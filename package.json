@@ -1,0 +1,13 @@
+{
+  "name": "ayla",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@ayla/web",
+    "build": "npm run build --workspace=@ayla/web",
+    "lint": "npm run lint --workspace=@ayla/web"
+  }
+}

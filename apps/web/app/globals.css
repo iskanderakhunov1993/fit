@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #1c1c1e;
+  background: #faf8f6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: #faf8f6;
+  color: #1c1c1e;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(140, 116, 217, 0.38);
+  outline-offset: 3px;
+}
+
+.soft-grid {
+  background: #faf8f6;
+}
+
+.phone-shell {
+  box-shadow:
+    0 32px 90px rgba(40, 36, 56, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.slider {
+  appearance: none;
+  height: 8px;
+  border-radius: 999px;
+  background: #dcd3f6;
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 6px solid #8c74d9;
+  box-shadow: 0 8px 20px rgba(140, 116, 217, 0.3);
+}
+
+@media (max-width: 380px) {
+  body {
+    font-size: 15px;
+  }
+}

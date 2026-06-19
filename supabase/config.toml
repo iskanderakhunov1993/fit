@@ -5,3 +5,18 @@ verify_jwt = true
 
 [functions.analyze-body]
 verify_jwt = true
+
+[functions.daily-decision]
+verify_jwt = true
+
+[functions.generate-workout]
+verify_jwt = true
+
+[functions.replace-exercise]
+verify_jwt = true
+
+[functions.pattern-analysis]
+verify_jwt = true
+
+[functions.health-navigator]
+verify_jwt = true

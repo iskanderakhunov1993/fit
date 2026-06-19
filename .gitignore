@@ -5,6 +5,7 @@ node_modules/
 
 # Expo
 .expo/
+.next/
 dist/
 web-build/
 expo-env.d.ts
@@ -47,5 +48,6 @@ xcuserdata/
 *.xcuserstate
 
 # generated Vite config outputs
+apps/web/.next/
 apps/web/vite.config.js
 apps/web/vite.config.d.ts

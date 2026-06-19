@@ -1,18 +1,18 @@
 import {
-  createDemoMealAnalysis,
+  createDemoWorkout,
   createEnvelope,
-  isMealAnalysisOutput,
-  parseAnalyzeMealInput
+  isWorkoutOutput,
+  parseGenerateWorkoutInput
 } from "../../../shared/ai-contracts.ts";
 import { handleStubRequest } from "../_shared/ai-stub.ts";
 
 Deno.serve((request) =>
   handleStubRequest(
     request,
-    "analyze-meal",
-    parseAnalyzeMealInput,
-    createDemoMealAnalysis,
-    isMealAnalysisOutput,
+    "generate-workout",
+    parseGenerateWorkoutInput,
+    createDemoWorkout,
+    isWorkoutOutput,
     createEnvelope
   )
 );

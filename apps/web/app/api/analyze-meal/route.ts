@@ -148,7 +148,7 @@ async function analyzeWithOllama(model: string, imageBase64: string, context: { 
       stream: false,
       options: { temperature: 0.1 }
     }),
-    signal: AbortSignal.timeout(120_000)
+    signal: AbortSignal.timeout(180_000)
   });
   const result: unknown = await response.json();
   if (!response.ok || !isObject(result) || typeof result.response !== "string") {

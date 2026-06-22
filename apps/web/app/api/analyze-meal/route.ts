@@ -80,6 +80,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isUploadedImage(value: FormDataEntryValue | null): value is File {
+  return typeof value === "object" && value !== null && "arrayBuffer" in value && "size" in value && "type" in value;
+}
+
 const mealSystemPrompt =
   "You analyze a single meal photo for Mira, a wellbeing app. Return only an approximate visual estimate, never exact nutrition facts. Identify visible foods conservatively. Give calorie and macro ranges wide enough to reflect uncertain portions, oils, sauces, hidden ingredients, and perspective. Never shame food, give dieting advice, diagnose health conditions, or claim the image proves what the person ate. Confidence reflects visual certainty, not nutritional truth. Do not describe the person's body. Respond in Russian.";
 
@@ -106,7 +110,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const image = formData.get("image");
-    if (!(image instanceof File)) return NextResponse.json({ error: "Нужно выбрать фото блюда." }, { status: 400 });
+    if (!isUploadedImage(image)) return NextResponse.json({ error: "Нужно выбрать фото блюда." }, { status: 400 });
     if (!allowedImageTypes.has(image.type)) {
       return NextResponse.json({ error: "Поддерживаются JPEG, PNG и WebP." }, { status: 415 });
     }

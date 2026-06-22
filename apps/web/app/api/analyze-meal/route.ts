@@ -93,11 +93,13 @@ function mealPrompt(energy: number | undefined, symptoms: string[] | undefined) 
 }
 
 export async function POST(request: Request) {
+  const yandexApiKey = process.env.YANDEX_API_KEY;
+  const yandexFolderId = process.env.YANDEX_FOLDER_ID;
   const groqApiKey = process.env.GROQ_API_KEY;
   const ollamaModel = process.env.OLLAMA_MEAL_MODEL;
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const openAiApiKey = process.env.OPENAI_API_KEY;
-  if (!groqApiKey && !ollamaModel && !geminiApiKey && !openAiApiKey) {
+  if (!yandexApiKey && !groqApiKey && !ollamaModel && !geminiApiKey && !openAiApiKey) {
     return NextResponse.json({
       data: createDemoMealAnalysis(),
       source: "demo",
@@ -126,19 +128,21 @@ export async function POST(request: Request) {
     const imageBase64 = Buffer.from(await image.arrayBuffer()).toString("base64");
     let outputText: string;
     try {
-      ({ outputText } = groqApiKey
-        ? await analyzeWithGroq(groqApiKey, image.type, imageBase64, parsed.data)
-        : ollamaModel
-          ? await analyzeWithOllama(ollamaModel, imageBase64, parsed.data)
-          : geminiApiKey
-            ? await analyzeWithGemini(geminiApiKey, image.type, imageBase64, parsed.data)
-            : await analyzeWithOpenAi(openAiApiKey!, image.type, imageBase64, parsed.data));
+      ({ outputText } = yandexApiKey && yandexFolderId
+        ? await analyzeWithYandex(yandexApiKey, yandexFolderId, image.type, imageBase64, parsed.data)
+        : groqApiKey
+          ? await analyzeWithGroq(groqApiKey, image.type, imageBase64, parsed.data)
+          : ollamaModel
+            ? await analyzeWithOllama(ollamaModel, imageBase64, parsed.data)
+            : geminiApiKey
+              ? await analyzeWithGemini(geminiApiKey, image.type, imageBase64, parsed.data)
+              : await analyzeWithOpenAi(openAiApiKey!, image.type, imageBase64, parsed.data));
     } catch (error) {
-      if (!groqApiKey || !ollamaModel) throw error;
-      console.warn("Groq failed; using the experimental local meal fallback");
+      if ((!yandexApiKey && !groqApiKey) || !ollamaModel) throw error;
+      console.warn("Remote meal provider failed; using the experimental local meal fallback");
       ({ outputText } = await analyzeWithOllama(ollamaModel, imageBase64, parsed.data));
     }
-    const analysis: unknown = outputText ? JSON.parse(outputText) : null;
+    const analysis = parseModelJson(outputText);
     if (!isMealAnalysisOutput(analysis) && ollamaModel) {
       console.warn("Ollama meal analysis needs an experimental fallback", analysis);
       return NextResponse.json({
@@ -157,6 +161,44 @@ export async function POST(request: Request) {
     console.error("Meal analysis failed", error);
     return NextResponse.json({ error: "Не удалось проанализировать фото. Попробуй ещё раз или добавь приём пищи вручную." }, { status: 500 });
   }
+}
+
+function parseModelJson(outputText: string): unknown {
+  const trimmed = outputText.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  try {
+    return JSON.parse(fenced?.[1] ?? trimmed);
+  } catch {
+    return null;
+  }
+}
+
+async function analyzeWithYandex(apiKey: string, folderId: string, mimeType: string, imageBase64: string, context: { energy?: number; symptoms?: string[] }) {
+  const model = process.env.YANDEX_MEAL_MODEL ?? "qwen3.6-35b-a3b/latest";
+  const response = await fetch("https://ai.api.cloud.yandex.net/v1/responses", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: `gpt://${folderId}/${model}`,
+      temperature: 0.1,
+      instructions: mealSystemPrompt,
+      input: [{
+        role: "user",
+        content: [
+          { type: "input_text", text: mealPrompt(context.energy, context.symptoms) },
+          { type: "input_image", image_url: `data:${mimeType};base64,${imageBase64}` }
+        ]
+      }],
+      max_output_tokens: 1800
+    })
+  });
+  const result: unknown = await response.json();
+  const outputText = readOutputText(result);
+  if (!response.ok || !outputText) {
+    console.error("Yandex meal analysis error", result);
+    throw new Error("Yandex meal analysis is unavailable");
+  }
+  return { outputText };
 }
 
 async function analyzeWithGroq(apiKey: string, mimeType: string, imageBase64: string, context: { energy?: number; symptoms?: string[] }) {

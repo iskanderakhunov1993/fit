@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-export type Screen = "today" | "workout" | "nutrition" | "progress" | "profile";
+export type Screen = "today" | "cycle" | "diary" | "coach" | "insights" | "workout" | "nutrition" | "progress" | "profile";
 
 export type ReadinessInput = {
   sleep: number;

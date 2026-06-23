@@ -1,18 +1,19 @@
 import {
-  Apple,
+  BookOpen,
+  CalendarHeart,
   ChartNoAxesCombined,
-  CircleUserRound,
-  Dumbbell,
-  House
+  House,
+  MessageCircle,
+  Sparkles
 } from "lucide-react";
 import type { Exercise, NavItem } from "../types";
 
 export const navigation: NavItem[] = [
   { id: "today", label: "Сегодня", icon: House },
-  { id: "workout", label: "Тренировка", icon: Dumbbell },
-  { id: "nutrition", label: "Питание", icon: Apple },
-  { id: "progress", label: "Прогресс", icon: ChartNoAxesCombined },
-  { id: "profile", label: "Профиль", icon: CircleUserRound }
+  { id: "cycle", label: "Цикл", icon: CalendarHeart },
+  { id: "diary", label: "Дневник", icon: BookOpen },
+  { id: "coach", label: "ИИ-коуч Mira", icon: MessageCircle },
+  { id: "insights", label: "Инсайты", icon: ChartNoAxesCombined }
 ];
 
 export const initialExercises: Exercise[] = [

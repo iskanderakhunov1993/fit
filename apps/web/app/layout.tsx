@@ -10,14 +10,14 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Mira — ИИ-коуч для тела",
-  description: "Ежедневный ИИ-коуч для женщин: движение, восстановление и контекст дня.",
-  applicationName: "Mira",
+  title: "Ромашка — твой цикл, твоя сила",
+  description: "Ежедневный ИИ-коуч для женщин: цикл, движение, восстановление и контекст дня.",
+  applicationName: "Ромашка",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Mira"
+    title: "Ромашка"
   },
   icons: {
     icon: "/favicon.svg",

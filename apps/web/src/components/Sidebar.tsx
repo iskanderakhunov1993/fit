@@ -1,4 +1,3 @@
-import { ChevronRight, Crown } from "lucide-react";
 import { navigation } from "../data/demo";
 import type { Screen } from "../types";
 import { Logo } from "./Logo";
@@ -6,9 +5,11 @@ import { Logo } from "./Logo";
 type SidebarProps = {
   active: Screen;
   onNavigate: (screen: Screen) => void;
+  userName?: string;
+  cycleLength?: number;
 };
 
-export function Sidebar({ active, onNavigate }: SidebarProps) {
+export function Sidebar({ active, onNavigate, userName, cycleLength }: SidebarProps) {
   return (
     <aside className="sidebar">
       <Logo />
@@ -21,6 +22,7 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
               key={item.id}
               onClick={() => onNavigate(item.id)}
             >
+              <span className="nav-dot" />
               <Icon size={19} strokeWidth={1.8} />
               <span>{item.label}</span>
             </button>
@@ -28,19 +30,15 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
         })}
       </nav>
       <div className="sidebar-spacer" />
-      <button className="membership-card">
-        <span className="membership-icon">
-          <Crown size={16} />
+      <div className="sidebar-user-card">
+        <span className="sidebar-user-avatar">
+          {(userName || "А").charAt(0).toUpperCase()}
         </span>
-        <span>
-          <small>Mira Premium</small>
-          <strong>Go to premium</strong>
+        <span className="sidebar-user-info">
+          <strong>{userName || "Аня"}</strong>
+          <small>Цикл {cycleLength || 28} дней</small>
         </span>
-        <ChevronRight size={17} />
-      </button>
-      <p className="safety-note">
-        Mira не ставит диагнозы и не заменяет консультацию врача.
-      </p>
+      </div>
     </aside>
   );
 }

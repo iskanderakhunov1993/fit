@@ -77,10 +77,10 @@ const checkInSymptoms = [
 const painAreas = ["Голова", "Шея", "Плечи", "Поясница", "Живот", "Таз", "Колени", "Другое"];
 const nav = [
   { id: "today", label: "Сегодня", icon: Sparkles },
-  { id: "calendar", label: "Календарь", icon: CalendarDays },
-  { id: "workouts", label: "Тренировки", icon: Dumbbell },
-  { id: "nutrition", label: "Питание", icon: Salad },
-  { id: "analytics", label: "Аналитика", icon: ChartNoAxesCombined }
+  { id: "calendar", label: "Цикл", icon: CalendarDays },
+  { id: "nutrition", label: "Дневник", icon: Salad },
+  { id: "workouts", label: "ИИ-коуч Mira", icon: Dumbbell },
+  { id: "analytics", label: "Инсайты", icon: ChartNoAxesCombined }
 ] as const;
 
 const defaultProfile: OnboardingState = {
@@ -262,66 +262,81 @@ export default function MiraMvp() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-5 text-mira-text">
-      <div className="mx-auto max-w-md">
-        <AppHeader onOpenProfile={() => setProfileOpen(true)} />
+    <main className="min-h-screen text-mira-text lg:flex">
+      {/* Desktop sidebar */}
+      <DesktopSidebar
+        active={active}
+        setActive={setActive}
+        userName={localData.account?.name}
+        cycleLength={profile.cycleLength}
+        onOpenProfile={() => setProfileOpen(true)}
+      />
 
-        {profileOpen ? (
-          <ProfileScreen
-            profile={profile}
-            onClose={() => setProfileOpen(false)}
-            onRestart={() => {
-              setProfile(defaultProfile);
-              setCheckIn(defaultCheckIn);
-              setGym(defaultGym);
-              setStep(0);
-              setOnboarded(false);
-              setProfileOpen(false);
-              setAccountReady(true);
-              persistLocalData({ ...localData, profile: undefined });
-            }}
-          />
-        ) : (
-          <motion.section
-            key={active}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="pb-28"
-          >
-            {active === "today" && (
-              <TodayScreen
-                plan={plan}
-                profile={profile}
-                checkIn={checkIn}
-                localData={localData}
-                account={localData.account}
-                onSaveCheckIn={saveCheckIn}
-                onSaveReflection={saveReflection}
-                onCalendar={() => setActive("calendar")}
-                onWorkouts={() => setActive("workouts")}
-                onNutrition={() => setActive("nutrition")}
-                onSetProfile={setProfile}
-                onPersistLocalData={persistLocalData}
-              />
-            )}
-            {active === "calendar" && <CalendarScreen profile={profile} plan={plan} localData={localData} onToday={() => setActive("today")} />}
-            {active === "workouts" && (
-              <WorkoutScreen
-                profile={profile}
-                checkIn={checkIn}
-                gym={gym}
-                localData={localData}
-                setGym={setGym}
-                onSaveWorkout={saveWorkout}
-              />
-            )}
-            {active === "nutrition" && <NutritionScreen checkIn={checkIn} plan={plan} localData={localData} onSaveMeal={saveMeal} />}
-            {active === "analytics" && <AnalyticsScreen profile={profile} plan={plan} checkIn={checkIn} localData={localData} onToday={() => setActive("today")} />}
-          </motion.section>
-        )}
+      <div className="flex-1 px-4 py-5 lg:ml-[260px] lg:px-8 lg:py-6">
+        <div className="mx-auto max-w-md lg:max-w-4xl">
+          <div className="lg:hidden">
+            <AppHeader onOpenProfile={() => setProfileOpen(true)} />
+          </div>
 
-        <BottomNav active={active} setActive={setActive} />
+          {profileOpen ? (
+            <ProfileScreen
+              profile={profile}
+              onClose={() => setProfileOpen(false)}
+              onRestart={() => {
+                setProfile(defaultProfile);
+                setCheckIn(defaultCheckIn);
+                setGym(defaultGym);
+                setStep(0);
+                setOnboarded(false);
+                setProfileOpen(false);
+                setAccountReady(true);
+                persistLocalData({ ...localData, profile: undefined });
+              }}
+            />
+          ) : (
+            <motion.section
+              key={active}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="pb-28 lg:pb-10"
+            >
+              {active === "today" && (
+                <TodayScreen
+                  plan={plan}
+                  profile={profile}
+                  checkIn={checkIn}
+                  localData={localData}
+                  account={localData.account}
+                  onSaveCheckIn={saveCheckIn}
+                  onSaveReflection={saveReflection}
+                  onCalendar={() => setActive("calendar")}
+                  onWorkouts={() => setActive("workouts")}
+                  onNutrition={() => setActive("nutrition")}
+                  onSetProfile={setProfile}
+                  onPersistLocalData={persistLocalData}
+                />
+              )}
+              {active === "calendar" && <CalendarScreen profile={profile} plan={plan} localData={localData} onToday={() => setActive("today")} />}
+              {active === "workouts" && (
+                <WorkoutScreen
+                  profile={profile}
+                  checkIn={checkIn}
+                  gym={gym}
+                  localData={localData}
+                  setGym={setGym}
+                  onSaveWorkout={saveWorkout}
+                />
+              )}
+              {active === "nutrition" && <NutritionScreen checkIn={checkIn} plan={plan} localData={localData} onSaveMeal={saveMeal} />}
+              {active === "analytics" && <AnalyticsScreen profile={profile} plan={plan} checkIn={checkIn} localData={localData} onToday={() => setActive("today")} />}
+            </motion.section>
+          )}
+
+          <div className="lg:hidden">
+            <BottomNav active={active} setActive={setActive} />
+          </div>
+        </div>
       </div>
       {tourReady && tourStep >= 1 && tourStep <= tourSteps.length && (
         <GuidedTour
@@ -475,12 +490,12 @@ function Landing({ onStart }: { onStart: () => void }) {
               <LogoMark />
               <span className="text-sm font-semibold text-mira-muted">Mira</span>
             </div>
-            <Badge className="mb-6 border-mira-primary/20 bg-[#F4F1F9] text-mira-primary">Твой личный ритм</Badge>
+            <Badge className="mb-6 border-mira-primary/20 bg-[#F4F1F9] text-mira-primary">Твой цикл · Твоя сила</Badge>
             <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl text-5xl font-black leading-[0.95] tracking-[-0.07em] sm:text-7xl">
               Понять себя. Выбрать, что делать сегодня.
             </motion.h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-mira-muted">
-              Mira соединяет цикл, сон, энергию, нагрузку и питание в один спокойный ориентир на день.
+              Ромашка соединяет цикл, сон, энергию, нагрузку и питание в один спокойный ориентир на день.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" onClick={onStart}>Создать личный план <ArrowRight className="h-4 w-4" /></Button>
@@ -917,14 +932,96 @@ function TodayScreen({
     setTimeout(() => setPeriodConfirmed(false), 3000);
   };
 
+  const phaseInsight = plan.cycleDay <= 5
+    ? "Приоритет: мягкое восстановление, йога, лёгкое кардио."
+    : plan.cycleDay <= 13
+      ? "Энергия растёт, тело готово к нагрузке. Отличное время для силовых и новых задач."
+      : plan.cycleDay <= 16
+        ? "Пик энергии! Идеальное время для интенсивных тренировок."
+        : "Энергия снижается. Приоритет: умеренная нагрузка и восстановление.";
+  const daysToOvulation = plan.cycleDay < 14 ? 14 - plan.cycleDay : plan.cycleDay > 16 ? profile.cycleLength - plan.cycleDay + 14 : 0;
+  const daysToPeriod = profile.cycleLength - plan.cycleDay;
+
   return (
     <div className="space-y-4">
       <section className="px-1 pt-1">
         <p className="capitalize text-sm font-semibold text-mira-muted">{today}</p>
-        <h1 className="mt-2 text-4xl font-black tracking-[-0.06em]">{greetingText}</h1>
-        <p className="mt-2 text-sm leading-6 text-mira-muted">Посмотрим на твой сегодняшний контекст без лишнего давления.</p>
+        <h1 className="mt-2 text-4xl font-black tracking-[-0.06em] lg:text-5xl">{greetingText}</h1>
       </section>
 
+      {/* Desktop 2-column layout */}
+      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">
+        <CycleWheelCard cycleDay={plan.cycleDay} cycleLength={profile.cycleLength} />
+
+        <div className="space-y-4">
+          {/* AI Coach card */}
+          <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#7B5EA7] via-[#9B7DC8] to-[#C4B5E0] p-6 text-white shadow-glow">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-300" />
+              ИИ-КОУЧ MIRA
+            </span>
+            <h2 className="mt-4 text-2xl font-black tracking-[-0.04em]">Открываем твой день</h2>
+            <p className="mt-2 text-sm leading-6 text-white/85">Ты в {plan.phase.toLowerCase()} фазе — {phaseInsight}</p>
+            <div className="mt-5 flex gap-3">
+              <button className="rounded-xl border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-semibold backdrop-blur-sm transition hover:bg-white/25" onClick={onWorkouts} type="button">
+                Поговорить с Mira
+              </button>
+              <button className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#7B5EA7] shadow-soft transition hover:shadow-glow" onClick={() => setCheckInOpen(true)} type="button">
+                Отметить день
+              </button>
+            </div>
+          </Card>
+
+          {/* Movement + Recovery */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-mira-muted">ДВИЖЕНИЕ</p>
+              <p className="mt-2 text-xl font-black tracking-[-0.04em]">{plan.movement.title}</p>
+              <p className="mt-1 text-xs text-mira-muted">{plan.movement.detail}</p>
+              <button className="mt-3 rounded-xl bg-[#F8F6FA] px-4 py-2 text-xs font-bold text-mira-primary transition hover:bg-[#F0ECF7]" onClick={onWorkouts} type="button">
+                Открыть план
+              </button>
+            </Card>
+            <Card className="p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-mira-muted">ВОССТАНОВЛЕНИЕ</p>
+              <p className="mt-2 text-xl font-black tracking-[-0.04em]">
+                7,5 <span className="text-sm font-semibold text-mira-muted">ч сна</span>
+              </p>
+              <div className="mt-2 space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-mira-muted">Гидратация</span><span className="font-bold">1,2 / 2 л</span></div>
+                <div className="flex justify-between"><span className="text-mira-muted">Энергия</span><span className="font-bold">{resource.score > 0 ? Math.round((resource.score / 15) * 100) : 82}%</span></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#F0ECF7]">
+                  <div className="h-full rounded-full bg-gradient-to-r from-mira-primary to-[#B8A9D4] transition-all" style={{ width: `${resource.score > 0 ? Math.round((resource.score / 15) * 100) : 82}%` }} />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Forecast */}
+          <Card className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-mira-muted">ПРОГНОЗ</p>
+            <div className="mt-3 flex items-center gap-0">
+              <div className="flex-1">
+                <span className="text-3xl font-black">{daysToOvulation}</span>
+                <span className="ml-1 text-sm font-bold">дн.</span>
+                <p className="text-xs text-mira-muted">до овуляции</p>
+              </div>
+              <div className="mx-4 h-10 w-px bg-[#F0ECE6]" />
+              <div className="flex-1">
+                <span className="text-3xl font-black">{daysToPeriod}</span>
+                <span className="ml-1 text-sm font-bold">дн.</span>
+                <p className="text-xs text-mira-muted">до месячных</p>
+              </div>
+              <button className="rounded-xl border border-[#F0ECE6] px-4 py-2.5 text-sm font-semibold transition hover:bg-[#F8F6FA]" onClick={onCalendar} type="button">
+                Календарь →
+              </button>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Mobile layout (original) */}
+      <div className="lg:hidden">
       <Card className="bg-[#F4F1F9]" data-tour="cycle-card">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -1123,6 +1220,7 @@ function TodayScreen({
           }}
         />
       )}
+      </div>
     </div>
   );
 }
@@ -1142,6 +1240,112 @@ function CycleDial({ cycleDay, cycleLength }: { cycleDay: number; cycleLength: n
         <span className="-mt-1 text-lg font-black text-mira-text">{cycleDay}</span>
       </div>
     </div>
+  );
+}
+
+const cyclePhases = [
+  { name: "Менструация", startDay: 1, endDay: 5, color: "#E88B9C" },
+  { name: "Фолликулярная", startDay: 6, endDay: 13, color: "#F0B95E" },
+  { name: "Овуляция", startDay: 14, endDay: 16, color: "#B99AE0" },
+  { name: "Лютеиновая", startDay: 17, endDay: 28, color: "#7B6FB5" }
+];
+
+function CycleWheelLarge({ cycleDay, cycleLength }: { cycleDay: number; cycleLength: number }) {
+  const size = 240;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 28;
+  const strokeW = 28;
+
+  const currentPhase = cyclePhases.find(p => cycleDay >= p.startDay && cycleDay <= p.endDay) ?? cyclePhases[0];
+  const dotAngle = ((cycleDay - 0.5) / cycleLength) * 360 - 90;
+  const dotRad = (dotAngle * Math.PI) / 180;
+  const dotX = cx + r * Math.cos(dotRad);
+  const dotY = cy + r * Math.sin(dotRad);
+
+  function arcPath(startDay: number, endDay: number) {
+    const startAngle = ((startDay - 1) / cycleLength) * 360 - 90;
+    const endAngle = (endDay / cycleLength) * 360 - 90;
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    const x1 = cx + r * Math.cos(startRad);
+    const y1 = cy + r * Math.sin(startRad);
+    const x2 = cx + r * Math.cos(endRad);
+    const y2 = cy + r * Math.sin(endRad);
+    const large = endAngle - startAngle > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+  }
+
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {cyclePhases.map(phase => (
+          <path
+            key={phase.name}
+            d={arcPath(phase.startDay, Math.min(phase.endDay, cycleLength))}
+            fill="none"
+            stroke={phase.color}
+            strokeWidth={strokeW}
+            strokeLinecap="round"
+            opacity={0.8}
+          />
+        ))}
+        {/* Daisy petals */}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <ellipse
+            key={i}
+            cx={cx}
+            cy={cy - 42}
+            rx={8}
+            ry={22}
+            fill="#EDE5F5"
+            opacity={0.5}
+            transform={`rotate(${i * 30} ${cx} ${cy})`}
+          />
+        ))}
+        <circle cx={cx} cy={cy} r={14} fill="#F0B95E" opacity={0.7} />
+        <circle cx={cx} cy={cy} r={8} fill="#E8A640" opacity={0.6} />
+        {/* Current day dot */}
+        <circle cx={dotX} cy={dotY} r={7} fill="#fff" stroke={currentPhase.color} strokeWidth={3} />
+      </svg>
+      <div className="absolute flex flex-col items-center">
+        <span className="text-4xl font-black text-mira-text">{cycleDay}</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-mira-muted">ДЕНЬ</span>
+      </div>
+    </div>
+  );
+}
+
+function CycleWheelCard({ cycleDay, cycleLength }: { cycleDay: number; cycleLength: number }) {
+  const currentPhase = cyclePhases.find(p => cycleDay >= p.startDay && cycleDay <= p.endDay) ?? cyclePhases[0];
+  const daysToOvulation = cycleDay < 14 ? 14 - cycleDay : cycleDay > 16 ? cycleLength - cycleDay + 14 : 0;
+  const daysToPeriod = cycleLength - cycleDay;
+
+  return (
+    <Card className="lg:min-h-[480px]">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-black tracking-[-0.04em]">Твой цикл</h3>
+        <span className="text-sm text-mira-muted">День {cycleDay} из {cycleLength}</span>
+      </div>
+      <div className="my-4 flex justify-center">
+        <CycleWheelLarge cycleDay={cycleDay} cycleLength={cycleLength} />
+      </div>
+      <div className="flex justify-center">
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#F8F6FA] px-4 py-2 text-sm font-semibold">
+          <span className="h-2 w-2 rounded-full" style={{ background: currentPhase.color }} />
+          {currentPhase.name}
+        </span>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1">
+        {cyclePhases.map(phase => (
+          <div key={phase.name} className="flex items-center gap-2 text-xs text-mira-muted">
+            <span className="h-2 w-2 rounded-full" style={{ background: phase.color }} />
+            <span>{phase.name}</span>
+            <span className="ml-auto font-bold text-mira-text">{phase.startDay}–{phase.endDay}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -2886,6 +3090,66 @@ function SettingsToggle({
   );
 }
 
+function DesktopSidebar({
+  active,
+  setActive,
+  userName,
+  cycleLength,
+  onOpenProfile
+}: {
+  active: (typeof nav)[number]["id"];
+  setActive: (active: (typeof nav)[number]["id"]) => void;
+  userName?: string;
+  cycleLength: number;
+  onOpenProfile: () => void;
+}) {
+  return (
+    <aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col border-r border-[#F0ECE6] bg-white/90 backdrop-blur-sm lg:flex">
+      <div className="px-6 pt-7 pb-2">
+        <LogoMark />
+      </div>
+
+      <nav className="mt-8 flex flex-col gap-1 px-4" aria-label="Основная навигация">
+        {nav.map((item) => {
+          const Icon = item.icon;
+          const isActive = active === item.id;
+          return (
+            <button
+              key={item.id}
+              className={cn(
+                "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition",
+                isActive ? "text-mira-text" : "text-mira-muted hover:text-mira-text hover:bg-[#F8F6FA]"
+              )}
+              onClick={() => setActive(item.id)}
+              type="button"
+            >
+              <span className={cn("h-1.5 w-1.5 rounded-full", isActive ? "bg-mira-primary" : "bg-transparent")} />
+              <Icon className="h-[18px] w-[18px]" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="mt-auto px-5 pb-6">
+        <button
+          className="flex w-full items-center gap-3 rounded-2xl bg-[#F8F6FA] p-3 text-left transition hover:bg-[#F0ECF7]"
+          onClick={onOpenProfile}
+          type="button"
+        >
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] text-sm font-bold text-white">
+            {(userName || "А").charAt(0).toUpperCase()}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-bold text-mira-text">{userName || "Аня"}</span>
+            <span className="block text-xs text-mira-muted">Цикл {cycleLength} дней</span>
+          </span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
 function AppHeader({ onOpenProfile }: { onOpenProfile: () => void }) {
   return (
     <header className="mb-5 flex items-center justify-between">
@@ -3107,8 +3371,8 @@ function LogoMark() {
     <div className="flex items-center gap-3">
       <MiraSymbol />
       <div>
-        <p className="text-lg font-black tracking-[-0.05em]">mira</p>
-        <p className="text-xs font-semibold text-mira-muted">для тебя сегодня</p>
+        <p className="text-lg font-black tracking-[-0.05em]">Ромашка</p>
+        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-mira-muted">ТВОЙ ЦИКЛ · ТВОЯ СИЛА</p>
       </div>
     </div>
   );

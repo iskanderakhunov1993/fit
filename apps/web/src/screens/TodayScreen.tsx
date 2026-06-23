@@ -1,197 +1,162 @@
 import {
-  BatteryCharging,
-  Brain,
-  ChevronRight,
+  ArrowRight,
+  CalendarDays,
   Droplets,
-  HeartPulse,
-  MoonStar,
-  Salad,
   Sparkles,
-  SunMedium
+  Zap
 } from "lucide-react";
-import { MetricCard } from "../components/MetricCard";
-import { ReadinessRing } from "../components/ReadinessRing";
+import { CycleLegend, CycleWheel } from "../components/CycleWheel";
 
 type TodayScreenProps = {
   readiness: number;
   insight: string;
   workoutMode: string;
   workoutDuration: number;
+  userName: string;
+  cycleDay: number;
+  cycleLength: number;
   onCheckIn: () => void;
   onGenerate: () => void;
   onNutrition: () => void;
 };
+
+function getPhaseInsight(day: number): string {
+  if (day <= 5) return "Ты в фазе менструации — Приоритет: мягкое восстановление, йога, лёгкое кардио. Тело просит отдыха.";
+  if (day <= 13) return "Ты в фолликулярная фазе — Энергия растёт, тело готово к нагрузке. Отличное время для силовых и новых задач.";
+  if (day <= 16) return "Ты в фазе овуляции — Пик энергии! Идеальное время для интенсивных тренировок и максимальной активности.";
+  return "Ты в лютеиновой фазе — Энергия снижается. Приоритет: умеренная нагрузка и восстановление.";
+}
+
+function getDayOfWeek(): string {
+  const days = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"];
+  return days[new Date().getDay()];
+}
+
+function getFormattedDate(): string {
+  const months = ["Января", "Февраля", "Марта", "Апреля", "Мая", "Июня", "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"];
+  const now = new Date();
+  return `${now.getDate()} ${months[now.getMonth()]}`;
+}
+
+function getDaysUntilOvulation(currentDay: number): number {
+  if (currentDay >= 14 && currentDay <= 16) return 0;
+  if (currentDay < 14) return 14 - currentDay;
+  return 28 - currentDay + 14;
+}
+
+function getDaysUntilPeriod(currentDay: number, cycleLength: number): number {
+  return cycleLength - currentDay;
+}
 
 export function TodayScreen({
   readiness,
   insight,
   workoutMode,
   workoutDuration,
+  userName,
+  cycleDay,
+  cycleLength,
   onCheckIn,
   onGenerate,
   onNutrition
 }: TodayScreenProps) {
+  const phaseInsight = getPhaseInsight(cycleDay);
+  const daysToOvulation = getDaysUntilOvulation(cycleDay);
+  const daysToPeriod = getDaysUntilPeriod(cycleDay, cycleLength);
+  const sleepHours = 7.5;
+
   return (
     <div className="screen today-screen">
-      <section className="welcome-row">
+      <section className="today-header">
         <div>
-          <p className="eyebrow">ТВОЙ ДЕНЬ С AYLА</p>
-          <h1>
-            Доброе утро, <em>Алина</em>
-          </h1>
-          <p className="lead">
-            Посмотрим, что будет поддерживать твоё тело сегодня.
-          </p>
+          <p className="today-date">{getDayOfWeek()} · {getFormattedDate()}</p>
+          <h1 className="today-greeting">Доброе утро, {userName || "Аня"}</h1>
         </div>
-        <button className="text-button" onClick={onCheckIn}>
-          Обновить состояние <ChevronRight size={16} />
-        </button>
       </section>
 
-      <section className="hero-grid">
-        <article className="readiness-card">
-          <div className="readiness-copy">
-            <p className="eyebrow">СОСТОЯНИЕ СЕГОДНЯ</p>
-            <h2>Мягкий, устойчивый ресурс</h2>
-            <p>
-              Сон был хорошим, но энергия чуть ниже твоего обычного уровня.
-              Сегодня важно двигаться без перегрузки.
-            </p>
-            <button className="quiet-button" onClick={onCheckIn}>
-              <HeartPulse size={17} />
-              Быстрый check-in
-            </button>
+      <section className="today-grid">
+        {/* Cycle wheel card */}
+        <article className="cycle-wheel-card">
+          <div className="cycle-wheel-header">
+            <h3>Твой цикл</h3>
+            <span className="cycle-day-badge">День {cycleDay} из {cycleLength}</span>
           </div>
-          <div className="readiness-score">
-            <ReadinessRing score={readiness} />
-            <span>Готовность</span>
-          </div>
-          <div className="orb orb-one" />
-          <div className="orb orb-two" />
+          <CycleWheel currentDay={cycleDay} cycleLength={cycleLength} size={260} />
+          <CycleLegend currentDay={cycleDay} cycleLength={cycleLength} />
         </article>
 
-        <article className="cycle-card">
-          <div className="cycle-top">
-            <span className="metric-icon">
-              <MoonStar size={18} />
+        {/* Right column */}
+        <div className="today-right">
+          {/* AI Coach card */}
+          <article className="ai-coach-card">
+            <span className="coach-badge">
+              <span className="coach-dot" /> ИИ-КОУЧ MIRA
             </span>
-            <span className="status-chip">День 22</span>
-          </div>
-          <div>
-            <p className="eyebrow">ЦИКЛ</p>
-            <h3>Лютеиновая фаза</h3>
-            <p>
-              Может быть меньше энергии и выше потребность в восстановлении.
-            </p>
-          </div>
-          <div className="cycle-track">
-            <span className="cycle-progress" />
-            <i />
-          </div>
-          <small>Ориентировочно 6 дней до нового цикла</small>
-        </article>
-      </section>
-
-      <section className="metrics-grid">
-        <MetricCard
-          icon={MoonStar}
-          label="Сон"
-          value="7 ч 42 мин"
-          detail="Хорошее восстановление"
-          tone="lavender"
-        />
-        <MetricCard
-          icon={BatteryCharging}
-          label="Энергия"
-          value="6 из 10"
-          detail="Ниже обычного"
-          tone="rose"
-        />
-        <MetricCard
-          icon={Brain}
-          label="Настроение"
-          value="Спокойное"
-          detail="Стабильный фон"
-          tone="beige"
-        />
-        <MetricCard
-          icon={Droplets}
-          label="Вода"
-          value="1,1 из 2,2 л"
-          detail="Добавь стакан сейчас"
-          tone="sage"
-        />
-      </section>
-
-      <section className="coach-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">MIRA INSIGHT</p>
-            <h2>Что лучше для тела сегодня</h2>
-          </div>
-          <span className="ai-badge">
-            <Sparkles size={15} /> AI insight
-          </span>
-        </div>
-
-        <div className="coach-grid">
-          <article className="insight-card">
-            <div className="insight-symbol">
-              <SunMedium size={28} strokeWidth={1.6} />
-            </div>
-            <div>
-              <h3>Сохраняем ритм, снижаем давление</h3>
-              <p>{insight}</p>
-              <div className="insight-factors">
-                <span>сон 7:42</span>
-                <span>энергия 6/10</span>
-                <span>цикл: день 22</span>
-              </div>
+            <h2>Открываем твой день</h2>
+            <p>{phaseInsight}</p>
+            <div className="coach-actions">
+              <button className="coach-button outline" onClick={onNutrition}>
+                Поговорить с Mira
+              </button>
+              <button className="coach-button filled" onClick={onCheckIn}>
+                Отметить день
+              </button>
             </div>
           </article>
 
-          <article className="workout-cta-card">
-            <div className="workout-cta-head">
-              <div>
-                <p className="eyebrow">ТРЕНИРОВКА ДНЯ</p>
-                <h3>{workoutMode}</h3>
+          {/* Movement + Recovery row */}
+          <div className="today-cards-row">
+            <article className="mini-card movement-card">
+              <span className="mini-card-label">ДВИЖЕНИЕ</span>
+              <strong className="mini-card-value">{workoutMode}</strong>
+              <span className="mini-card-detail">Силовая · HIIT · бег</span>
+              <button className="mini-card-button" onClick={onGenerate}>
+                Открыть план
+              </button>
+            </article>
+
+            <article className="mini-card recovery-card">
+              <span className="mini-card-label">ВОССТАНОВЛЕНИЕ</span>
+              <strong className="mini-card-value">
+                {sleepHours} <small>ч сна</small>
+              </strong>
+              <div className="recovery-stats">
+                <div className="recovery-stat">
+                  <span>Гидратация</span>
+                  <span>1,2 / 2 л</span>
+                </div>
+                <div className="recovery-stat">
+                  <span>Энергия</span>
+                  <span>{readiness}%</span>
+                </div>
+                <div className="recovery-bar">
+                  <div className="recovery-bar-fill" style={{ width: `${readiness}%` }} />
+                </div>
               </div>
-              <span>{workoutDuration} мин</span>
+            </article>
+          </div>
+
+          {/* Forecast card */}
+          <article className="forecast-card">
+            <span className="mini-card-label">ПРОГНОЗ</span>
+            <div className="forecast-content">
+              <div className="forecast-item">
+                <strong>{daysToOvulation}</strong>
+                <span>дн.</span>
+                <small>до овуляции</small>
+              </div>
+              <div className="forecast-divider" />
+              <div className="forecast-item">
+                <strong>{daysToPeriod}</strong>
+                <span>дн.</span>
+                <small>до месячных</small>
+              </div>
+              <button className="forecast-calendar-btn">
+                Календарь <ArrowRight size={15} />
+              </button>
             </div>
-            <div className="body-lines" aria-hidden="true">
-              <i className="line line-a" />
-              <i className="line line-b" />
-              <i className="line line-c" />
-              <i className="line line-d" />
-            </div>
-            <button className="primary-button" onClick={onGenerate}>
-              <Sparkles size={18} />
-              Сгенерировать тренировку
-            </button>
-            <small>
-              Mira учтёт сон, цикл, энергию, ограничения и вчерашнюю нагрузку.
-            </small>
           </article>
         </div>
-      </section>
-
-      <section className="nutrition-preview">
-        <div>
-          <span className="metric-icon">
-            <Salad size={20} />
-          </span>
-          <div>
-            <p className="eyebrow">ПИТАНИЕ</p>
-            <h3>Белка пока немного меньше твоего ритма</h3>
-            <p>
-              Не нужно ничего считать. Сфотографируй следующий приём пищи, и
-              Mira обновит картину дня.
-            </p>
-          </div>
-        </div>
-        <button className="secondary-button" onClick={onNutrition}>
-          Добавить фото еды
-        </button>
       </section>
     </div>
   );

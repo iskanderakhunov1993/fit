@@ -56,6 +56,14 @@ const initialProfile: UserProfile = {
   wearableSources: []
 };
 
+function getCycleDay(lastPeriodDate: string | undefined, cycleLength: number): number {
+  if (!lastPeriodDate) return 13;
+  const start = new Date(lastPeriodDate);
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return ((diff % cycleLength) + cycleLength) % cycleLength + 1;
+}
+
 export function App() {
   const [accountCreated, setAccountCreated] = useState(
     () => window.localStorage.getItem("mira-account-created") === "true"
@@ -97,6 +105,8 @@ export function App() {
     () => getCoachDecision(readiness),
     [readiness]
   );
+
+  const cycleDay = getCycleDay(profile.lastPeriodDate, profile.cycleLength ?? 28);
 
   const navigate = (next: Screen) => {
     setScreen(next);
@@ -199,7 +209,12 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar active={screen} onNavigate={navigate} />
+      <Sidebar
+        active={screen}
+        onNavigate={navigate}
+        userName={profile.name}
+        cycleLength={profile.cycleLength}
+      />
       <div className="app-main">
         <TopBar />
         <main>
@@ -209,6 +224,9 @@ export function App() {
               insight={decision.insight}
               workoutMode={decision.mode}
               workoutDuration={decision.duration}
+              userName={profile.name}
+              cycleDay={cycleDay}
+              cycleLength={profile.cycleLength ?? 28}
               onCheckIn={() => setCheckInOpen(true)}
               onGenerate={generateWorkout}
               onNutrition={() => setFoodScanOpen(true)}
@@ -239,16 +257,16 @@ export function App() {
               onBack={() => navigate("today")}
             />
           )}
-          {screen === "nutrition" && (
+          {(screen === "nutrition" || screen === "diary") && (
             <NutritionScreen onAddMeal={() => setFoodScanOpen(true)} />
           )}
-          {screen === "progress" && (
+          {(screen === "progress" || screen === "insights") && (
             <ProgressScreen
               latestScan={latestScan}
               onNewScan={() => setBodyScanOpen(true)}
             />
           )}
-          {screen === "profile" && (
+          {(screen === "profile" || screen === "coach") && (
             <ProfileScreen
               profile={profile}
               onRestartOnboarding={() => {
@@ -256,6 +274,20 @@ export function App() {
                 setOnboardingComplete(false);
                 setScreen("today");
               }}
+            />
+          )}
+          {screen === "cycle" && (
+            <TodayScreen
+              readiness={readiness}
+              insight={decision.insight}
+              workoutMode={decision.mode}
+              workoutDuration={decision.duration}
+              userName={profile.name}
+              cycleDay={cycleDay}
+              cycleLength={profile.cycleLength ?? 28}
+              onCheckIn={() => setCheckInOpen(true)}
+              onGenerate={generateWorkout}
+              onNutrition={() => setFoodScanOpen(true)}
             />
           )}
         </main>

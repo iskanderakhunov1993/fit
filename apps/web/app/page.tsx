@@ -518,7 +518,7 @@ function Landing({ onStart }: { onStart: () => void }) {
 }
 
 function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: (account: MiraAccount) => void }) {
-  const [mode, setMode] = useState<"create" | "sign-in">("create");
+  const [mode, setMode] = useState<"create" | "sign-in" | "forgot">("create");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -526,19 +526,46 @@ function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: 
   const [acceptedHealthContext, setAcceptedHealthContext] = useState(false);
   const [status, setStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const isCreate = mode === "create";
-  const canSubmit = email.includes("@") && password.length >= 8 && (!isCreate || (name.trim().length > 1 && acceptedTerms && acceptedHealthContext));
+  const isForgot = mode === "forgot";
+  const canSubmit = isForgot ? email.includes("@") : email.includes("@") && password.length >= 8 && (!isCreate || (name.trim().length > 1 && acceptedTerms && acceptedHealthContext));
 
   const submit = async () => {
     if (!canSubmit) return;
     setIsSubmitting(true);
     setStatus("");
     try {
+      if (isForgot) {
+        if (supabase) {
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/auth/reset-password`
+          });
+          if (error) throw error;
+        }
+        setResetSent(true);
+        return;
+      }
       if (supabase) {
-        const result = isCreate
-          ? await supabase.auth.signUp({ email, password, options: { data: { name: name.trim() } } })
-          : await supabase.auth.signInWithPassword({ email, password });
-        if (result.error) throw result.error;
+        if (isCreate) {
+          const result = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { name: name.trim() },
+              emailRedirectTo: `${window.location.origin}/auth/callback`
+            }
+          });
+          if (result.error) throw result.error;
+          if (result.data.user && !result.data.session) {
+            setEmailConfirmationSent(true);
+            return;
+          }
+        } else {
+          const result = await supabase.auth.signInWithPassword({ email, password });
+          if (result.error) throw result.error;
+        }
         onComplete({ name: name.trim() || email.split("@")[0], email, storage: "cloud", createdAt: new Date().toISOString() });
         return;
       }
@@ -550,6 +577,34 @@ function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: 
     }
   };
 
+  if (emailConfirmationSent) {
+    return (
+      <main className="min-h-screen px-5 py-6 text-mira-text">
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col items-center justify-center text-center">
+          <div className="mb-6 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-mira-ink"><AtSign className="h-8 w-8" /></div>
+          <h1 className="text-3xl font-black tracking-[-0.05em]">Проверь почту</h1>
+          <p className="mt-4 text-sm leading-6 text-mira-muted">Мы отправили письмо на <strong className="text-mira-text">{email}</strong>. Нажми на ссылку в письме, чтобы подтвердить аккаунт и начать.</p>
+          <p className="mt-6 text-xs leading-5 text-mira-muted">Не пришло? Проверь папку «Спам». Письмо приходит в течение 1-2 минут.</p>
+          <Button className="mt-6" variant="secondary" onClick={() => { setEmailConfirmationSent(false); setMode("sign-in"); }}>Уже подтвердил — войти</Button>
+        </div>
+      </main>
+    );
+  }
+
+  if (resetSent) {
+    return (
+      <main className="min-h-screen px-5 py-6 text-mira-text">
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col items-center justify-center text-center">
+          <div className="mb-6 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-mira-ink"><LockKeyhole className="h-8 w-8" /></div>
+          <h1 className="text-3xl font-black tracking-[-0.05em]">Ссылка отправлена</h1>
+          <p className="mt-4 text-sm leading-6 text-mira-muted">Если аккаунт с адресом <strong className="text-mira-text">{email}</strong> существует, мы отправили ссылку для сброса пароля.</p>
+          <p className="mt-6 text-xs leading-5 text-mira-muted">Проверь почту и папку «Спам».</p>
+          <Button className="mt-6" variant="secondary" onClick={() => { setResetSent(false); setMode("sign-in"); setStatus(""); }}>Вернуться ко входу</Button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen px-5 py-6 text-mira-text">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col">
@@ -557,17 +612,28 @@ function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: 
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="my-auto py-10">
           <div className="mb-7 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-mira-ink"><ShieldCheck className="h-8 w-8" /></div>
           <p className="text-sm font-semibold text-mira-primary">Твой личный ритм</p>
-          <h1 className="mt-3 text-4xl font-black leading-[1.02] tracking-[-0.06em]">{isCreate ? "Создадим твой профиль" : "Рады видеть тебя снова"}</h1>
-          <p className="mt-4 text-sm leading-6 text-mira-muted">{isCreate ? "С ним можно сохранить настройки и продолжить на другом устройстве." : "Войди, чтобы открыть сохранённый контекст и свой день."}</p>
+          <h1 className="mt-3 text-4xl font-black leading-[1.02] tracking-[-0.06em]">{isForgot ? "Восстановление пароля" : isCreate ? "Создадим твой профиль" : "Рады видеть тебя снова"}</h1>
+          <p className="mt-4 text-sm leading-6 text-mira-muted">{isForgot ? "Введи email, и мы отправим ссылку для создания нового пароля." : isCreate ? "С ним можно сохранить настройки и продолжить на другом устройстве." : "Войди, чтобы открыть сохранённый контекст и свой день."}</p>
           <div className="mt-8 space-y-3">
             {isCreate && <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Как к тебе обращаться</span><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-mira-card px-4"><UserRound className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" maxLength={40} onChange={(event) => setName(event.target.value)} placeholder="Имя" value={name} /></div></label>}
             <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Электронная почта</span><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-mira-card px-4"><AtSign className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" value={email} /></div></label>
-            <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Пароль</span><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-mira-card px-4"><LockKeyhole className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" minLength={8} onChange={(event) => setPassword(event.target.value)} placeholder="Не меньше 8 символов" type="password" value={password} /></div></label>
+            {!isForgot && <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Пароль</span><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-mira-card px-4"><LockKeyhole className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" minLength={8} onChange={(event) => setPassword(event.target.value)} placeholder="Не меньше 8 символов" type="password" value={password} /></div></label>}
           </div>
           {isCreate && <div className="mt-6 space-y-3 text-sm leading-5 text-mira-muted"><ConsentRow checked={acceptedTerms} label="Я принимаю условия использования и политику конфиденциальности." onChange={setAcceptedTerms} /><ConsentRow checked={acceptedHealthContext} label="Я разрешаю использовать мои отметки только для персонального контекста в Mira. Согласие можно изменить в настройках." onChange={setAcceptedHealthContext} /></div>}
           {status && <p className="mt-4 text-sm font-semibold text-mira-cycle" role="alert">{status}</p>}
         </motion.section>
-        <div className="pb-4"><Button className="w-full" disabled={!canSubmit || isSubmitting} size="lg" onClick={submit}>{isSubmitting ? "Проверяем данные..." : isCreate ? "Создать профиль" : "Войти"} <ArrowRight className="h-4 w-4" /></Button><button className="mt-5 w-full text-sm font-semibold text-mira-primary" onClick={() => { setMode(isCreate ? "sign-in" : "create"); setStatus(""); }}>{isCreate ? "У меня уже есть аккаунт" : "Создать новый аккаунт"}</button><p className="mt-5 text-center text-xs leading-5 text-mira-muted">{supabase ? "Аккаунт хранится в защищённом сервисе авторизации." : "Сейчас включён локальный режим: данные останутся на этом устройстве до подключения облачной синхронизации."}</p></div>
+        <div className="pb-4">
+          <Button className="w-full" disabled={!canSubmit || isSubmitting} size="lg" onClick={submit}>
+            {isSubmitting ? "Проверяем данные..." : isForgot ? "Отправить ссылку" : isCreate ? "Создать профиль" : "Войти"} <ArrowRight className="h-4 w-4" />
+          </Button>
+          {!isForgot && !isCreate && supabase && (
+            <button className="mt-4 w-full text-sm font-semibold text-mira-muted" onClick={() => { setMode("forgot"); setStatus(""); }}>Забыли пароль?</button>
+          )}
+          <button className="mt-3 w-full text-sm font-semibold text-mira-primary" onClick={() => { setMode(isForgot ? "sign-in" : isCreate ? "sign-in" : "create"); setStatus(""); }}>
+            {isForgot ? "Вернуться ко входу" : isCreate ? "У меня уже есть аккаунт" : "Создать новый аккаунт"}
+          </button>
+          <p className="mt-5 text-center text-xs leading-5 text-mira-muted">{supabase ? "Аккаунт хранится в защищённом сервисе авторизации." : "Сейчас включён локальный режим: данные останутся на этом устройстве до подключения облачной синхронизации."}</p>
+        </div>
       </div>
     </main>
   );

@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
         <a href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-mira-primary">
           <ArrowLeft className="h-4 w-4" /> Назад
         </a>
-        <div className="mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-mira-primary text-mira-ink">
+        <div className="mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-mira-primary text-white">
           <LockKeyhole className="h-7 w-7" />
         </div>
         <h1 className="text-3xl font-black tracking-[-0.05em]">Новый пароль</h1>
@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-mira-muted">Новый пароль</span>
             <input
-              className="h-14 w-full rounded-2xl border border-white/10 bg-mira-background px-4 text-mira-text outline-none transition focus:border-mira-primary"
+              className="h-14 w-full rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 text-mira-text outline-none transition focus:border-mira-primary"
               type="password"
               minLength={8}
               placeholder="Минимум 8 символов"
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-mira-muted">Повторите пароль</span>
             <input
-              className="h-14 w-full rounded-2xl border border-white/10 bg-mira-background px-4 text-mira-text outline-none transition focus:border-mira-primary"
+              className="h-14 w-full rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 text-mira-text outline-none transition focus:border-mira-primary"
               type="password"
               minLength={8}
               placeholder="Ещё раз"

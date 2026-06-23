@@ -7,10 +7,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-mira-primary text-mira-ink shadow-glow hover:bg-[#8ce0f7]",
-        secondary: "bg-mira-card text-mira-text shadow-soft hover:bg-[#302f2b]",
-        ghost: "text-mira-text hover:bg-white/10",
-        outline: "border border-white/15 bg-mira-card text-mira-text hover:bg-[#302f2b]"
+        default: "bg-mira-primary text-white shadow-glow hover:bg-[#E07058]",
+        secondary: "bg-[#F3EFEA] text-mira-text hover:bg-[#E8E4DE]",
+        ghost: "text-mira-text hover:bg-[#F3EFEA]",
+        outline: "border border-[#E8E4DE] bg-white text-mira-text hover:bg-[#F3EFEA]"
       },
       size: {
         default: "h-12 px-5",

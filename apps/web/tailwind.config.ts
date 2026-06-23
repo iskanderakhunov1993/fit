@@ -11,22 +11,22 @@ const config: Config = {
     extend: {
       colors: {
         mira: {
-          background: "#191918",
-          card: "#262522",
-          text: "#F7F6F1",
-          muted: "#B5B3AD",
-          primary: "#76D7F3",
-          success: "#1C665A",
-          cycle: "#EF4653",
-          ink: "#111110"
+          background: "#FBF8F5",
+          card: "#FFFFFF",
+          text: "#2D2A26",
+          muted: "#9B978F",
+          primary: "#E8836B",
+          success: "#6BAF8D",
+          cycle: "#D4637A",
+          ink: "#2D2A26"
         }
       },
       fontFamily: {
         sans: ["var(--font-jakarta)", "Inter", "system-ui", "sans-serif"]
       },
       boxShadow: {
-        soft: "0 20px 60px rgba(0, 0, 0, 0.28)",
-        glow: "0 18px 60px rgba(118, 215, 243, 0.2)"
+        soft: "0 8px 32px rgba(45, 42, 38, 0.08)",
+        glow: "0 12px 40px rgba(232, 131, 107, 0.2)"
       },
       borderRadius: {
         "3xl": "2rem",

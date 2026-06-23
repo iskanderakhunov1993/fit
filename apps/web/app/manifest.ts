@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Бережный ежедневный план для тела, движения и восстановления.",
     start_url: "/",
     display: "standalone",
-    background_color: "#191918",
-    theme_color: "#191918",
+    background_color: "#FBF8F5",
+    theme_color: "#FBF8F5",
     lang: "ru",
     icons: [
       {

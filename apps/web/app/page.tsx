@@ -420,7 +420,7 @@ function GuidedTour({
           initial={{ opacity: 0, y: tooltipAbove ? 8 : -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.1 }}
-          className="absolute left-4 right-4 mx-auto max-w-sm rounded-2xl bg-mira-card p-5 shadow-[0_12px_40px_rgba(0,0,0,0.4)]"
+          className="absolute left-4 right-4 mx-auto max-w-sm rounded-2xl bg-white p-5 shadow-[0_12px_40px_rgba(45,42,38,0.15)]"
           style={{
             top: tooltipAbove ?? tooltipTop
           }}
@@ -475,7 +475,7 @@ function Landing({ onStart }: { onStart: () => void }) {
               <LogoMark />
               <span className="text-sm font-semibold text-mira-muted">Mira</span>
             </div>
-            <Badge className="mb-6 border-mira-primary/15 bg-mira-card/80 text-mira-primary">Твой личный ритм</Badge>
+            <Badge className="mb-6 border-mira-primary/20 bg-[#FEF6F3] text-mira-primary">Твой личный ритм</Badge>
             <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl text-5xl font-black leading-[0.95] tracking-[-0.07em] sm:text-7xl">
               Понять себя. Выбрать, что делать сегодня.
             </motion.h1>
@@ -484,18 +484,18 @@ function Landing({ onStart }: { onStart: () => void }) {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" onClick={onStart}>Создать личный план <ArrowRight className="h-4 w-4" /></Button>
-              <a className="inline-flex h-14 items-center justify-center rounded-full px-6 text-sm font-semibold text-mira-primary transition hover:bg-white/5" href="#how-it-works">Как это работает</a>
+              <a className="inline-flex h-14 items-center justify-center rounded-full px-6 text-sm font-semibold text-mira-primary transition hover:bg-[#F3EFEA]" href="#how-it-works">Как это работает</a>
             </div>
             <p className="mt-4 text-sm text-mira-muted">Без диагнозов. Без оценок тела. Ты решаешь, чем делиться.</p>
           </motion.section>
 
-          <motion.section style={{ y: dashboardY }} initial={{ opacity: 0, y: 36, rotate: 2 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ duration: 0.6 }} className="phone-shell relative mx-auto w-full max-w-sm rounded-[2.5rem] border border-white/10 bg-mira-card p-3">
+          <motion.section style={{ y: dashboardY }} initial={{ opacity: 0, y: 36, rotate: 2 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ duration: 0.6 }} className="phone-shell relative mx-auto w-full max-w-sm rounded-[2.5rem] border border-[#F0ECE6] bg-white p-3">
             <div className="rounded-[2rem] bg-mira-background p-5">
               <div className="mb-7 flex items-center justify-between"><LogoMark /><Badge>Сегодня</Badge></div>
-              <Card className="bg-mira-primary p-6 text-mira-ink">
-                <p className="text-sm font-semibold text-mira-ink/65">Ресурс на сегодня</p>
+              <Card className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-6 text-white">
+                <p className="text-sm font-semibold text-white/70">Ресурс на сегодня</p>
                 <h2 className="mt-3 text-4xl font-black tracking-[-0.05em]">В балансе</h2>
-                <p className="mt-3 text-sm leading-6 text-mira-ink/75">Умеренное движение, привычная еда и более спокойный вечер.</p>
+                <p className="mt-3 text-sm leading-6 text-white/80">Умеренное движение, привычная еда и более спокойный вечер.</p>
               </Card>
               <div className="mt-4 grid grid-cols-2 gap-3"><Metric label="Энергия" value="6/10" /><Metric label="Сон" value="Нормально" /><Metric label="Цикл" value="День 14" /><Metric label="Нагрузка" value="Средняя" /></div>
             </div>
@@ -503,7 +503,7 @@ function Landing({ onStart }: { onStart: () => void }) {
         </div>
       </section>
 
-      <section id="how-it-works" className="border-y border-white/10 bg-[#20201e] px-5 py-16">
+      <section id="how-it-works" className="border-y border-[#F0ECE6] bg-[#F3EFEA] px-5 py-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm font-bold uppercase tracking-[0.12em] text-mira-primary">Три шага</p>
           <h2 className="mt-3 max-w-xl text-3xl font-black tracking-[-0.05em]">Меньше полей. Больше понятных решений.</h2>
@@ -581,7 +581,7 @@ function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: 
     return (
       <main className="min-h-screen px-5 py-6 text-mira-text">
         <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col items-center justify-center text-center">
-          <div className="mb-6 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-mira-ink"><AtSign className="h-8 w-8" /></div>
+          <div className="mb-6 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-white"><AtSign className="h-8 w-8" /></div>
           <h1 className="text-3xl font-black tracking-[-0.05em]">Проверь почту</h1>
           <p className="mt-4 text-sm leading-6 text-mira-muted">Мы отправили письмо на <strong className="text-mira-text">{email}</strong>. Нажми на ссылку в письме, чтобы подтвердить аккаунт и начать.</p>
           <p className="mt-6 text-xs leading-5 text-mira-muted">Не пришло? Проверь папку «Спам». Письмо приходит в течение 1-2 минут.</p>
@@ -595,7 +595,7 @@ function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: 
     return (
       <main className="min-h-screen px-5 py-6 text-mira-text">
         <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col items-center justify-center text-center">
-          <div className="mb-6 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-mira-ink"><LockKeyhole className="h-8 w-8" /></div>
+          <div className="mb-6 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-white"><LockKeyhole className="h-8 w-8" /></div>
           <h1 className="text-3xl font-black tracking-[-0.05em]">Ссылка отправлена</h1>
           <p className="mt-4 text-sm leading-6 text-mira-muted">Если аккаунт с адресом <strong className="text-mira-text">{email}</strong> существует, мы отправили ссылку для сброса пароля.</p>
           <p className="mt-6 text-xs leading-5 text-mira-muted">Проверь почту и папку «Спам».</p>
@@ -608,16 +608,16 @@ function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: 
   return (
     <main className="min-h-screen px-5 py-6 text-mira-text">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col">
-        <div className="flex items-center justify-between"><button aria-label="Назад" className="grid h-11 w-11 place-items-center rounded-full border border-white/10 text-mira-text" onClick={onBack}><ArrowLeft className="h-5 w-5" /></button><LogoMark /><span className="w-11" /></div>
+        <div className="flex items-center justify-between"><button aria-label="Назад" className="grid h-11 w-11 place-items-center rounded-full border border-[#E8E4DE] text-mira-text" onClick={onBack}><ArrowLeft className="h-5 w-5" /></button><LogoMark /><span className="w-11" /></div>
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="my-auto py-10">
-          <div className="mb-7 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-mira-ink"><ShieldCheck className="h-8 w-8" /></div>
+          <div className="mb-7 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-mira-primary text-white"><ShieldCheck className="h-8 w-8" /></div>
           <p className="text-sm font-semibold text-mira-primary">Твой личный ритм</p>
           <h1 className="mt-3 text-4xl font-black leading-[1.02] tracking-[-0.06em]">{isForgot ? "Восстановление пароля" : isCreate ? "Создадим твой профиль" : "Рады видеть тебя снова"}</h1>
           <p className="mt-4 text-sm leading-6 text-mira-muted">{isForgot ? "Введи email, и мы отправим ссылку для создания нового пароля." : isCreate ? "С ним можно сохранить настройки и продолжить на другом устройстве." : "Войди, чтобы открыть сохранённый контекст и свой день."}</p>
           <div className="mt-8 space-y-3">
-            {isCreate && <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Как к тебе обращаться</span><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-mira-card px-4"><UserRound className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" maxLength={40} onChange={(event) => setName(event.target.value)} placeholder="Имя" value={name} /></div></label>}
-            <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Электронная почта</span><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-mira-card px-4"><AtSign className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" value={email} /></div></label>
-            {!isForgot && <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Пароль</span><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-mira-card px-4"><LockKeyhole className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" minLength={8} onChange={(event) => setPassword(event.target.value)} placeholder="Не меньше 8 символов" type="password" value={password} /></div></label>}
+            {isCreate && <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Как к тебе обращаться</span><div className="flex items-center gap-3 rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4"><UserRound className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" maxLength={40} onChange={(event) => setName(event.target.value)} placeholder="Имя" value={name} /></div></label>}
+            <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Электронная почта</span><div className="flex items-center gap-3 rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4"><AtSign className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" value={email} /></div></label>
+            {!isForgot && <label className="block"><span className="mb-2 block text-sm font-semibold text-mira-muted">Пароль</span><div className="flex items-center gap-3 rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4"><LockKeyhole className="h-5 w-5 text-mira-primary" /><input className="h-14 min-w-0 flex-1 bg-transparent text-mira-text outline-none" minLength={8} onChange={(event) => setPassword(event.target.value)} placeholder="Не меньше 8 символов" type="password" value={password} /></div></label>}
           </div>
           {isCreate && <div className="mt-6 space-y-3 text-sm leading-5 text-mira-muted"><ConsentRow checked={acceptedTerms} label="Я принимаю условия использования и политику конфиденциальности." onChange={setAcceptedTerms} /><ConsentRow checked={acceptedHealthContext} label="Я разрешаю использовать мои отметки только для персонального контекста в Mira. Согласие можно изменить в настройках." onChange={setAcceptedHealthContext} /></div>}
           {status && <p className="mt-4 text-sm font-semibold text-mira-cycle" role="alert">{status}</p>}
@@ -640,7 +640,7 @@ function AccountEntry({ onBack, onComplete }: { onBack: () => void; onComplete: 
 }
 
 function ConsentRow({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
-  return <button className="flex w-full items-start gap-3 text-left" onClick={() => onChange(!checked)} type="button"><span className={cn("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border", checked ? "border-mira-primary bg-mira-primary text-mira-ink" : "border-white/25 bg-mira-card")}><Check className={cn("h-3.5 w-3.5", checked ? "opacity-100" : "opacity-0")} /></span><span>{label}</span></button>;
+  return <button className="flex w-full items-start gap-3 text-left" onClick={() => onChange(!checked)} type="button"><span className={cn("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border", checked ? "border-mira-primary bg-mira-primary text-white" : "border-[#E8E4DE] bg-[#F3EFEA]")}><Check className={cn("h-3.5 w-3.5", checked ? "opacity-100" : "opacity-0")} /></span><span>{label}</span></button>;
 }
 
 function Onboarding({
@@ -671,9 +671,9 @@ function Onboarding({
           <span className="text-sm font-semibold text-mira-muted">{stageNames[step]} · {step + 1}/5</span>
         </div>
         <div className="mb-3 flex gap-1.5" aria-label={`Шаг ${step + 1} из 5`}>
-          {stageNames.map((name, index) => <span key={name} className={cn("h-1.5 flex-1 rounded-full transition-colors", index <= step ? "bg-mira-primary" : "bg-mira-card")} />)}
+          {stageNames.map((name, index) => <span key={name} className={cn("h-1.5 flex-1 rounded-full transition-colors", index <= step ? "bg-mira-primary" : "bg-[#E8E4DE]")} />)}
         </div>
-        <div className="mb-8 h-1 overflow-hidden rounded-full bg-mira-card" aria-hidden="true">
+        <div className="mb-8 h-1 overflow-hidden rounded-full bg-[#E8E4DE]" aria-hidden="true">
           <div
             className="h-full rounded-full bg-mira-primary transition-all"
             style={{ width: `${progress}%` }}
@@ -682,7 +682,7 @@ function Onboarding({
 
         <motion.div key={step} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} transition={{ duration: 0.28 }}>
         <Card className="min-h-[570px] p-6 sm:p-7">
-          <div className="mb-7 flex items-center gap-3"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-mira-primary text-mira-ink"><StageIcon className="h-6 w-6" /></div><span className="text-sm font-semibold text-mira-muted">Настройка Mira</span></div>
+          <div className="mb-7 flex items-center gap-3"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-mira-primary text-white"><StageIcon className="h-6 w-6" /></div><span className="text-sm font-semibold text-mira-muted">Настройка Mira</span></div>
           {step === 0 && (
             <StepShell
               eyebrow="Начнём с важного"
@@ -705,7 +705,7 @@ function Onboarding({
             >
               <Field label="Первый день последней менструации">
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-mira-background px-4 py-3"
+                  className="w-full rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 py-3"
                   type="date"
                   value={profile.periodStart}
                   onChange={(event) => setProfile({ ...profile, periodStart: event.target.value })}
@@ -713,7 +713,7 @@ function Onboarding({
               </Field>
               <Field label="Средняя длина цикла">
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-mira-background px-4 py-3"
+                  className="w-full rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 py-3"
                   type="number"
                   min={21}
                   max={45}
@@ -808,17 +808,17 @@ function Onboarding({
               title="Mira готова быть рядом сегодня"
               subtitle="Это стартовый план на основе выбранного ритма. После первого чек-ина он станет точнее."
             >
-              <div className="rounded-3xl bg-mira-ink p-5 text-white">
-                <p className="text-sm font-semibold text-white/60">Движение</p>
+              <div className="rounded-3xl bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+                <p className="text-sm font-semibold text-white/70">Движение</p>
                 <p className="mt-2 text-xl font-black tracking-[-0.04em]">{plan.movement.title}</p>
-                <p className="mt-2 text-sm leading-6 text-white/70">{plan.movement.detail}</p>
+                <p className="mt-2 text-sm leading-6 text-white/80">{plan.movement.detail}</p>
               </div>
               <div className="grid gap-3 text-sm">
-                <div className="rounded-2xl bg-mira-background p-4">
+                <div className="rounded-2xl bg-[#F3EFEA] p-4">
                   <p className="font-bold">Питание</p>
                   <p className="mt-1 text-mira-muted">{plan.nutrition.title}</p>
                 </div>
-                <div className="rounded-2xl bg-mira-background p-4">
+                <div className="rounded-2xl bg-[#F3EFEA] p-4">
                   <p className="font-bold">Восстановление</p>
                   <p className="mt-1 text-mira-muted">{plan.recovery.title}</p>
                 </div>
@@ -925,7 +925,7 @@ function TodayScreen({
         <p className="mt-2 text-sm leading-6 text-mira-muted">Посмотрим на твой сегодняшний контекст без лишнего давления.</p>
       </section>
 
-      <Card className="bg-[#30272b]" data-tour="cycle-card">
+      <Card className="bg-[#FEF6F3]" data-tour="cycle-card">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-mira-muted">Цикл</p>
@@ -943,7 +943,7 @@ function TodayScreen({
           </div>
           <CycleDial cycleDay={plan.cycleDay} cycleLength={profile.cycleLength} />
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-4 text-sm">
+        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[#E8E4DE] pt-4 text-sm">
           <div>
             <p className="text-mira-muted">Следующая менструация</p>
             <p className="mt-1 font-bold text-mira-text">Ориентировочно {nextPeriod}</p>
@@ -956,7 +956,7 @@ function TodayScreen({
       </Card>
 
       {(plan.cycleDay > 20 || !profile.periodStart) && !periodConfirmed && (
-        <Card className="border-mira-cycle/30 bg-[#30272b]">
+        <Card className="border-mira-cycle/30 bg-[#FEF6F3]">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-mira-muted">Менструация</p>
@@ -971,7 +971,7 @@ function TodayScreen({
         </Card>
       )}
       {periodConfirmed && (
-        <Card className="border-mira-primary/30 bg-[#1d302b]">
+        <Card className="border-mira-primary/30 bg-[#F0FAF4]">
           <div className="flex items-center gap-3">
             <Check className="h-5 w-5 text-mira-primary" />
             <p className="text-sm font-semibold text-mira-text">Начало менструации отмечено. Цикл пересчитан.</p>
@@ -982,19 +982,19 @@ function TodayScreen({
       <DashboardCalendar profile={profile} plan={plan} localData={localData} onOpenCalendar={onCalendar} />
 
       {nutritionEnergy && (
-        <Card className="bg-[#1d302b]">
+        <Card className="bg-[#F0FAF4]">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-mira-muted">Энергия из фото еды</p>
               <h2 className="mt-1 text-2xl font-black tracking-[-0.04em]">{nutritionEnergy.min}-{nutritionEnergy.max} ккал</h2>
               <p className="mt-1 text-sm leading-6 text-mira-muted">Ориентировочный диапазон по {analyzedMeals.length} {analyzedMeals.length === 1 ? "фото" : "фото"}; это не точный подсчёт.</p>
             </div>
-            <Badge className="bg-mira-background text-mira-text">Уверенность {nutritionEnergy.confidence}%</Badge>
+            <Badge className="bg-[#F3EFEA] text-mira-text">Уверенность {nutritionEnergy.confidence}%</Badge>
           </div>
         </Card>
       )}
 
-      <Card className="border-mira-primary/30 bg-[#1d302b]" data-tour="checkin-button">
+      <Card className="border-mira-primary/30 bg-[#F0FAF4]" data-tour="checkin-button">
         <p className="text-sm font-semibold text-mira-muted">Следующий шаг</p>
         <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">
           {!hasSavedCheckIn ? "Отметь, как ты сейчас" : checkIn.painLevel > 0 ? "Сегодня выбираем восстановление" : "План на сегодня готов"}
@@ -1024,7 +1024,7 @@ function TodayScreen({
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {resource.factors.map((factor) => (
-            <span key={factor} className="rounded-full bg-mira-background px-3 py-2 text-xs font-semibold text-mira-muted">
+            <span key={factor} className="rounded-full bg-[#F3EFEA] px-3 py-2 text-xs font-semibold text-mira-muted">
               {factor}
             </span>
           ))}
@@ -1032,12 +1032,12 @@ function TodayScreen({
       </Card>
 
       <Card className="overflow-hidden p-0" data-tour="recommendation-card">
-        <div className="bg-mira-ink p-5 text-white">
-          <p className="text-sm font-semibold text-white/60">Главная рекомендация</p>
+        <div className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+          <p className="text-sm font-semibold text-white/70">Главная рекомендация</p>
           <h2 className="mt-2 text-2xl font-black tracking-[-0.04em]">Поддерживающий план на сегодня</h2>
-          <p className="mt-2 text-sm leading-6 text-white/70">{plan.movement.reason}</p>
+          <p className="mt-2 text-sm leading-6 text-white/80">{plan.movement.reason}</p>
         </div>
-        <div className="divide-y divide-white/10">
+        <div className="divide-y divide-[#F0ECE6]">
           <TodayRecommendation icon={<BriefcaseBusiness />} label="Работа" text={workRecommendation} />
           <TodayRecommendation icon={<Dumbbell />} label="Тренировка" text={`${plan.movement.title} - ${plan.movement.detail}.`} />
           <TodayRecommendation icon={<HeartPulse />} label="Питание" text={`${plan.nutrition.title}. ${plan.nutrition.detail}.`} />
@@ -1095,7 +1095,7 @@ function TodayScreen({
         />
       )}
 
-      <Card className="bg-[#1d302b]">
+      <Card className="bg-[#F0FAF4]">
         <p className="text-sm font-semibold text-mira-muted">Небольшое наблюдение</p>
         <p className="mt-2 text-sm leading-6 text-mira-text">{insight}</p>
       </Card>
@@ -1129,15 +1129,15 @@ function TodayScreen({
 
 function CycleDial({ cycleDay, cycleLength }: { cycleDay: number; cycleLength: number }) {
   const progress = Math.min(100, Math.max(4, (cycleDay / cycleLength) * 100));
-  const accent = cycleDay <= 5 ? "#EF4653" : "#76D7F3";
+  const accent = cycleDay <= 5 ? "#D4637A" : "#E8836B";
 
   return (
     <div
       aria-label={`День цикла ${cycleDay} из ${cycleLength}`}
       className="grid h-16 w-16 shrink-0 place-items-center rounded-full p-1"
-      style={{ background: `conic-gradient(${accent} ${progress}%, #484742 0)` }}
+      style={{ background: `conic-gradient(${accent} ${progress}%, #E8E4DE 0)` }}
     >
-      <div className="grid h-full w-full place-items-center rounded-full bg-mira-card text-center">
+      <div className="grid h-full w-full place-items-center rounded-full bg-white text-center">
         <span className="text-[9px] font-bold uppercase text-mira-muted">день</span>
         <span className="-mt-1 text-lg font-black text-mira-text">{cycleDay}</span>
       </div>
@@ -1188,7 +1188,7 @@ function DashboardCalendar({
         </div>
         <button
           aria-label="Открыть подробный календарь"
-          className="grid h-10 w-10 place-items-center rounded-full bg-mira-background text-mira-primary transition hover:bg-mira-primary hover:text-mira-ink"
+          className="grid h-10 w-10 place-items-center rounded-full bg-[#F3EFEA] text-mira-primary transition hover:bg-mira-primary hover:text-white"
           onClick={onOpenCalendar}
           title="Открыть календарь"
           type="button"
@@ -1215,7 +1215,7 @@ function DashboardCalendar({
               aria-pressed={selectedDate}
               className={cn(
                 "relative mx-auto grid h-9 w-9 place-items-center rounded-full text-xs font-bold transition",
-                selectedDate ? "bg-mira-ink text-white shadow-soft" : period ? "bg-mira-cycle/65 text-mira-text" : "text-mira-text hover:bg-mira-background",
+                selectedDate ? "bg-mira-primary text-white shadow-soft" : period ? "bg-mira-cycle/65 text-mira-text" : "text-mira-text hover:bg-[#F3EFEA]",
                 fertile && !selectedDate ? "ring-1 ring-[#d9d4ee]" : "",
                 todayDate && !selectedDate ? "border border-mira-primary" : ""
               )}
@@ -1229,7 +1229,7 @@ function DashboardCalendar({
         })}
       </div>
 
-      <div className="mt-4 flex items-start gap-3 rounded-2xl bg-mira-background px-3 py-3">
+      <div className="mt-4 flex items-start gap-3 rounded-2xl bg-[#F3EFEA] px-3 py-3">
         <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-mira-primary" />
         <p className="text-sm leading-5 text-mira-muted">{selectedLabel}</p>
       </div>
@@ -1320,8 +1320,8 @@ function DailyCheckIn({
                 className={cn(
                   "rounded-full border px-3 py-2 text-sm font-semibold transition",
                   draft.symptoms.includes(symptom)
-                    ? "border-mira-primary bg-mira-primary text-mira-ink"
-                    : "border-white/10 bg-mira-background text-mira-muted"
+                    ? "border-mira-primary bg-mira-primary text-white"
+                    : "border-[#E8E4DE] bg-[#F3EFEA] text-mira-muted"
                 )}
                 onClick={() => toggleListValue("symptoms", symptom)}
                 type="button"
@@ -1376,8 +1376,8 @@ function DailyCheckIn({
                       className={cn(
                         "rounded-full border px-3 py-2 text-sm font-semibold transition",
                         draft.painAreas.includes(area)
-                          ? "border-mira-primary bg-mira-primary text-mira-ink"
-                          : "border-white/10 bg-mira-background text-mira-muted"
+                          ? "border-mira-primary bg-mira-primary text-white"
+                          : "border-[#E8E4DE] bg-[#F3EFEA] text-mira-muted"
                       )}
                       onClick={() => toggleListValue("painAreas", area)}
                       type="button"
@@ -1390,7 +1390,7 @@ function DailyCheckIn({
             )}
             <Field label="Заметка (необязательно)">
               <textarea
-                className="min-h-20 w-full resize-y rounded-2xl border border-white/10 bg-mira-background px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
+                className="min-h-20 w-full resize-y rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
                 maxLength={280}
                 placeholder="Например: много встреч, хочу оставить вечер спокойнее"
                 value={draft.note}
@@ -1423,7 +1423,7 @@ function DailyReflectionForm({
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-4 pb-4">
-      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(0,0,0,0.38)]">
+      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(45,42,38,0.1)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-mira-muted">Вечерняя отметка</p>
@@ -1457,7 +1457,7 @@ function DailyReflectionForm({
           </Field>
           <Field label="Короткая заметка (необязательно)">
             <textarea
-              className="min-h-20 w-full resize-y rounded-2xl border border-white/10 bg-mira-background px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
+              className="min-h-20 w-full resize-y rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
               maxLength={280}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Например: прогулка помогла переключиться"
@@ -1587,10 +1587,10 @@ function WorkoutScreen({
 
   return (
     <div className="space-y-4">
-      <Card className="bg-mira-ink text-white">
-        <p className="text-sm font-semibold text-white/60">Тренировка на сегодня</p>
+      <Card className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] text-white">
+        <p className="text-sm font-semibold text-white/70">Тренировка на сегодня</p>
         <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">{highPain ? "Сегодня - восстановление" : "Подберём спокойную нагрузку"}</h1>
-        <p className="mt-3 text-sm leading-6 text-white/65">
+        <p className="mt-3 text-sm leading-6 text-white/80">
           {highPain
             ? "Ты отметила высокий уровень боли, поэтому силовую нагрузку сегодня исключаем."
             : "Mira использует твой сегодняшний контекст, а не заставляет следовать жёсткой программе."}
@@ -1600,11 +1600,11 @@ function WorkoutScreen({
       <Card className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <p className="text-sm font-semibold text-mira-muted">Почему именно такой план</p>
-          <Badge className="bg-mira-background text-mira-text">Нагрузка {displayPlan.readinessScore}/100</Badge>
+          <Badge className="bg-[#F3EFEA] text-mira-text">Нагрузка {displayPlan.readinessScore}/100</Badge>
         </div>
         <div className="flex flex-wrap gap-2">
           {displayPlan.factors.map((factor) => (
-            <span key={factor} className="rounded-full bg-mira-background px-3 py-2 text-xs font-semibold text-mira-muted">
+            <span key={factor} className="rounded-full bg-[#F3EFEA] px-3 py-2 text-xs font-semibold text-mira-muted">
               {factor}
             </span>
           ))}
@@ -1640,22 +1640,22 @@ function WorkoutScreen({
       </Card>
 
       {isGenerating && (
-        <div aria-live="polite" className="rounded-2xl bg-mira-background px-4 py-3 text-sm text-mira-muted" role="status">
+        <div aria-live="polite" className="rounded-2xl bg-[#F3EFEA] px-4 py-3 text-sm text-mira-muted" role="status">
           Учитываем время, состояние, цикл, рабочую нагрузку и записи еды.
         </div>
       )}
 
       {generated && (
         <Card className="overflow-hidden p-0">
-          <div className="bg-mira-primary p-5 text-mira-ink">
-            <Badge className="border-mira-ink/10 bg-mira-ink/10 text-mira-ink">{generationSource === "ai" ? "План Mira AI" : "Локальный алгоритм"}</Badge>
+          <div className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+            <Badge className="border-white/20 bg-white/20 text-white">{generationSource === "ai" ? "План Mira AI" : "Локальный алгоритм"}</Badge>
             <h2 className="mt-3 text-2xl font-black tracking-[-0.05em]">{displayPlan.title}</h2>
-            <p className="mt-2 text-sm text-mira-ink/75">{displayPlan.time} · {displayPlan.intensity}</p>
+            <p className="mt-2 text-sm text-white/80">{displayPlan.time} · {displayPlan.intensity}</p>
           </div>
           <div className="space-y-4 p-5">
-            <p className="rounded-2xl bg-mira-background p-4 text-sm leading-6 text-mira-muted">{displayPlan.explanation}</p>
+            <p className="rounded-2xl bg-[#F3EFEA] p-4 text-sm leading-6 text-mira-muted">{displayPlan.explanation}</p>
             {displayPlan.nutritionSupport && (
-              <div className="rounded-2xl bg-[#30272b] p-4 text-sm leading-6 text-mira-muted">
+              <div className="rounded-2xl bg-[#FEF6F3] p-4 text-sm leading-6 text-mira-muted">
                 <p className="font-bold text-mira-text">Контекст питания</p>
                 <p className="mt-1">{displayPlan.nutritionSupport}</p>
               </div>
@@ -1727,12 +1727,12 @@ function WorkoutScreen({
         </Card>
       )}
 
-      <Card className="border-dashed bg-mira-card/60">
+      <Card className="border-dashed bg-[#F3EFEA]/60">
         <p className="text-sm font-semibold text-mira-muted">История тренировок</p>
         {todayWorkouts.length ? (
           <div className="mt-3 space-y-2">
             {todayWorkouts.map((entry) => (
-              <div key={entry.id} className="rounded-2xl bg-mira-background p-3">
+              <div key={entry.id} className="rounded-2xl bg-[#F3EFEA] p-3">
                 <p className="text-sm font-bold text-mira-text">{entry.title}</p>
                 <p className="mt-1 text-xs leading-5 text-mira-muted">{entry.status === "completed" ? "Завершена" : entry.status === "recovery" ? "Восстановление" : "Остановлена"}{entry.durationMinutes ? ` · ${entry.durationMinutes} мин` : ""}</p>
               </div>
@@ -1756,7 +1756,7 @@ function WorkoutExerciseCard({
   onReplace: () => void;
 }) {
   return (
-    <div className="rounded-2xl bg-mira-background p-4">
+    <div className="rounded-2xl bg-[#F3EFEA] p-4">
       <div className="flex items-start gap-3">
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-xs font-black text-mira-primary">{index + 1}</span>
         <div className="min-w-0 flex-1">
@@ -1811,7 +1811,7 @@ const calendarLayers: Array<{ id: CalendarLayer; label: string; dot: string }> =
   { id: "mood", label: "Настроение", dot: "bg-[#f0d8ac]" },
   { id: "energy", label: "Энергия", dot: "bg-[#a7c7b0]" },
   { id: "workload", label: "Работа", dot: "bg-[#98a7bb]" },
-  { id: "workouts", label: "Тренировки", dot: "bg-mira-ink" },
+  { id: "workouts", label: "Тренировки", dot: "bg-mira-primary" },
   { id: "nutrition", label: "Питание", dot: "bg-[#c4b06f]" },
   { id: "notes", label: "Заметки", dot: "bg-[#d9d4ee]" }
 ];
@@ -1876,7 +1876,7 @@ function CalendarScreen({
               key={layer.id}
               className={cn(
                 "flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition",
-                active ? "border-mira-primary bg-mira-card text-mira-text shadow-soft" : "border-transparent bg-mira-card/50 text-mira-muted"
+                active ? "border-mira-primary bg-white text-mira-text shadow-soft" : "border-transparent bg-[#F3EFEA] text-mira-muted"
               )}
               onClick={() => toggleLayer(layer.id)}
               type="button"
@@ -1889,13 +1889,13 @@ function CalendarScreen({
       </section>
 
       {activeLayers.length === 0 && (
-        <div aria-live="polite" className="rounded-2xl bg-mira-background px-4 py-3 text-sm leading-6 text-mira-muted" role="status">
+        <div aria-live="polite" className="rounded-2xl bg-[#F3EFEA] px-4 py-3 text-sm leading-6 text-mira-muted" role="status">
           Все слои скрыты. Включи один или несколько, чтобы увидеть отметки в календаре.
         </div>
       )}
 
       {!hasLocalEntries && (
-        <Card className="bg-[#1d302b]">
+        <Card className="bg-[#F0FAF4]">
           <p className="text-sm font-semibold text-mira-muted">Первая запись</p>
           <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">Календарь оживёт с твоим первым чек-ином</h2>
           <p className="mt-2 text-sm leading-6 text-mira-muted">Сейчас здесь есть только ориентиры цикла. Самочувствие, тренировки, еда и заметки появятся после сохранения твоих записей.</p>
@@ -1906,7 +1906,7 @@ function CalendarScreen({
       <Card className="p-4">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm font-bold text-mira-text">Неделя вокруг выбранного дня</p>
-          <Badge className="bg-mira-background text-mira-muted">День {selected.cycleDay}</Badge>
+          <Badge className="bg-[#F3EFEA] text-mira-muted">День {selected.cycleDay}</Badge>
         </div>
         <div className="grid grid-cols-7 gap-1">
           {weekDays.map((day) => (
@@ -1914,7 +1914,7 @@ function CalendarScreen({
               key={day.day}
               className={cn(
                 "flex min-h-16 flex-col items-center justify-center rounded-2xl text-xs font-bold transition",
-                day.day === selectedDay ? "bg-mira-ink text-white" : "bg-mira-background text-mira-text"
+                day.day === selectedDay ? "bg-mira-primary text-white" : "bg-[#F3EFEA] text-mira-text"
               )}
               onClick={() => {
                 setSelectedDay(day.day);
@@ -1988,7 +1988,7 @@ function CalendarDayButton({
       aria-label={`Открыть ${day.day} число`}
       className={cn(
         "relative grid aspect-square place-items-center rounded-2xl text-sm font-bold transition",
-        isSelected ? "bg-mira-ink text-white shadow-soft" : hasPeriodLayer ? "bg-mira-cycle/35 text-mira-text" : "text-mira-text hover:bg-mira-background",
+        isSelected ? "bg-mira-primary text-white shadow-soft" : hasPeriodLayer ? "bg-mira-cycle/35 text-mira-text" : "text-mira-text hover:bg-[#F3EFEA]",
         hasFertileLayer && !isSelected ? "ring-1 ring-[#d9d4ee]" : "",
         isToday && !isSelected ? "border border-mira-primary" : ""
       )}
@@ -2021,7 +2021,7 @@ function CalendarDaySheet({ date, day, onClose }: { date: Date; day: CalendarDay
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-4 pb-4">
-      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(0,0,0,0.38)]">
+      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(45,42,38,0.1)]">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <p className="capitalize text-sm font-semibold text-mira-muted">{dateLabel}</p>
@@ -2041,7 +2041,7 @@ function CalendarDaySheet({ date, day, onClose }: { date: Date; day: CalendarDay
           <CalendarDetail label="Питание" value={day.nutrition || "Нет записей"} />
           {day.note && <CalendarDetail label="Заметка" value={day.note} />}
         </div>
-        <div className="mt-4 rounded-2xl bg-[#1d302b] p-4">
+        <div className="mt-4 rounded-2xl bg-[#F0FAF4] p-4">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-mira-muted">Рекомендация на день</p>
           <p className="mt-2 text-sm leading-6 text-mira-text">{day.recommendation}</p>
         </div>
@@ -2052,7 +2052,7 @@ function CalendarDaySheet({ date, day, onClose }: { date: Date; day: CalendarDay
 
 function CalendarDetail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-5 border-b border-white/10 pb-3 last:border-0 last:pb-0">
+    <div className="flex items-start justify-between gap-5 border-b border-[#F0ECE6] pb-3 last:border-0 last:pb-0">
       <span className="shrink-0 font-semibold text-mira-muted">{label}</span>
       <span className="text-right leading-5 text-mira-text">{value}</span>
     </div>
@@ -2168,13 +2168,13 @@ function NutritionScreen({
         <p className="mt-2 text-sm leading-6 text-mira-muted">Mira помогает заметить, что может поддержать энергию и самочувствие, без оценок еды.</p>
       </section>
 
-      <Card className="bg-[#1d302b]">
+      <Card className="bg-[#F0FAF4]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-mira-muted">Сводка за сегодня</p>
             <h2 className="mt-1 text-2xl font-black tracking-[-0.04em]">{todayMeals.length ? `${todayMeals.length} ${todayMeals.length === 1 ? "приём пищи" : "приёма пищи"}` : "Пока без записей"}</h2>
           </div>
-          <Badge className="bg-mira-card/80 text-mira-text">На устройстве</Badge>
+          <Badge className="bg-[#F3EFEA] text-mira-text">На устройстве</Badge>
         </div>
         <p className="mt-3 text-sm leading-6 text-mira-muted">
           {todayMeals.length ? "Записи остаются локально в этом браузере. Ты всегда сможешь добавить контекст позже." : "Добавь еду вручную или через фото, чтобы сохранить контекст дня."}
@@ -2182,10 +2182,10 @@ function NutritionScreen({
       </Card>
 
       <Card className="overflow-hidden p-0">
-        <div className="bg-mira-ink p-5 text-white">
-          <p className="text-sm font-semibold text-white/60">Приём пищи</p>
+        <div className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+          <p className="text-sm font-semibold text-white/70">Приём пищи</p>
           <h2 className="mt-2 text-2xl font-black tracking-[-0.04em]">Покажи, что на тарелке</h2>
-          <p className="mt-2 text-sm leading-6 text-white/70">Фото помогает сделать ориентировочную запись. Это не точный подсчёт.</p>
+          <p className="mt-2 text-sm leading-6 text-white/80">Фото помогает сделать ориентировочную запись. Это не точный подсчёт.</p>
         </div>
         <div className="p-5">
           <div className="grid grid-cols-2 gap-3">
@@ -2206,32 +2206,32 @@ function NutritionScreen({
               <p className="text-sm font-semibold text-mira-muted">Анализ блюда</p>
               <h2 className="mt-1 text-xl font-black tracking-[-0.04em]">Ориентировочная оценка</h2>
             </div>
-            <Badge className="bg-mira-background text-mira-text">Уверенность {Math.round(analysis.confidence * 100)}%</Badge>
+            <Badge className="bg-[#F3EFEA] text-mira-text">Уверенность {Math.round(analysis.confidence * 100)}%</Badge>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             {analysis.foods.map((food) => (
-              <span key={food} className="rounded-full bg-mira-background px-3 py-2 text-xs font-semibold text-mira-text">{food}</span>
+              <span key={food} className="rounded-full bg-[#F3EFEA] px-3 py-2 text-xs font-semibold text-mira-text">{food}</span>
             ))}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-mira-background p-3">
+            <div className="rounded-2xl bg-[#F3EFEA] p-3">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-mira-muted">Калорийность</p>
               <p className="mt-1 text-sm font-bold text-mira-text">{analysis.calories.min}-{analysis.calories.max} ккал</p>
             </div>
-            <div className="rounded-2xl bg-mira-background p-3">
+            <div className="rounded-2xl bg-[#F3EFEA] p-3">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-mira-muted">Белки</p>
               <p className="mt-1 text-sm font-bold text-mira-text">{analysis.macros.protein.min}-{analysis.macros.protein.max} г</p>
             </div>
-            <div className="rounded-2xl bg-mira-background p-3">
+            <div className="rounded-2xl bg-[#F3EFEA] p-3">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-mira-muted">Углеводы</p>
               <p className="mt-1 text-sm font-bold text-mira-text">{analysis.macros.carbs.min}-{analysis.macros.carbs.max} г</p>
             </div>
-            <div className="rounded-2xl bg-mira-background p-3">
+            <div className="rounded-2xl bg-[#F3EFEA] p-3">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-mira-muted">Жиры</p>
               <p className="mt-1 text-sm font-bold text-mira-text">{analysis.macros.fat.min}-{analysis.macros.fat.max} г</p>
             </div>
           </div>
-          <div className="mt-4 rounded-2xl bg-[#30272b] p-4">
+          <div className="mt-4 rounded-2xl bg-[#FEF6F3] p-4">
             <p className="text-sm font-semibold text-mira-text">Что может повлиять на оценку</p>
             <p className="mt-1 text-sm leading-6 text-mira-muted">{analysis.uncertaintyFactors.join(", ")}. {analysis.note}</p>
           </div>
@@ -2244,12 +2244,12 @@ function NutritionScreen({
         <p className="mt-2 text-sm leading-6 text-mira-text">{recommendation}</p>
       </Card>
 
-      <Card className="border-dashed bg-mira-card/60">
+      <Card className="border-dashed bg-[#F3EFEA]/60">
         <p className="text-sm font-semibold text-mira-muted">История питания</p>
         {todayMeals.length ? (
           <div className="mt-3 space-y-2">
             {todayMeals.map((meal) => (
-              <div key={meal.id} className="rounded-2xl bg-mira-background p-3">
+              <div key={meal.id} className="rounded-2xl bg-[#F3EFEA] p-3">
                 <p className="text-sm font-bold text-mira-text">{meal.label}</p>
                 <p className="mt-1 text-xs text-mira-muted">
                   {meal.source === "manual"
@@ -2332,7 +2332,7 @@ function MealPhotoFlow({ onClose, onAnalyze }: { onClose: () => void; onAnalyze:
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-4 pb-4">
-      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(0,0,0,0.38)]">
+      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(45,42,38,0.1)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-mira-muted">Фото блюда</p>
@@ -2342,7 +2342,7 @@ function MealPhotoFlow({ onClose, onAnalyze }: { onClose: () => void; onAnalyze:
             <span aria-hidden="true">×</span>
           </Button>
         </div>
-        <label className="mt-5 flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-mira-primary/40 bg-mira-background px-5 text-center">
+        <label className="mt-5 flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-mira-primary/40 bg-[#F3EFEA] px-5 text-center">
           <Camera className="h-6 w-6 text-mira-primary" />
           <span className="mt-3 text-sm font-bold text-mira-text">{fileName || "Сделать или выбрать фото"}</span>
           <span className="mt-1 text-xs leading-5 text-mira-muted">Поддерживаются JPEG, PNG и WebP до 8 МБ.</span>
@@ -2353,8 +2353,8 @@ function MealPhotoFlow({ onClose, onAnalyze }: { onClose: () => void; onAnalyze:
             onChange={(event) => selectPhoto(event.target.files?.[0])}
           />
         </label>
-        {fileError && <p className="mt-3 rounded-2xl bg-[#30272b] p-3 text-sm leading-6 text-mira-text" role="alert">{fileError}</p>}
-        <label className="mt-4 flex items-start gap-3 rounded-2xl bg-mira-background p-4 text-sm leading-6 text-mira-muted">
+        {fileError && <p className="mt-3 rounded-2xl bg-[#FEF6F3] p-3 text-sm leading-6 text-mira-text" role="alert">{fileError}</p>}
+        <label className="mt-4 flex items-start gap-3 rounded-2xl bg-[#F3EFEA] p-4 text-sm leading-6 text-mira-muted">
           <input
             checked={hasConsent}
             className="mt-1 h-4 w-4 shrink-0 accent-mira-primary"
@@ -2384,7 +2384,7 @@ function ManualMealForm({
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-4 pb-4">
-      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(0,0,0,0.38)]">
+      <Card className="rounded-t-[2rem] border-b-0 bg-mira-card p-5 shadow-[0_-18px_60px_rgba(45,42,38,0.1)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-mira-muted">Приём пищи</p>
@@ -2399,7 +2399,7 @@ function ManualMealForm({
           <Field label="Что было в приёме пищи?">
             <input
               autoFocus
-              className="w-full rounded-2xl border border-white/10 bg-mira-background px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
+              className="w-full rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
               maxLength={120}
               onChange={(event) => setLabel(event.target.value)}
               placeholder="Например: суп и хлеб, йогурт с ягодами"
@@ -2408,7 +2408,7 @@ function ManualMealForm({
           </Field>
           <Field label="Заметка (необязательно)">
             <textarea
-              className="min-h-20 w-full resize-y rounded-2xl border border-white/10 bg-mira-background px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
+              className="min-h-20 w-full resize-y rounded-2xl border border-[#E8E4DE] bg-[#F3EFEA] px-4 py-3 text-sm text-mira-text outline-none transition focus:border-mira-primary"
               maxLength={280}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Например: поела между встречами"
@@ -2468,7 +2468,7 @@ function AnalyticsScreen({
       </section>
 
       {records.length < minimumForPatterns && (
-        <Card className="bg-[#1d302b]">
+        <Card className="bg-[#F0FAF4]">
           <p className="text-sm font-semibold text-mira-muted">Первые наблюдения</p>
           <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">
             {missingRecords ? `Нужно ещё ${missingRecords} ${missingRecords === 1 ? "чек-ин" : "чек-ина"}` : "Данные готовы"}
@@ -2501,7 +2501,7 @@ function AnalyticsScreen({
             </div>
           </Card>
 
-          <Card className="bg-[#30272b]">
+          <Card className="bg-[#FEF6F3]">
             <p className="text-sm font-semibold text-mira-muted">Работа и ресурс</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">Контекст без выводов за тебя</h2>
             <p className="mt-2 text-sm leading-6 text-mira-muted">Высокая рабочая нагрузка отмечена в {recent.filter((record) => record.value.workload === "Высокая").length} из {recent.length} последних чек-инов. Это наблюдение, а не объяснение причины.</p>
@@ -2527,13 +2527,13 @@ function AnalyticsScreen({
             <p className="mt-4 text-sm leading-6 text-mira-muted">Отметки помогают заметить контекст, а не оценивать питание.</p>
           </Card>
 
-          <Card className="bg-mira-ink text-white">
-            <p className="text-sm font-semibold text-white/60">Наблюдения</p>
+          <Card className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] text-white">
+            <p className="text-sm font-semibold text-white/70">Наблюдения</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">Контекст из твоих записей</h2>
             <ol className="mt-4 space-y-3">
               {insights.map((insight, index) => (
                 <li key={insight} className="flex gap-3 text-sm leading-6 text-white/80">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/15 text-xs font-black text-white">{index + 1}</span>
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/30 text-xs font-black text-white">{index + 1}</span>
                   <span>{insight}</span>
                 </li>
               ))}
@@ -2549,7 +2549,7 @@ function AnalyticsScreen({
 
 function AnalyticsMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-mira-background p-3">
+    <div className="rounded-2xl bg-[#F3EFEA] p-3">
       <p className="text-xs font-bold uppercase tracking-[0.12em] text-mira-muted">{label}</p>
       <p className="mt-1 text-sm font-black text-mira-text">{value}</p>
     </div>
@@ -2632,12 +2632,12 @@ function HealthNavigator({ checkIn }: { checkIn: CheckInState }) {
 
   return (
     <section className="space-y-4">
-      <Card className="bg-[#1d302b]">
+      <Card className="bg-[#F0FAF4]">
         <p className="text-sm font-semibold text-mira-muted">Навигатор здоровья</p>
         <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">Понять, что стоит обсудить</h2>
         <p className="mt-2 text-sm leading-6 text-mira-muted">Это спокойный обзор паттернов из самоотчёта, а не медицинская оценка.</p>
 
-        <div className="mt-4 rounded-2xl bg-mira-card/80 p-4">
+        <div className="mt-4 rounded-2xl bg-white p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-mira-muted">Сигнал здоровья · демо</p>
@@ -2663,7 +2663,7 @@ function HealthNavigator({ checkIn }: { checkIn: CheckInState }) {
                   key={signal.level}
                   className={cn(
                     "w-full rounded-2xl border p-3 text-left transition",
-                    selectedLevel === signal.level ? "border-mira-primary bg-mira-background" : "border-white/10 bg-mira-card"
+                    selectedLevel === signal.level ? "border-mira-primary bg-[#F3EFEA]" : "border-[#E8E4DE] bg-white"
                   )}
                   onClick={() => setSelectedLevel(signal.level)}
                   type="button"
@@ -2827,7 +2827,7 @@ function ProfileScreen({
           {!deleteConfirmOpen ? (
             <Button className="w-full" variant="outline" onClick={() => setDeleteConfirmOpen(true)}>Удалить данные</Button>
           ) : (
-            <div className="rounded-2xl bg-[#30272b] p-4">
+            <div className="rounded-2xl bg-[#FEF6F3] p-4">
               <p className="text-sm font-semibold text-mira-text">Удалить демо-данные?</p>
               <p className="mt-1 text-sm leading-6 text-mira-muted">В готовой версии это действие будет необратимым. Сейчас данные не удаляются.</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -2839,7 +2839,7 @@ function ProfileScreen({
               </div>
             </div>
           )}
-          {actionStatus && <p className="rounded-2xl bg-mira-background p-3 text-sm leading-6 text-mira-muted">{actionStatus}</p>}
+          {actionStatus && <p className="rounded-2xl bg-[#F3EFEA] p-3 text-sm leading-6 text-mira-muted">{actionStatus}</p>}
         </Card>
 
         <Card className="space-y-3">
@@ -2864,7 +2864,7 @@ function SettingsToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4 last:border-0 last:pb-0">
+    <div className="flex items-start justify-between gap-4 border-b border-[#F0ECE6] pb-4 last:border-0 last:pb-0">
       <div>
         <p className="text-sm font-bold text-mira-text">{label}</p>
         <p className="mt-1 text-sm leading-5 text-mira-muted">{description}</p>
@@ -2874,7 +2874,7 @@ function SettingsToggle({
         aria-label={label}
         className={cn(
           "mt-1 flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition",
-          checked ? "bg-mira-primary" : "bg-white/15"
+          checked ? "bg-mira-primary" : "bg-[#E8E4DE]"
         )}
         onClick={() => onChange(!checked)}
         role="switch"
@@ -2891,10 +2891,10 @@ function AppHeader({ onOpenProfile }: { onOpenProfile: () => void }) {
     <header className="mb-5 flex items-center justify-between">
       <LogoMark />
       <div className="flex items-center gap-2">
-        <Badge className="bg-mira-card/80">Прототип</Badge>
+        <Badge className="bg-[#F3EFEA]">Прототип</Badge>
         <button
           aria-label="Открыть профиль и настройки"
-          className="grid h-11 w-11 place-items-center rounded-full bg-mira-primary text-mira-ink shadow-soft"
+          className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#E8836B] to-[#D4637A] text-white shadow-soft"
           onClick={onOpenProfile}
           type="button"
         >
@@ -2913,7 +2913,7 @@ function BottomNav({
   setActive: (active: (typeof nav)[number]["id"]) => void;
 }) {
   return (
-    <nav aria-label="Основная навигация" className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 mx-auto grid max-w-md grid-cols-5 gap-1 rounded-full border border-white/10 bg-mira-card/95 p-2 shadow-soft backdrop-blur">
+    <nav aria-label="Основная навигация" className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 mx-auto grid max-w-md grid-cols-5 gap-1 rounded-full border border-[#F0ECE6] bg-white/95 p-2 shadow-soft backdrop-blur">
       {nav.map((item) => {
         const Icon = item.icon;
         return (
@@ -2921,7 +2921,7 @@ function BottomNav({
             key={item.id}
             className={cn(
               "flex min-h-12 flex-col items-center justify-center gap-1 rounded-full px-1 py-2 text-[10px] font-bold transition",
-              active === item.id ? "bg-mira-ink text-white" : "text-mira-muted"
+              active === item.id ? "bg-mira-primary text-white" : "text-mira-muted"
             )}
             aria-current={active === item.id ? "page" : undefined}
             data-tour={item.id === "calendar" ? "nav-calendar" : item.id === "workouts" ? "nav-workouts" : undefined}
@@ -2955,7 +2955,7 @@ function ChoiceGrid({
             "rounded-2xl border px-4 py-3 text-left text-sm font-bold transition",
             value === option
               ? "border-mira-primary bg-mira-primary text-white shadow-glow"
-              : "border-white/10 bg-mira-background text-mira-text"
+              : "border-[#E8E4DE] bg-[#F3EFEA] text-mira-text"
           )}
           onClick={() => onChange(option)}
           type="button"
@@ -2988,7 +2988,7 @@ function MultiChoiceGrid({
               "rounded-2xl border px-4 py-3 text-left text-sm font-bold transition",
               selected
                 ? "border-mira-primary bg-mira-primary text-white shadow-glow"
-                : "border-white/10 bg-mira-background text-mira-text"
+                : "border-[#E8E4DE] bg-[#F3EFEA] text-mira-text"
             )}
             onClick={() =>
               onChange(selected ? values.filter((value) => value !== option) : [...values, option])
@@ -3049,7 +3049,7 @@ function PlanCard({
   return (
     <Card>
       <div className="flex gap-4">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-mira-background text-mira-primary [&_svg]:h-5 [&_svg]:w-5">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#F3EFEA] text-mira-primary [&_svg]:h-5 [&_svg]:w-5">
           {icon}
         </div>
         <div>
@@ -3072,7 +3072,7 @@ function WorkoutBlock({ title, items }: { title: string; items: string[] }) {
       <h3 className="text-sm font-black uppercase tracking-[0.16em] text-mira-muted">{title}</h3>
       <div className="mt-2 space-y-2">
         {items.map((item, index) => (
-          <div key={item} className="flex items-center gap-3 rounded-2xl bg-mira-background p-3">
+          <div key={item} className="flex items-center gap-3 rounded-2xl bg-[#F3EFEA] p-3">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-xs font-black">
               {index + 1}
             </span>
@@ -3086,7 +3086,7 @@ function WorkoutBlock({ title, items }: { title: string; items: string[] }) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl bg-white/82 p-4 shadow-sm">
+    <div className="rounded-3xl bg-[#F3EFEA] p-4 shadow-sm">
       <p className="text-xs font-bold uppercase tracking-[0.14em] text-mira-muted">{label}</p>
       <p className="mt-2 text-xl font-black tracking-[-0.04em]">{value}</p>
     </div>
@@ -3095,7 +3095,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-mira-background px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl bg-[#F3EFEA] px-4 py-3">
       <span>{label}</span>
       <strong className="text-mira-text">{value}</strong>
     </div>
@@ -3108,7 +3108,7 @@ function LogoMark() {
       <MiraSymbol />
       <div>
         <p className="text-lg font-black tracking-[-0.05em]">mira</p>
-        <p className="text-xs font-semibold text-mira-muted">ИИ-коуч для тела</p>
+        <p className="text-xs font-semibold text-mira-muted">для тебя сегодня</p>
       </div>
     </div>
   );
@@ -3116,12 +3116,13 @@ function LogoMark() {
 
 function MiraSymbol() {
   return (
-    <div aria-label="Логотип Mira" className="grid h-12 w-12 place-items-center rounded-2xl bg-mira-ink shadow-soft" role="img">
-      <svg aria-hidden="true" className="h-8 w-8" fill="none" viewBox="0 0 36 36">
-        <circle cx="18" cy="18" r="12" stroke="#45443f" strokeWidth="3" />
-        <path d="M18 6a12 12 0 0 1 10.8 6.8" stroke="#76D7F3" strokeLinecap="round" strokeWidth="3" />
-        <path d="M28.8 24.3A12 12 0 0 1 18 30" stroke="#76D7F3" strokeLinecap="round" strokeWidth="3" />
-        <circle cx="29.2" cy="16.4" fill="#EF4653" r="2.5" />
+    <div aria-label="Логотип Mira" className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#E8836B] to-[#D4637A] shadow-soft" role="img">
+      <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 32 32">
+        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.85" transform="rotate(-15 16 16)" />
+        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.7" transform="rotate(25 16 16)" />
+        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.6" transform="rotate(65 16 16)" />
+        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.5" transform="rotate(-55 16 16)" />
+        <circle cx="16" cy="16" r="2.5" fill="white" />
       </svg>
     </div>
   );

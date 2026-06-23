@@ -475,7 +475,7 @@ function Landing({ onStart }: { onStart: () => void }) {
               <LogoMark />
               <span className="text-sm font-semibold text-mira-muted">Mira</span>
             </div>
-            <Badge className="mb-6 border-mira-primary/20 bg-[#FEF6F3] text-mira-primary">Твой личный ритм</Badge>
+            <Badge className="mb-6 border-mira-primary/20 bg-[#F4F1F9] text-mira-primary">Твой личный ритм</Badge>
             <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl text-5xl font-black leading-[0.95] tracking-[-0.07em] sm:text-7xl">
               Понять себя. Выбрать, что делать сегодня.
             </motion.h1>
@@ -492,7 +492,7 @@ function Landing({ onStart }: { onStart: () => void }) {
           <motion.section style={{ y: dashboardY }} initial={{ opacity: 0, y: 36, rotate: 2 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ duration: 0.6 }} className="phone-shell relative mx-auto w-full max-w-sm rounded-[2.5rem] border border-[#F0ECE6] bg-white p-3">
             <div className="rounded-[2rem] bg-mira-background p-5">
               <div className="mb-7 flex items-center justify-between"><LogoMark /><Badge>Сегодня</Badge></div>
-              <Card className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-6 text-white">
+              <Card className="bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] p-6 text-white">
                 <p className="text-sm font-semibold text-white/70">Ресурс на сегодня</p>
                 <h2 className="mt-3 text-4xl font-black tracking-[-0.05em]">В балансе</h2>
                 <p className="mt-3 text-sm leading-6 text-white/80">Умеренное движение, привычная еда и более спокойный вечер.</p>
@@ -808,7 +808,7 @@ function Onboarding({
               title="Mira готова быть рядом сегодня"
               subtitle="Это стартовый план на основе выбранного ритма. После первого чек-ина он станет точнее."
             >
-              <div className="rounded-3xl bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+              <div className="rounded-3xl bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] p-5 text-white">
                 <p className="text-sm font-semibold text-white/70">Движение</p>
                 <p className="mt-2 text-xl font-black tracking-[-0.04em]">{plan.movement.title}</p>
                 <p className="mt-2 text-sm leading-6 text-white/80">{plan.movement.detail}</p>
@@ -925,7 +925,7 @@ function TodayScreen({
         <p className="mt-2 text-sm leading-6 text-mira-muted">Посмотрим на твой сегодняшний контекст без лишнего давления.</p>
       </section>
 
-      <Card className="bg-[#FEF6F3]" data-tour="cycle-card">
+      <Card className="bg-[#F4F1F9]" data-tour="cycle-card">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-mira-muted">Цикл</p>
@@ -956,7 +956,7 @@ function TodayScreen({
       </Card>
 
       {(plan.cycleDay > 20 || !profile.periodStart) && !periodConfirmed && (
-        <Card className="border-mira-cycle/30 bg-[#FEF6F3]">
+        <Card className="border-mira-cycle/30 bg-[#F4F1F9]">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-mira-muted">Менструация</p>
@@ -1032,7 +1032,7 @@ function TodayScreen({
       </Card>
 
       <Card className="overflow-hidden p-0" data-tour="recommendation-card">
-        <div className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+        <div className="bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] p-5 text-white">
           <p className="text-sm font-semibold text-white/70">Главная рекомендация</p>
           <h2 className="mt-2 text-2xl font-black tracking-[-0.04em]">Поддерживающий план на сегодня</h2>
           <p className="mt-2 text-sm leading-6 text-white/80">{plan.movement.reason}</p>
@@ -1129,7 +1129,7 @@ function TodayScreen({
 
 function CycleDial({ cycleDay, cycleLength }: { cycleDay: number; cycleLength: number }) {
   const progress = Math.min(100, Math.max(4, (cycleDay / cycleLength) * 100));
-  const accent = cycleDay <= 5 ? "#D4637A" : "#E8836B";
+  const accent = cycleDay <= 5 ? "#C47E9B" : "#9B8EC4";
 
   return (
     <div
@@ -1587,7 +1587,7 @@ function WorkoutScreen({
 
   return (
     <div className="space-y-4">
-      <Card className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] text-white">
+      <Card className="bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] text-white">
         <p className="text-sm font-semibold text-white/70">Тренировка на сегодня</p>
         <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">{highPain ? "Сегодня - восстановление" : "Подберём спокойную нагрузку"}</h1>
         <p className="mt-3 text-sm leading-6 text-white/80">
@@ -1647,7 +1647,7 @@ function WorkoutScreen({
 
       {generated && (
         <Card className="overflow-hidden p-0">
-          <div className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+          <div className="bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] p-5 text-white">
             <Badge className="border-white/20 bg-white/20 text-white">{generationSource === "ai" ? "План Mira AI" : "Локальный алгоритм"}</Badge>
             <h2 className="mt-3 text-2xl font-black tracking-[-0.05em]">{displayPlan.title}</h2>
             <p className="mt-2 text-sm text-white/80">{displayPlan.time} · {displayPlan.intensity}</p>
@@ -1655,7 +1655,7 @@ function WorkoutScreen({
           <div className="space-y-4 p-5">
             <p className="rounded-2xl bg-[#F3EFEA] p-4 text-sm leading-6 text-mira-muted">{displayPlan.explanation}</p>
             {displayPlan.nutritionSupport && (
-              <div className="rounded-2xl bg-[#FEF6F3] p-4 text-sm leading-6 text-mira-muted">
+              <div className="rounded-2xl bg-[#F4F1F9] p-4 text-sm leading-6 text-mira-muted">
                 <p className="font-bold text-mira-text">Контекст питания</p>
                 <p className="mt-1">{displayPlan.nutritionSupport}</p>
               </div>
@@ -2182,7 +2182,7 @@ function NutritionScreen({
       </Card>
 
       <Card className="overflow-hidden p-0">
-        <div className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] p-5 text-white">
+        <div className="bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] p-5 text-white">
           <p className="text-sm font-semibold text-white/70">Приём пищи</p>
           <h2 className="mt-2 text-2xl font-black tracking-[-0.04em]">Покажи, что на тарелке</h2>
           <p className="mt-2 text-sm leading-6 text-white/80">Фото помогает сделать ориентировочную запись. Это не точный подсчёт.</p>
@@ -2231,7 +2231,7 @@ function NutritionScreen({
               <p className="mt-1 text-sm font-bold text-mira-text">{analysis.macros.fat.min}-{analysis.macros.fat.max} г</p>
             </div>
           </div>
-          <div className="mt-4 rounded-2xl bg-[#FEF6F3] p-4">
+          <div className="mt-4 rounded-2xl bg-[#F4F1F9] p-4">
             <p className="text-sm font-semibold text-mira-text">Что может повлиять на оценку</p>
             <p className="mt-1 text-sm leading-6 text-mira-muted">{analysis.uncertaintyFactors.join(", ")}. {analysis.note}</p>
           </div>
@@ -2353,7 +2353,7 @@ function MealPhotoFlow({ onClose, onAnalyze }: { onClose: () => void; onAnalyze:
             onChange={(event) => selectPhoto(event.target.files?.[0])}
           />
         </label>
-        {fileError && <p className="mt-3 rounded-2xl bg-[#FEF6F3] p-3 text-sm leading-6 text-mira-text" role="alert">{fileError}</p>}
+        {fileError && <p className="mt-3 rounded-2xl bg-[#F4F1F9] p-3 text-sm leading-6 text-mira-text" role="alert">{fileError}</p>}
         <label className="mt-4 flex items-start gap-3 rounded-2xl bg-[#F3EFEA] p-4 text-sm leading-6 text-mira-muted">
           <input
             checked={hasConsent}
@@ -2501,7 +2501,7 @@ function AnalyticsScreen({
             </div>
           </Card>
 
-          <Card className="bg-[#FEF6F3]">
+          <Card className="bg-[#F4F1F9]">
             <p className="text-sm font-semibold text-mira-muted">Работа и ресурс</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">Контекст без выводов за тебя</h2>
             <p className="mt-2 text-sm leading-6 text-mira-muted">Высокая рабочая нагрузка отмечена в {recent.filter((record) => record.value.workload === "Высокая").length} из {recent.length} последних чек-инов. Это наблюдение, а не объяснение причины.</p>
@@ -2527,7 +2527,7 @@ function AnalyticsScreen({
             <p className="mt-4 text-sm leading-6 text-mira-muted">Отметки помогают заметить контекст, а не оценивать питание.</p>
           </Card>
 
-          <Card className="bg-gradient-to-br from-[#E8836B] to-[#D4637A] text-white">
+          <Card className="bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] text-white">
             <p className="text-sm font-semibold text-white/70">Наблюдения</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.04em]">Контекст из твоих записей</h2>
             <ol className="mt-4 space-y-3">
@@ -2827,7 +2827,7 @@ function ProfileScreen({
           {!deleteConfirmOpen ? (
             <Button className="w-full" variant="outline" onClick={() => setDeleteConfirmOpen(true)}>Удалить данные</Button>
           ) : (
-            <div className="rounded-2xl bg-[#FEF6F3] p-4">
+            <div className="rounded-2xl bg-[#F4F1F9] p-4">
               <p className="text-sm font-semibold text-mira-text">Удалить демо-данные?</p>
               <p className="mt-1 text-sm leading-6 text-mira-muted">В готовой версии это действие будет необратимым. Сейчас данные не удаляются.</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -2894,7 +2894,7 @@ function AppHeader({ onOpenProfile }: { onOpenProfile: () => void }) {
         <Badge className="bg-[#F3EFEA]">Прототип</Badge>
         <button
           aria-label="Открыть профиль и настройки"
-          className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#E8836B] to-[#D4637A] text-white shadow-soft"
+          className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] text-white shadow-soft"
           onClick={onOpenProfile}
           type="button"
         >
@@ -3116,12 +3116,13 @@ function LogoMark() {
 
 function MiraSymbol() {
   return (
-    <div aria-label="Логотип Mira" className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#E8836B] to-[#D4637A] shadow-soft" role="img">
-      <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 32 32">
-        <path d="M16 3a13 13 0 0 1 9.2 3.8A13 13 0 0 1 29 16" stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.95" />
-        <path d="M29 16a13 13 0 0 1-3.8 9.2A13 13 0 0 1 16 29" stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.7" />
-        <path d="M16 29a13 13 0 0 1-9.2-3.8A13 13 0 0 1 3 16" stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.45" />
-        <circle cx="16" cy="3" r="3" fill="white" />
+    <div aria-label="Логотип Mira" className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-[#B8A9D4] to-[#9585B5] shadow-soft" role="img">
+      <svg aria-hidden="true" className="h-7 w-7" viewBox="0 0 32 32" fill="none">
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+          <ellipse key={angle} cx="16" cy="9" rx="3.2" ry="6.5" fill="white" opacity="0.85" transform={`rotate(${angle} 16 16)`} />
+        ))}
+        <circle cx="16" cy="16" r="3.8" fill="#F5E6A3" />
+        <circle cx="16" cy="16" r="2" fill="#EDCF6A" />
       </svg>
     </div>
   );

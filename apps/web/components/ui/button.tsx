@@ -7,8 +7,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-mira-primary text-white shadow-glow hover:bg-[#E07058]",
-        secondary: "bg-[#F3EFEA] text-mira-text hover:bg-[#E8E4DE]",
+        default: "bg-mira-primary text-white shadow-glow hover:bg-[#8A7DB8]",
+        secondary: "bg-[#F0EDF5] text-mira-text hover:bg-[#E4DFF0]",
         ghost: "text-mira-text hover:bg-[#F3EFEA]",
         outline: "border border-[#E8E4DE] bg-white text-mira-text hover:bg-[#F3EFEA]"
       },

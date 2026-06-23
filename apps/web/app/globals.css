@@ -39,7 +39,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(232, 131, 107, 0.5);
+  outline: 3px solid rgba(155, 142, 196, 0.5);
   outline-offset: 3px;
 }
 
@@ -67,8 +67,8 @@ textarea:focus-visible {
   height: 24px;
   border-radius: 999px;
   background: #FFFFFF;
-  border: 5px solid #E8836B;
-  box-shadow: 0 4px 12px rgba(232, 131, 107, 0.3);
+  border: 5px solid #9B8EC4;
+  box-shadow: 0 4px 12px rgba(155, 142, 196, 0.3);
 }
 
 @media (max-width: 380px) {

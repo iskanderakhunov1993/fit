@@ -15,9 +15,9 @@ const config: Config = {
           card: "#FFFFFF",
           text: "#2D2A26",
           muted: "#9B978F",
-          primary: "#E8836B",
-          success: "#6BAF8D",
-          cycle: "#D4637A",
+          primary: "#9B8EC4",
+          success: "#7BAF8D",
+          cycle: "#C47E9B",
           ink: "#2D2A26"
         }
       },
@@ -26,7 +26,7 @@ const config: Config = {
       },
       boxShadow: {
         soft: "0 8px 32px rgba(45, 42, 38, 0.08)",
-        glow: "0 12px 40px rgba(232, 131, 107, 0.2)"
+        glow: "0 12px 40px rgba(155, 142, 196, 0.25)"
       },
       borderRadius: {
         "3xl": "2rem",

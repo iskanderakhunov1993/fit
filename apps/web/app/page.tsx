@@ -3118,11 +3118,10 @@ function MiraSymbol() {
   return (
     <div aria-label="Логотип Mira" className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#E8836B] to-[#D4637A] shadow-soft" role="img">
       <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 32 32">
-        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.85" transform="rotate(-15 16 16)" />
-        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.7" transform="rotate(25 16 16)" />
-        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.6" transform="rotate(65 16 16)" />
-        <ellipse cx="16" cy="13" rx="5" ry="8" fill="white" opacity="0.5" transform="rotate(-55 16 16)" />
-        <circle cx="16" cy="16" r="2.5" fill="white" />
+        <path d="M16 3a13 13 0 0 1 9.2 3.8A13 13 0 0 1 29 16" stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.95" />
+        <path d="M29 16a13 13 0 0 1-3.8 9.2A13 13 0 0 1 16 29" stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.7" />
+        <path d="M16 29a13 13 0 0 1-9.2-3.8A13 13 0 0 1 3 16" stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.45" />
+        <circle cx="16" cy="3" r="3" fill="white" />
       </svg>
     </div>
   );

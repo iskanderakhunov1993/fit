@@ -1,8 +1,13 @@
-# Ромашка
+# Mira — Слушай себя
 
-Ромашка — body-aware AI wellness coach для женщин. Продукт каждый день
-отвечает на вопрос: «Что лучше для моего тела сегодня?», учитывая цикл,
-сон, энергию, нагрузку и питание.
+Приватное веб-приложение для отслеживания цикла, самочувствия, питания и активности.
+
+**Не контроль, а забота. Не диета, а ориентир. Не спорт любой ценой, а активность по состоянию.**
+
+🌐 **Прод**: http://201.51.9.114
+📱 **PWA**: устанавливается на телефон из браузера
+
+---
 
 ## Быстрый старт
 
@@ -11,135 +16,125 @@ npm install
 npm run dev
 ```
 
-Откройте [http://localhost:4173](http://localhost:4173).
-
-Production-сборка:
+Откройте http://localhost:4173
 
 ```bash
-npm run build
+npm run build && npm start
 ```
 
-## Текущее состояние
+## Тестовые аккаунты
 
-Веб-приложение (`apps/web`) реализует:
-- Landing + регистрация + онбординг (цель, цикл, ритм, фокус)
-- Десктоп-дашборд с сайдбаром и CycleWheel
-- Мобильный adaptive layout с bottom nav
-- Ежедневный check-in (энергия, сон, боль, симптомы, стресс)
-- Цикл-трекинг с фазами и прогнозом овуляции/менструации
-- AI-генерация тренировок (Groq + fallback)
-- Анализ еды по фото (Yandex Vision / Groq)
-- Календарь цикла с отметками по дням
-- Вечерняя рефлексия и аналитика
-- Guided tour для первого запуска
-- Supabase auth (email sign-up/sign-in, password recovery)
-- PWA manifest
+Страница демо-входа: `/demo`
 
-Архитектура описана в [docs/MIRA_ARCHITECTURE.md](docs/MIRA_ARCHITECTURE.md).
+| Пользователь | Email | Пароль | Описание |
+|---|---|---|---|
+| Амина | `amina@mira.app` | `mira-test-1` | 27 лет, ислам, полный трекинг |
+| Диана | `diana@mira.app` | `mira-test-2` | 22 года, базовый трекинг |
+| София | `sofia@mira.app` | `mira-test-3` | 34 года, полный трекинг + питание |
 
 ---
 
-## Бэклог продукта
+## Архитектура
 
-### Неделя 1 — Фундамент облачного хранения
+```
+mira/
+├── apps/web/              # Next.js 15 web app
+│   ├── app/               # Next.js App Router
+│   │   ├── page.tsx       # Entry → AppShell
+│   │   ├── design/        # Design system reference
+│   │   ├── demo/          # Demo login page
+│   │   └── api/           # API routes (AI stubs)
+│   ├── components/
+│   │   ├── layout/        # AppShell, Sidebar, BottomNav
+│   │   ├── screens/       # All screen components
+│   │   └── ui/            # Button, Card, Badge, MiraLogo
+│   ├── lib/
+│   │   ├── types.ts       # Data types (9 tracking categories)
+│   │   ├── store.ts       # localStorage CRUD + cycle calculations
+│   │   ├── nutrition.ts   # KBJU calculation (Mifflin-St Jeor)
+│   │   └── tips.ts        # Dynamic tips by phase/symptoms
+│   └── public/
+│       ├── icons/         # PWA icons (192, 512, maskable)
+│       └── sw.js          # Service worker (offline support)
+├── shared/                # Shared AI contracts
+├── docs/                  # Product & architecture docs
+└── supabase/              # Supabase config (migrations, functions)
+```
 
-| # | Задача | Приоритет | Оценка |
-|---|--------|-----------|--------|
-| 1 | Создать `lib/supabaseSync.ts` — слой записи/чтения check-ins, workouts, meals в Supabase | P0 | 4ч |
-| 2 | При наличии сессии автоматически сохранять check-in и в localStorage, и в Supabase | P0 | 2ч |
-| 3 | Сохранять профиль онбординга в таблицу `profiles` после регистрации | P0 | 2ч |
-| 4 | Сохранять workouts и workout_exercises в Supabase после завершения | P0 | 3ч |
-| 5 | Сохранять meal_logs с результатами AI-анализа в Supabase | P0 | 2ч |
-| 6 | Сохранять cycle_logs при отметке "Начались месячные" | P0 | 1ч |
-| 7 | Загрузка данных из Supabase при логине на новом устройстве | P1 | 4ч |
+## Навигация
 
-### Неделя 2 — AI через Edge Functions
+**Desktop** (sidebar, 7 пунктов):
+Сегодня → Цикл → Дневник → Питание → Тренировка → Аналитика → Профиль
 
-| # | Задача | Приоритет | Оценка |
-|---|--------|-----------|--------|
-| 8 | Перенести `generate-workout` из Next.js API route в Supabase Edge Function | P0 | 3ч |
-| 9 | Перенести `analyze-meal` в Supabase Edge Function (ключи не в клиенте) | P0 | 3ч |
-| 10 | Добавить Edge Function `daily-decision` — план дня через AI (structured output) | P1 | 4ч |
-| 11 | Добавить Edge Function `replace-exercise` — замена при боли | P1 | 2ч |
-| 12 | Логировать все AI-вызовы в таблицу `ai_runs` (модель, latency, cost) | P1 | 2ч |
-| 13 | Добавить fallback на demo-данные если Edge Function недоступна | P1 | 2ч |
+**Mobile** (bottom nav, 5 пунктов):
+Сегодня → Цикл → Дневник → Аналитика → Профиль
 
-### Неделя 3 — Качество и polish
+## Функции
 
-| # | Задача | Приоритет | Оценка |
-|---|--------|-----------|--------|
-| 14 | Offline-first: очередь записей, sync при восстановлении сети | P1 | 4ч |
-| 15 | Анимации перехода между экранами (framer-motion page transitions) | P2 | 3ч |
-| 16 | Skeleton loading для карточек при загрузке данных | P2 | 2ч |
-| 17 | Тёмная тема (ТЕМА toggle в TopBar) | P2 | 4ч |
-| 18 | Responsive polish: tablet breakpoint, iPad layout | P2 | 3ч |
-| 19 | Error boundary + toast уведомления при ошибках сети | P1 | 2ч |
-| 20 | E2E тесты: онбординг → check-in → тренировка → meal flow | P1 | 4ч |
+### Трекинг (9 категорий)
+Месячные · Боль · Настроение · Энергия · Сон · Интимность · ПМС · Питание · Заметка
 
-### Неделя 4 — Подготовка к деплою
+### Питание
+КБЖУ по профилю (Mifflin-St Jeor + коррекция по фазе) · Приёмы пищи · Калории отключаемые
 
-| # | Задача | Приоритет | Оценка |
-|---|--------|-----------|--------|
-| 21 | Настроить Vercel deployment (env vars, preview branches) | P0 | 2ч |
-| 22 | Supabase production project + apply migrations | P0 | 1ч |
-| 23 | Custom domain + SSL | P0 | 1ч |
-| 24 | PWA: service worker, offline page, install prompt | P1 | 3ч |
-| 25 | Open Graph мета-теги + социальная preview-картинка | P2 | 1ч |
-| 26 | Rate limiting на API routes | P1 | 2ч |
-| 27 | GDPR: кнопка экспорта/удаления данных в профиле | P0 | 3ч |
-| 28 | Security audit: проверить RLS, убрать секреты из клиента | P0 | 2ч |
+### Тренировка
+Генерация по фазе/самочувствию · Таймер выполнения · Защитная логика
 
----
+### Исламский режим
+Хайд · Нифас · Гусль · Пост · Каза-счётчик
 
-## Месячный план (после запуска)
+### Приватность
+PIN · Скрытые уведомления · Экспорт/удаление данных
 
-### Месяц 1 — Валидация MVP
+## Стек
 
-- [ ] Запустить с 10–15 тестовыми пользователями
-- [ ] Собрать метрики: D7 retention, completion rate check-in, workout relevance score
-- [ ] A/B: сравнить AI-план дня vs. статический план
-- [ ] Добавить NPS-опрос после 7 дней использования
-- [ ] Исправить top-3 UX-проблемы из обратной связи
-
-### Месяц 2 — Expo Mobile App
-
-- [ ] Expo Router + React Native приложение
-- [ ] Apple/email auth через Supabase
-- [ ] Push-уведомления (утренний check-in, вечерняя рефлексия)
-- [ ] Apple Health интеграция (сон, шаги, HRV)
-- [ ] Камера для meal photo + body scan
-- [ ] StoreKit: trial + подписка
-
-### Месяц 3 — Платный MVP
-
-- [ ] Subscription entitlement service
-- [ ] Usage limits для бесплатного tier
-- [ ] Cohort analytics dashboard
-- [ ] Model evaluation: точность рекомендаций vs. feedback
-- [ ] Safety review: аудит всех AI-ответов на медицинские claims
-- [ ] Deletion/export tooling (GDPR compliance)
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Анимации**: Framer Motion
+- **Хранение**: localStorage (local-first)
+- **PWA**: Service Worker, Web App Manifest
+- **Деплой**: PM2 + Nginx на VPS
+- **Дизайн**: лавандовый (#9B8EC4), Plus Jakarta Sans, glassmorphism ∞
 
 ---
 
-## Метрики успеха
+## Бэклог
 
-| Метрика | Цель |
-|---------|------|
-| D7 retention | ≥ 25% |
-| 2+ check-ins за неделю 1 | ≥ 50% |
-| 2+ тренировки | ≥ 70% от активных |
-| Workout relevance (self-report) | ≥ 60% "relevant" |
-| Meal correction < 15 сек | ≥ 80% |
-| Inappropriate exercise reports | < 5% |
+### Фаза 1 — AI интеграция
+- [ ] Claude/GPT для рекомендаций по питанию
+- [ ] AI-генерация тренировок с учётом истории
+- [ ] Персональные советы по паттернам цикла
+
+### Фаза 2 — Облако и авторизация
+- [ ] Supabase auth (email + social)
+- [ ] Синхронизация между устройствами
+- [ ] Row Level Security
+
+### Фаза 3 — Мобильное приложение
+- [ ] Expo / React Native
+- [ ] Push-уведомления
+- [ ] Apple Health
+
+### Фаза 4 — Монетизация
+- [ ] Free tier + Premium (AI, аналитика)
+- [ ] Подписка Stripe / App Store
+
+### Улучшения
+- [ ] Тёмная тема
+- [ ] Мультиязычность (en, ar)
+- [ ] Импорт данных
+- [ ] Интеграция с фитнес-трекерами
 
 ---
 
-## AI-анализ еды по фото
+## Деплой
 
-Фото отправляется не напрямую в OpenAI, а через API route / Edge Function.
-Так секретный ключ никогда не попадает в браузер.
+```bash
+# На сервере (201.51.9.114)
+cd /root/mira && git pull
+cd apps/web && npx next build
+pm2 restart mira
+```
 
-## Legacy iOS prototype
+## Лицензия
 
-Предыдущий SwiftUI-прототип сохранён в `FitFlow/`. После проверки веб-гипотезы
-интерфейс Ромашки переносится в Expo/React Native.
+MIT

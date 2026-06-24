@@ -1,0 +1,88 @@
+{
+  "users": [
+    {
+      "login": "amina@mira.app",
+      "password": "mira-test-1",
+      "name": "Амина",
+      "description": "Активная, 27 лет, ислам, полный трекинг",
+      "data": {
+        "version": 2,
+        "onboardingCompleted": true,
+        "profile": {
+          "name": "Амина",
+          "email": "amina@mira.app",
+          "showCalories": true,
+          "cycleConfig": { "periodStart": "2026-06-11", "cycleLength": 28, "periodLength": 5 },
+          "trackingPreferences": ["cycle", "pain", "mood", "energy", "sleep", "nutrition", "workout", "intimacy"],
+          "additionalMode": "islam",
+          "pinEnabled": false,
+          "hiddenNotifications": false,
+          "privateMarks": true,
+          "height": 165,
+          "weight": 58,
+          "age": 27,
+          "activityLevel": "medium"
+        },
+        "checkIns": {},
+        "workouts": [],
+        "islamicEntries": {}
+      }
+    },
+    {
+      "login": "diana@mira.app",
+      "password": "mira-test-2",
+      "name": "Диана",
+      "description": "Новичок, 22 года, без режима, базовый трекинг",
+      "data": {
+        "version": 2,
+        "onboardingCompleted": true,
+        "profile": {
+          "name": "Диана",
+          "email": "diana@mira.app",
+          "showCalories": false,
+          "cycleConfig": { "periodStart": "2026-06-05", "cycleLength": 30, "periodLength": 4 },
+          "trackingPreferences": ["cycle", "mood", "energy", "sleep"],
+          "additionalMode": "none",
+          "pinEnabled": false,
+          "hiddenNotifications": false,
+          "privateMarks": true,
+          "height": 170,
+          "weight": 62,
+          "age": 22,
+          "activityLevel": "low"
+        },
+        "checkIns": {},
+        "workouts": [],
+        "islamicEntries": {}
+      }
+    },
+    {
+      "login": "sofia@mira.app",
+      "password": "mira-test-3",
+      "name": "София",
+      "description": "Опытная, 34 года, без режима, полный трекинг + питание",
+      "data": {
+        "version": 2,
+        "onboardingCompleted": true,
+        "profile": {
+          "name": "София",
+          "email": "sofia@mira.app",
+          "showCalories": true,
+          "cycleConfig": { "periodStart": "2026-06-18", "cycleLength": 26, "periodLength": 6 },
+          "trackingPreferences": ["cycle", "pain", "mood", "energy", "sleep", "nutrition", "workout"],
+          "additionalMode": "none",
+          "pinEnabled": true,
+          "hiddenNotifications": true,
+          "privateMarks": true,
+          "height": 158,
+          "weight": 52,
+          "age": 34,
+          "activityLevel": "high"
+        },
+        "checkIns": {},
+        "workouts": [],
+        "islamicEntries": {}
+      }
+    }
+  ]
+}

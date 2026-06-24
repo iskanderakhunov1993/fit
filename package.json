@@ -1,8 +1,7 @@
 {
   "name": "mira",
   "private": true,
-  "version": "0.1.0",
-  "main": "index.js",
+  "version": "1.0.0",
   "workspaces": [
     "apps/web"
   ],
@@ -10,16 +9,6 @@
     "dev": "npm run dev --workspace=@mira/web",
     "build": "npm run build --workspace=@mira/web",
     "lint": "npm run lint --workspace=@mira/web",
-    "expo:start": "expo start",
-    "expo:android": "expo start --android",
-    "expo:ios": "expo start --ios",
-    "expo:web": "expo start --web"
-  },
-  "dependencies": {
-    "expo": "~56.0.12",
-    "expo-status-bar": "~56.0.4",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "react-native": "0.85.3"
+    "start": "npm run start --workspace=@mira/web"
   }
 }

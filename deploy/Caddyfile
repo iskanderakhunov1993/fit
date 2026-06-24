@@ -1,4 +1,0 @@
-{$MIRA_DOMAIN} {
-  encode zstd gzip
-  reverse_proxy mira-web:3000
-}

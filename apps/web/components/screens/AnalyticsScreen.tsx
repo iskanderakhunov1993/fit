@@ -35,8 +35,10 @@ function countBy<T>(arr: T[], fn: (item: T) => string): Record<string, number> {
   return counts;
 }
 
+const metricToTab: Record<string, number> = { cycle: 0, pain: 1, mood: 2, sleep: 3, energy: 3 };
+
 export function AnalyticsScreen({ data }: ScreenProps) {
-  const [activeTab, setActiveTab] = useState(0);
+  const [detailTab, setDetailTab] = useState<number | null>(null);
   const profile = data.profile;
   const norm = getCycleNorm(profile);
   const cycleLength = norm.cycleLength; // реальная медианная длина из истории
@@ -77,10 +79,13 @@ export function AnalyticsScreen({ data }: ScreenProps) {
         <p className="mt-1 text-sm text-mira-muted">Посмотри и сразу пойми — всё ли в норме</p>
       </div>
 
-      {/* Health Dashboard — светофор статусов */}
-      <div className="mb-6">
-        <HealthDashboard data={data} />
+      {/* Health Dashboard — светофор статусов (тап → детали) */}
+      <div className="mb-3">
+        <HealthDashboard data={data} onMetricClick={(id) => setDetailTab(prev => prev === metricToTab[id] ? null : metricToTab[id])} />
       </div>
+      {detailTab === null && (
+        <p className="mb-6 text-center text-[11px] text-mira-muted">Нажми на показатель, чтобы увидеть детали</p>
+      )}
 
       {/* Norm Map */}
       <div className="mb-6">
@@ -133,29 +138,24 @@ export function AnalyticsScreen({ data }: ScreenProps) {
         );
       })()}
 
-      {/* Tabs */}
-      <div className="mb-6 flex gap-1 overflow-x-auto rounded-2xl bg-white p-1 shadow-card">
-        {tabs.map((t, i) => {
-          const Icon = tabIcons[i];
-          return (
-            <button key={t} onClick={() => setActiveTab(i)} className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition ${
-              activeTab === i ? "bg-mira-lavender-light text-mira-primary shadow-card" : "text-mira-muted hover:text-mira-text"
-            }`}>
-              <Icon className="h-3.5 w-3.5" />
-              {t}
-            </button>
-          );
-        })}
-      </div>
-
-      {needsMoreData && (
+      {needsMoreData && detailTab === null && (
         <Card className="mb-6 border-[#C4B07E]/15 bg-[#F5F0E0]/30 p-4">
-          <p className="text-sm text-[#A09060]">Начни отслеживать каждый день — аналитика появится после первой недели данных.</p>
+          <p className="text-sm text-[#A09060]">Начни отслеживать каждый день — детали появятся после первой недели данных.</p>
         </Card>
       )}
 
-      {/* Tab content */}
-      {activeTab === 0 && (
+      {/* Drill-down: детали выбранного показателя */}
+      {detailTab !== null && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-bold text-mira-text flex items-center gap-1.5">
+              {(() => { const Icon = tabIcons[detailTab]; return <Icon className="h-4 w-4 text-mira-primary" />; })()}
+              {tabs[detailTab]}
+            </p>
+            <button onClick={() => setDetailTab(null)} className="text-xs text-mira-muted hover:text-mira-primary">Свернуть ✕</button>
+          </div>
+
+      {detailTab === 0 && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5">
             <div className="flex items-center justify-between">
@@ -230,7 +230,7 @@ export function AnalyticsScreen({ data }: ScreenProps) {
         </div>
       )}
 
-      {activeTab === 1 && (
+      {detailTab === 1 && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Боль по дням</p>
@@ -266,7 +266,7 @@ export function AnalyticsScreen({ data }: ScreenProps) {
         </div>
       )}
 
-      {activeTab === 2 && (
+      {detailTab === 2 && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">ПМС-симптомы</p>
@@ -315,7 +315,7 @@ export function AnalyticsScreen({ data }: ScreenProps) {
         </div>
       )}
 
-      {activeTab === 3 && (
+      {detailTab === 3 && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Качество сна</p>
@@ -367,61 +367,27 @@ export function AnalyticsScreen({ data }: ScreenProps) {
         </div>
       )}
 
-      {activeTab === 4 && (
-        <div className="space-y-5">
-          <Card className="border-[#C47E7E]/15 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertCircle className="h-4 w-4 text-[#C47E7E]" />
-              <p className="text-sm font-semibold text-mira-text">Что изменилось сейчас</p>
-            </div>
-            {totalDays < 14
-              ? <p className="text-sm text-mira-muted">Нужно больше данных, чтобы заметить отклонения. Продолжай отмечать каждый день.</p>
-              : (
-                <div className="space-y-3">
-                  {painEntries.length > 3 && (
-                    <div className="flex items-start gap-2 text-sm">
-                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#C47E7E]" />
-                      <span className="text-mira-text">Боль отмечена в {painEntries.length} днях — стоит обратить внимание</span>
-                    </div>
-                  )}
-                  {sleepEntries.filter(c => c.sleep!.quality === "bad" || c.sleep!.quality === "insomnia").length > 3 && (
-                    <div className="flex items-start gap-2 text-sm">
-                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#7E8EC4]" />
-                      <span className="text-mira-text">Плохой сон повторяется — может быть связан с фазой цикла</span>
-                    </div>
-                  )}
-                  {energyEntries.filter(c => c.energy!.value === "exhausted" || c.energy!.value === "low").length > energyEntries.length * 0.4 && (
-                    <div className="flex items-start gap-2 text-sm">
-                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#C4B07E]" />
-                      <span className="text-mira-text">Энергия часто низкая — обрати внимание на сон и питание</span>
-                    </div>
-                  )}
-                  {painEntries.length <= 3 && sleepEntries.filter(c => c.sleep!.quality === "bad").length <= 3 && (
-                    <p className="text-sm text-mira-success">Пока всё в пределах нормы. Продолжай отслеживать.</p>
-                  )}
-                </div>
-              )}
-          </Card>
-
-          <Card className="p-5">
-            <p className="text-sm font-semibold text-mira-text mb-2">Когда стоит обратиться к врачу</p>
-            <ul className="space-y-2">
-              {[
-                "Сильная боль повторяется 3+ цикла подряд",
-                "Цикл стал значительно длиннее или короче",
-                "Обильное кровотечение более 7 дней",
-                "Необычные выделения",
-                "Любые симптомы, которые вас беспокоят",
-              ].map(item => (
-                <li key={item} className="flex items-start gap-2 text-xs text-mira-muted">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-mira-lavender" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </Card>
         </div>
       )}
+
+      {/* Постоянная справка — когда к врачу */}
+      <Card className="p-5">
+        <p className="text-sm font-semibold text-mira-text mb-2">Когда стоит обратиться к врачу</p>
+        <ul className="space-y-2">
+          {[
+            "Сильная боль повторяется 3+ цикла подряд",
+            "Цикл стал значительно длиннее или короче",
+            "Обильное кровотечение более 7 дней",
+            "Необычные выделения",
+            "Любые симптомы, которые тебя беспокоят",
+          ].map(item => (
+            <li key={item} className="flex items-start gap-2 text-xs text-mira-muted">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-mira-lavender" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </Card>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { getVitaminRecommendations } from "@/lib/vitamins";
 import { getDayStatus, getQadaStats, type Madhab } from "@/lib/islamic";
 import { getAgeConfig } from "@/lib/ageMode";
 import { getHealthSummary, statusMeta } from "@/lib/healthScore";
+import { GardenCard } from "./GardenCard";
 import type { ScreenProps } from "./types";
 import type { CyclePhase, DailyCheckIn, MiraLocalData } from "@/lib/types";
 
@@ -79,7 +80,7 @@ const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 function CycleCalendar({ cycleDay, cycleLength, periodLength, checkIns, periodStart, onCheckIn, persist, data }: {
   cycleDay: number; cycleLength: number; periodLength: number;
   checkIns: Record<string, DailyCheckIn>; periodStart: string;
-  onCheckIn?: () => void;
+  onCheckIn?: (date?: string) => void;
   persist: (data: any) => void;
   data: any;
 }) {
@@ -143,7 +144,7 @@ function CycleCalendar({ cycleDay, cycleLength, periodLength, checkIns, periodSt
               key={d.key}
               onClick={() => {
                 setSelectedKey(d.key === todayKey ? null : d.key);
-                if (!isFuture && onCheckIn) onCheckIn();
+                if (!isFuture && onCheckIn) onCheckIn(d.key);
               }}
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -254,6 +255,11 @@ function MiniHealthStrip({ data, onOpen }: { data: MiraLocalData; onOpen: () => 
 }
 
 export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps) {
+  const [hintDismissed, setHintDismissed] = useState(
+    typeof window !== "undefined" && localStorage.getItem("mira:hint-today") === "done"
+  );
+  const dismissHint = () => { localStorage.setItem("mira:hint-today", "done"); setHintDismissed(true); };
+
   const profile = data.profile;
   const cycleDay = getCycleDay(profile);
   const cycleLength = profile?.cycleConfig.cycleLength ?? 28;
@@ -313,6 +319,25 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
         </button>
       </motion.div>
 
+      {/* Первая подсказка (один раз) */}
+      {!hintDismissed && (
+        <motion.div variants={fadeUp} className="mb-4">
+          <Card className="p-4 border-mira-primary/15 bg-mira-lavender-light/30">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">👋</span>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-mira-text">Как это работает</p>
+                <p className="text-xs text-mira-muted mt-1 leading-relaxed">
+                  Каждый день жми <span className="font-semibold text-mira-primary">«Отметить состояние»</span> — 10 секунд.
+                  Я покажу, что происходит с телом, и <span className="font-semibold text-mira-primary">светофор</span> подскажет, всё ли в норме. Сад растёт с каждым днём 🌱
+                </p>
+                <button onClick={dismissHint} className="mt-2 text-xs font-semibold text-mira-primary">Понятно ✓</button>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Calendar pills */}
       <motion.div variants={fadeUp} className="mb-5">
         <CycleCalendar
@@ -320,6 +345,11 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
           checkIns={data.checkIns} periodStart={profile?.cycleConfig.periodStart ?? ""}
           onCheckIn={onCheckIn} persist={persist} data={data}
         />
+      </motion.div>
+
+      {/* Сад здоровья + дневной ритуал */}
+      <motion.div variants={fadeUp} className="mb-4">
+        <GardenCard data={data} onCheckIn={onCheckIn} />
       </motion.div>
 
       {/* Phase hero with wave graph */}
@@ -361,6 +391,13 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
             <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted mb-0.5">Сегодня важное</p>
             <p className="text-sm font-semibold text-mira-text">{important.title}</p>
             <p className="text-xs text-mira-muted mt-0.5">{important.body}</p>
+            {/* #4 Проактивный отчёт врачу при красных флагах */}
+            {redFlags.length > 0 && !toughDay && (
+              <button onClick={() => navigate("report")}
+                className="mt-2 inline-flex items-center gap-1 rounded-full bg-mira-cycle/15 px-3 py-1.5 text-xs font-semibold text-mira-cycle transition active:scale-95">
+                📋 Собрать отчёт для врача <ChevronRight className="h-3 w-3" />
+              </button>
+            )}
           </div>
         </Card>
       </motion.div>
@@ -394,7 +431,7 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
 
       {/* CTA */}
       <motion.div variants={fadeUp}>
-        <Button className="w-full" size="lg" onClick={onCheckIn}>
+        <Button className="w-full" size="lg" onClick={() => onCheckIn?.()}>
           + Отметить состояние <ChevronRight className="h-4 w-4" />
         </Button>
       </motion.div>

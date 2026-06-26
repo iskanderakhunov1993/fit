@@ -23,12 +23,17 @@ export function AppShell() {
   const [ready, setReady] = useState(false);
   const [showApp, setShowApp] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [checkInDate, setCheckInDate] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const loaded = readData();
     setData(loaded);
     setShowApp(loaded.onboardingCompleted && !!loaded.profile);
     setReady(true);
+    // Локальное напоминание при заходе (не чаще раза в день)
+    if (loaded.onboardingCompleted) {
+      import("@/lib/notifications").then(m => m.maybeShowDailyNotification(loaded));
+    }
   }, []);
 
   const persist = useCallback((next: MiraLocalData) => {
@@ -36,7 +41,10 @@ export function AppShell() {
     writeData(next);
   }, []);
 
-  const openCheckIn = useCallback(() => setCheckInOpen(true), []);
+  const openCheckIn = useCallback((date?: string) => {
+    setCheckInDate(typeof date === "string" ? date : undefined);
+    setCheckInOpen(true);
+  }, []);
 
   if (!ready) {
     return (
@@ -57,6 +65,8 @@ export function AppShell() {
         onComplete={() => {
           setData(readData());
           setShowApp(true);
+          // #2 «Первая победа» — сразу предлагаем отметить состояние
+          setTimeout(() => { setCheckInDate(undefined); setCheckInOpen(true); }, 600);
         }}
       />
     );
@@ -100,6 +110,7 @@ export function AppShell() {
             onClose={() => setCheckInOpen(false)}
             data={data}
             persist={persist}
+            targetDate={checkInDate}
           />
         )}
       </AnimatePresence>

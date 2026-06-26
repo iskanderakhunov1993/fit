@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import {
-  FileText, Download, Share2, Printer, Shield,
+  Download, Share2, Printer, Shield,
   Calendar, Droplets, Activity, Brain, Moon,
   MessageSquare,
 } from "lucide-react";
@@ -22,7 +22,7 @@ const periods = [
 export function ReportScreen({ data }: ScreenProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(3);
   const [includeSex, setIncludeSex] = useState(false);
-  const [generated, setGenerated] = useState(false);
+  const [generated, setGenerated] = useState(true); // показываем превью сразу
   const reportRef = useRef<HTMLDivElement>(null);
 
   const profile = data.profile;
@@ -121,12 +121,19 @@ export function ReportScreen({ data }: ScreenProps) {
         <p className="mt-1 text-sm text-mira-muted">Иди к врачу с фактами, а не по памяти</p>
       </div>
 
+      {/* Контекстная подсказка */}
+      <Card className="mb-4 p-4 border-mira-primary/10 bg-mira-lavender-light/20">
+        <p className="text-sm text-mira-text">
+          📅 Скоро к гинекологу? Покажи этот отчёт — врач увидит факты за несколько месяцев, а не по памяти.
+        </p>
+      </Card>
+
       {/* Period selector */}
-      <Card className="mb-6 p-5">
+      <Card className="mb-5 p-5">
         <p className="text-sm font-semibold text-mira-text mb-3">Период отчёта</p>
         <div className="flex gap-2">
           {periods.map(p => (
-            <button key={p.months} onClick={() => { setSelectedPeriod(p.months); setGenerated(false); }}
+            <button key={p.months} onClick={() => setSelectedPeriod(p.months)}
               className={`flex-1 rounded-xl py-2.5 text-xs font-semibold transition ${
                 selectedPeriod === p.months ? "bg-mira-primary text-white shadow-glow" : "bg-mira-lavender-light text-mira-muted"
               }`}>{p.label}</button>
@@ -144,11 +151,6 @@ export function ReportScreen({ data }: ScreenProps) {
             </button>
           </div>
         )}
-
-        <Button className="mt-4 w-full" onClick={() => setGenerated(true)}>
-          <FileText className="h-4 w-4" />
-          Создать отчёт
-        </Button>
       </Card>
 
       {/* Generated report */}

@@ -39,7 +39,7 @@ function StatusRing({ status, size = 56 }: { status: HealthMetric["status"]; siz
   );
 }
 
-export function HealthDashboard({ data }: { data: MiraLocalData }) {
+export function HealthDashboard({ data, onMetricClick }: { data: MiraLocalData; onMetricClick?: (id: string) => void }) {
   const summary = getHealthSummary(data);
   const heroMeta = statusMeta[summary.overall];
 
@@ -60,6 +60,12 @@ export function HealthDashboard({ data }: { data: MiraLocalData }) {
               <p className="text-sm text-mira-muted mt-0.5">{summary.subtext}</p>
             </div>
           </div>
+          {/* Легенда цветов — чтобы сразу понять что значит */}
+          <div className="mt-3 flex items-center justify-center gap-4 border-t border-white/40 pt-2.5">
+            <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#5BAE7E" }} />в норме</span>
+            <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#C99A3E" }} />следи</span>
+            <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#C9607E" }} />к врачу</span>
+          </div>
         </Card>
       </motion.div>
 
@@ -68,8 +74,10 @@ export function HealthDashboard({ data }: { data: MiraLocalData }) {
         {summary.metrics.map((m, i) => {
           const meta = statusMeta[m.status];
           return (
-            <motion.div key={m.id} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}>
-              <Card className="p-4 h-full">
+            <motion.button key={m.id} onClick={() => onMetricClick?.(m.id)}
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
+              className="text-left transition active:scale-[0.97]">
+              <Card className="p-4 h-full hover:shadow-card-hover transition-shadow">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{m.emoji}</span>
@@ -91,10 +99,10 @@ export function HealthDashboard({ data }: { data: MiraLocalData }) {
                   <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: meta.color }}>
                     {meta.label}
                   </span>
-                  <span className="text-[10px] text-mira-muted">{m.value}</span>
+                  <span className="text-[10px] text-mira-muted">{m.value} ›</span>
                 </div>
               </Card>
-            </motion.div>
+            </motion.button>
           );
         })}
       </div>

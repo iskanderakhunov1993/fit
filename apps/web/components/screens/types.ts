@@ -5,5 +5,5 @@ export type ScreenProps = {
   data: MiraLocalData;
   persist: (data: MiraLocalData) => void;
   navigate: (page: NavPage) => void;
-  onCheckIn?: () => void;
+  onCheckIn?: (date?: string) => void;
 };

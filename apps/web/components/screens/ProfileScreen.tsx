@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   UserRound, Calendar, Shield, Download, Trash2,
-  ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon,
+  ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon, Award,
 } from "lucide-react";
 import { madhabs, type Madhab } from "@/lib/islamic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { saveProfile, clearData } from "@/lib/store";
+import { notificationsSupported, notificationsEnabled, requestNotifications, setNotificationsPref } from "@/lib/notifications";
+import { getUnlockedCount } from "@/lib/gamification";
+import { AchievementsCard } from "./AchievementsCard";
 import type { ScreenProps } from "./types";
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
@@ -22,6 +25,19 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 export function ProfileScreen({ data, persist }: ScreenProps) {
   const profile = data.profile;
   const [section, setSection] = useState<string | null>(null);
+  const [notifOn, setNotifOn] = useState(false);
+  useEffect(() => { setNotifOn(notificationsEnabled()); }, []);
+
+  async function toggleNotifications() {
+    if (notifOn) {
+      setNotificationsPref(false);
+      setNotifOn(false);
+    } else {
+      const granted = await requestNotifications();
+      setNotifOn(granted);
+      if (!granted) alert("Разреши уведомления в настройках браузера, чтобы получать напоминания.");
+    }
+  }
 
   if (!profile) {
     return (
@@ -34,14 +50,37 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
     );
   }
 
-  const menuItems = [
-    { icon: UserRound, label: "Мои данные", desc: "Имя", id: "data" },
-    { icon: Calendar, label: "Настройки цикла", desc: `${profile.cycleConfig.cycleLength} дн., период ${profile.cycleConfig.periodLength} дн.`, id: "cycle" },
-    { icon: Shield, label: "Приватность", desc: "Уведомления, отметки", id: "privacy" },
-    { icon: Moon, label: "Режим мусульманки", desc: profile.additionalMode === "islam" ? `${madhabs[profile.madhab ?? "hanafi"].name} · активен` : "Не активен", id: "islamic" },
-    { icon: Users, label: "Режим партнёра", desc: "Поделись фазой цикла", id: "partner" },
-    { icon: Database, label: "Мои данные", desc: "Что храним и где", id: "mydata" },
-    { icon: Download, label: "Экспорт данных", desc: "Скачать свои данные", id: "export" },
+  const unlockedCount = getUnlockedCount(data);
+
+  const menuGroups: { title: string; items: { icon: typeof UserRound; label: string; desc: string; id: string }[] }[] = [
+    {
+      title: "Цикл и тело",
+      items: [
+        { icon: UserRound, label: "О себе", desc: profile.age ? `${profile.name}, ${profile.age} лет` : profile.name, id: "data" },
+        { icon: Calendar, label: "Настройки цикла", desc: `${profile.cycleConfig.cycleLength} дн., период ${profile.cycleConfig.periodLength} дн.`, id: "cycle" },
+      ],
+    },
+    {
+      title: "Прогресс",
+      items: [
+        { icon: Award, label: "Достижения", desc: `${unlockedCount.unlocked} из ${unlockedCount.total} открыто`, id: "achievements" },
+      ],
+    },
+    {
+      title: "Режимы",
+      items: [
+        { icon: Moon, label: "Режим мусульманки", desc: profile.additionalMode === "islam" ? `${madhabs[profile.madhab ?? "hanafi"].name} · активен` : "Не активен", id: "islamic" },
+        { icon: Users, label: "Режим партнёра", desc: "Поделись фазой цикла", id: "partner" },
+      ],
+    },
+    {
+      title: "Данные и приватность",
+      items: [
+        { icon: Shield, label: "Приватность", desc: "Напоминания, отметки", id: "privacy" },
+        { icon: Database, label: "Хранение данных", desc: "Что храним и где", id: "mydata" },
+        { icon: Download, label: "Экспорт данных", desc: "Скачать свою копию", id: "export" },
+      ],
+    },
   ];
 
   if (section === "islamic") {
@@ -206,17 +245,36 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
     );
   }
 
+  if (section === "achievements") {
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">Достижения</h1>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
+        <div className="max-w-lg">
+          <AchievementsCard data={data} />
+        </div>
+      </div>
+    );
+  }
+
   if (section === "data") {
     return (
       <div>
-        <h1 className="mb-6 text-2xl font-bold text-mira-text">Мои данные</h1>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">О себе</h1>
         <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
-        <Card className="max-w-lg p-6">
+        <Card className="max-w-lg p-6 space-y-3">
           <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
             <label className="text-xs text-mira-muted">Имя</label>
             <input type="text" value={profile.name}
               onChange={e => persist(saveProfile(data, { ...profile, name: e.target.value }))}
               className="mt-1 w-full bg-transparent text-sm font-semibold text-mira-text focus:outline-none" />
+          </div>
+          <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+            <label className="text-xs text-mira-muted">Возраст</label>
+            <input type="number" min={10} max={60} value={profile.age ?? ""} placeholder="не указан"
+              onChange={e => persist(saveProfile(data, { ...profile, age: e.target.value ? +e.target.value : undefined }))}
+              className="mt-1 w-full bg-transparent text-sm font-semibold text-mira-text focus:outline-none" />
+            <p className="mt-1 text-[10px] text-mira-muted">Влияет на режим: подросток, молодая, зрелая, перименопауза</p>
           </div>
         </Card>
       </div>
@@ -261,6 +319,19 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
         <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
         <Card className="max-w-lg p-6">
           <div className="space-y-4">
+            {/* Напоминания (Notification API) */}
+            {notificationsSupported() && (
+              <div className="flex items-center gap-3 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mira-lavender-light text-mira-primary">
+                  <Bell className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-mira-text">Напоминания</p>
+                  <p className="text-xs text-mira-muted">Отметиться, подготовиться к месячным</p>
+                </div>
+                <Toggle on={notifOn} onToggle={toggleNotifications} />
+              </div>
+            )}
             {[
               { icon: Bell, label: "Скрытые уведомления", desc: "Без деталей на экране блокировки", key: "hiddenNotifications" as const },
               { icon: Heart, label: "Приватные отметки", desc: "Интимность скрыта по умолчанию", key: "privateMarks" as const },
@@ -302,22 +373,29 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
           </div>
         </div>
 
-        <div className="space-y-1">
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setSection(item.id)}
-              className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mira-bg"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mira-lavender-light text-mira-primary">
-                <item.icon className="h-5 w-5" />
+        <div className="space-y-5">
+          {menuGroups.map(group => (
+            <div key={group.title}>
+              <p className="px-1 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-mira-muted">{group.title}</p>
+              <div className="space-y-1">
+                {group.items.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setSection(item.id)}
+                    className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-mira-bg"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mira-lavender-light text-mira-primary">
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-mira-text">{item.label}</p>
+                      <p className="text-xs text-mira-muted">{item.desc}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-mira-lavender" />
+                  </button>
+                ))}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-mira-text">{item.label}</p>
-                <p className="text-xs text-mira-muted">{item.desc}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-mira-lavender" />
-            </button>
+            </div>
           ))}
 
           <button

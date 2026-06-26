@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { saveCheckIn, dateKey, getCheckIn } from "@/lib/store";
 import { recordPeriodStart } from "@/lib/cycleEngine";
+import { getStreak, getGarden } from "@/lib/gamification";
 import type {
   MiraLocalData, DailyCheckIn, PeriodIntensity, PeriodType,
   PainKind, PainLevel, MoodValue, EnergyValue, SleepQuality,
@@ -62,12 +63,18 @@ type Props = {
   onClose: () => void;
   data: MiraLocalData;
   persist: (data: MiraLocalData) => void;
+  targetDate?: string; // дата записи (по умолчанию сегодня) — для backfill прошлых дней
 };
 
-export function CheckInModal({ open, onClose, data, persist }: Props) {
+export function CheckInModal({ open, onClose, data, persist, targetDate }: Props) {
+  const entryDate = targetDate ?? dateKey();
+  const isToday = entryDate === dateKey();
+  const modalTitle = isToday
+    ? "Отметить состояние"
+    : new Date(entryDate).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [insightData, setInsightData] = useState<ReturnType<typeof getMicroInsight> | null>(null);
-  const existing = getCheckIn(data);
+  const existing = getCheckIn(data, entryDate);
 
   const [periodIntensity, setPeriodIntensity] = useState<PeriodIntensity | null>(null);
   const [periodType, setPeriodType] = useState<PeriodType | null>(null);
@@ -105,12 +112,12 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
       setPmsSelected(existing.pms?.symptoms ?? []);
       setNoteText(existing.note?.text ?? "");
     }
-  }, [open, existing]);
+  }, [open, entryDate, existing]);
 
   if (!open) return null;
 
   function save() {
-    const date = dateKey();
+    const date = entryDate;
     const checkIn: DailyCheckIn = {
       date,
       savedAt: new Date().toISOString(),
@@ -149,7 +156,7 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
   }
 
   function saveAsUsual() {
-    const date = dateKey();
+    const date = entryDate;
     const checkIn: DailyCheckIn = {
       date,
       savedAt: new Date().toISOString(),
@@ -165,19 +172,17 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
   }
 
   function repeatYesterday() {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yKey = dateKey(yesterday);
-    const yData = data.checkIns[yKey];
+    const dayBefore = new Date(entryDate);
+    dayBefore.setDate(dayBefore.getDate() - 1);
+    const yData = data.checkIns[dateKey(dayBefore)];
     if (!yData) return;
-    const date = dateKey();
-    const checkIn: DailyCheckIn = { ...yData, date, savedAt: new Date().toISOString() };
+    const checkIn: DailyCheckIn = { ...yData, date: entryDate, savedAt: new Date().toISOString() };
     persist(saveCheckIn(data, checkIn));
     onClose();
   }
 
   const hasYesterday = (() => {
-    const y = new Date();
+    const y = new Date(entryDate);
     y.setDate(y.getDate() - 1);
     return !!data.checkIns[dateKey(y)];
   })();
@@ -236,6 +241,25 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
           <h3 className="mt-3 text-lg font-bold text-mira-text">{insightData.title}</h3>
           <p className="mt-2 text-sm text-mira-muted leading-relaxed max-w-xs mx-auto">{insightData.body}</p>
         </motion.div>
+
+        {/* #3 Награда в момент: streak + сад подрос */}
+        {(() => {
+          const streak = getStreak(data);
+          const garden = getGarden(data);
+          return (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring" }}
+              className="mt-5 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#EAF6EE] to-[#F2EDFA] px-4 py-3">
+              <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: "spring", stiffness: 200 }} className="text-2xl">
+                {garden.emoji}
+              </motion.span>
+              <div className="text-left">
+                <p className="text-sm font-bold text-mira-text">🔥 Серия {streak.current} {streak.current === 1 ? "день" : streak.current < 5 ? "дня" : "дней"}</p>
+                <p className="text-[11px] text-mira-muted">{garden.title} · сад растёт</p>
+              </div>
+            </motion.div>
+          );
+        })()}
+
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 w-full">
           <Button className="w-full" onClick={closeAndReset}>Понятно</Button>
         </motion.div>
@@ -598,7 +622,7 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
         className="fixed inset-y-0 right-0 z-50 hidden w-[420px] overflow-y-auto border-l border-mira-lavender/20 bg-white p-6 shadow-soft lg:block"
       >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-mira-text">Отметить состояние</h2>
+          <h2 className="text-lg font-bold text-mira-text">{modalTitle}</h2>
           <button onClick={onClose} className="rounded-xl p-2 text-mira-muted hover:bg-mira-lavender-light transition">
             <X className="h-4 w-4" />
           </button>
@@ -614,7 +638,7 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-mira-lavender" />
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-mira-text">Отметить состояние</h2>
+          <h2 className="text-lg font-bold text-mira-text">{modalTitle}</h2>
           <button onClick={onClose} className="rounded-xl p-2 text-mira-muted hover:bg-mira-lavender-light transition">
             <X className="h-4 w-4" />
           </button>

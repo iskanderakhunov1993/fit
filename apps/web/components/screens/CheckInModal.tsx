@@ -11,6 +11,7 @@ import { getMicroInsight } from "@/lib/insights";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { saveCheckIn, dateKey, getCheckIn } from "@/lib/store";
+import { recordPeriodStart } from "@/lib/cycleEngine";
 import type {
   MiraLocalData, DailyCheckIn, PeriodIntensity, PeriodType,
   PainKind, PainLevel, MoodValue, EnergyValue, SleepQuality,
@@ -128,7 +129,19 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
     if (discharge) checkIn.discharge = discharge;
     if (stressLevel) checkIn.stress = stressLevel;
 
-    const newData = saveCheckIn(data, checkIn);
+    let newData = saveCheckIn(data, checkIn);
+
+    // Движок нормы: если отмечены месячные и это новый старт
+    // (вчера месячных не было) — записываем дату в историю циклов.
+    if (periodIntensity && newData.profile) {
+      const yesterday = new Date(date);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const hadPeriodYesterday = !!newData.checkIns[dateKey(yesterday)]?.period;
+      if (!hadPeriodYesterday) {
+        newData = { ...newData, profile: recordPeriodStart(newData.profile, date) };
+      }
+    }
+
     persist(newData);
     setActiveCategory(null);
     const insight = getMicroInsight(newData, checkIn);
@@ -456,13 +469,10 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
   ) : (
     <div>
       {/* Quick actions */}
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        <button
-          onClick={saveAsUsual}
-          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-mira-success/30 bg-[#E0F5E8]/40 p-3.5 text-sm font-semibold text-mira-success transition hover:bg-[#E0F5E8]/70 active:scale-[0.98]"
-        >
-          <Check className="h-4 w-4" />
-          Всё как обычно
+      <div className="mb-5 grid grid-cols-2 gap-2">
+        <button onClick={saveAsUsual}
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-mira-success/30 bg-[#E0F5E8]/40 p-3.5 text-sm font-semibold text-mira-success transition active:scale-[0.97]">
+          <Check className="h-4 w-4" /> Всё как обычно
         </button>
         {hasYesterday && (
           <Button variant="secondary" size="sm" className="h-auto py-3.5" onClick={repeatYesterday}>
@@ -471,8 +481,89 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
         )}
       </div>
 
-      {/* Categories grid */}
-      <div className="grid grid-cols-3 gap-2.5">
+      {/* ── Flo-style categories ── */}
+      {(() => {
+        const isIslam = data.profile?.additionalMode === "islam";
+        const isTeen = !data.profile?.age || data.profile.age < 18;
+        const hideSex = isIslam || isTeen;
+
+        type CatItem = { id: Category; emoji: string; label: string; bg: string; border: string };
+        const mainCats: CatItem[] = [
+          { id: "period", emoji: "🩸", label: "Месячные", bg: "bg-gradient-to-br from-[#FFB3C1] to-[#FF8FA3]", border: "border-[#FF8FA3]/30" },
+          { id: "pain", emoji: "😣", label: "Боль", bg: "bg-gradient-to-br from-[#FFD6A5] to-[#FFAB76]", border: "border-[#FFAB76]/30" },
+          { id: "mood", emoji: "😊", label: "Настроение", bg: "bg-gradient-to-br from-[#D4B8F0] to-[#B8A0E0]", border: "border-[#B8A0E0]/30" },
+        ];
+        const bodyCats: CatItem[] = [
+          { id: "sleep", emoji: "😴", label: "Сон", bg: "bg-gradient-to-br from-[#A8C8F0] to-[#7EB0E0]", border: "border-[#7EB0E0]/30" },
+          { id: "energy", emoji: "⚡", label: "Энергия", bg: "bg-gradient-to-br from-[#F0E0A0] to-[#E0C870]", border: "border-[#E0C870]/30" },
+          { id: "pms", emoji: "😤", label: "ПМС", bg: "bg-gradient-to-br from-[#D0B8F0] to-[#A888D8]", border: "border-[#A888D8]/30" },
+        ];
+        const extraCats: CatItem[] = [
+          ...(hideSex ? [] : [{ id: "sex" as Category, emoji: "❤️", label: "Секс", bg: "bg-gradient-to-br from-[#FFB3C1] to-[#E88098]", border: "border-[#E88098]/30" }]),
+          { id: "stress", emoji: "😰", label: "Стресс", bg: "bg-gradient-to-br from-[#F0C8A8] to-[#D8A880]", border: "border-[#D8A880]/30" },
+          { id: "bleeding", emoji: "🔴", label: "Кровотечение", bg: "bg-gradient-to-br from-[#F0A0A0] to-[#D88080]", border: "border-[#D88080]/30" },
+          { id: "note", emoji: "📝", label: "Заметка", bg: "bg-gradient-to-br from-[#D4CCE6] to-[#B8B0D0]", border: "border-[#B8B0D0]/30" },
+        ];
+
+        function renderCatButton(cat: CatItem) {
+          const marked = hasData(cat.id);
+          return (
+            <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+              className={`flex flex-col items-center gap-2 rounded-3xl border p-4 transition-all duration-200 active:scale-[0.93] hover:translate-y-[-2px] hover:shadow-lg ${cat.border} ${marked ? "ring-2 ring-mira-primary ring-offset-2" : ""}`}>
+              <div className={`flex h-14 w-14 items-center justify-center rounded-full ${cat.bg} shadow-lg`}>
+                <span className="text-2xl">{cat.emoji}</span>
+              </div>
+              <span className="text-xs font-semibold text-mira-text">{cat.label}</span>
+              {marked && <span className="text-[9px] text-mira-primary font-semibold">✓ отмечено</span>}
+            </button>
+          );
+        }
+
+        return (
+          <>
+            {/* Main — most used */}
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted mb-2">Основное</p>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {mainCats.map(renderCatButton)}
+            </div>
+
+            {/* Body */}
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted mb-2">Тело</p>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {bodyCats.map(renderCatButton)}
+            </div>
+
+            {/* Extra */}
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted mb-2">Ещё</p>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {extraCats.map(renderCatButton)}
+            </div>
+
+            {/* Marked summary */}
+            {(() => {
+              const allCats = [...mainCats, ...bodyCats, ...extraCats];
+              const marked = allCats.filter(c => hasData(c.id));
+              if (marked.length === 0) return null;
+              return (
+                <div className="border-t border-mira-lavender/20 pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted mb-2">Уже отмечено</p>
+                  <div className="flex flex-wrap gap-2">
+                    {marked.map(c => (
+                      <div key={c.id} className="flex items-center gap-1.5 rounded-full bg-mira-lavender-light/50 px-3 py-1.5">
+                        <span className="text-sm">{c.emoji}</span>
+                        <span className="text-[10px] font-semibold text-mira-primary">{c.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        );
+      })()}
+
+      {/* Old grid hidden — replaced above */}
+      <div className="hidden grid grid-cols-3 gap-2.5">
         {categories.filter(cat => {
           const isIslam = data.profile?.additionalMode === "islam";
           const age = data.profile?.age;

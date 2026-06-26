@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ChevronRight, Heart, Shield, AlertTriangle, Bell,
@@ -12,13 +13,14 @@ import {
   getCycleDay, getCyclePhase, getPhaseLabel,
   getDaysUntilPeriod, getCheckIn, getWaterEntry, dateKey,
 } from "@/lib/store";
+import { getPeriodForecast } from "@/lib/cycleEngine";
 import { getSmartReminders, getRedFlags, getToughDayContent, getIronAlert } from "@/lib/alerts";
 import { getVitaminRecommendations } from "@/lib/vitamins";
 import { getDayStatus, getQadaStats, haydDuas, type Madhab } from "@/lib/islamic";
 import { getAgeConfig } from "@/lib/ageMode";
 import { getNormOverallPercent, getNormMap } from "@/lib/insights";
 import type { ScreenProps } from "./types";
-import type { CyclePhase } from "@/lib/types";
+import type { CyclePhase, DailyCheckIn } from "@/lib/types";
 
 type PhaseInfo = {
   emoji: string;
@@ -73,6 +75,111 @@ const phaseConfig: Record<CyclePhase, PhaseInfo> = {
   },
 };
 
+// ── Apple-style Horizontal Calendar + Tracker ──
+
+const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+function CycleCalendar({ cycleDay, cycleLength, periodLength, checkIns, periodStart, onCheckIn, persist, data }: {
+  cycleDay: number; cycleLength: number; periodLength: number;
+  checkIns: Record<string, DailyCheckIn>; periodStart: string;
+  onCheckIn?: () => void;
+  persist: (data: any) => void;
+  data: any;
+}) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const todayStr = today.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + (i - 3));
+    const key = d.toISOString().slice(0, 10);
+    return {
+      date: d, day: d.getDate(),
+      weekDay: dayNames[(d.getDay() + 6) % 7],
+      isToday: key === todayKey, key,
+    };
+  });
+
+  function getPhaseColor(date: Date): string {
+    if (!periodStart) return "#D4CCE6";
+    const start = new Date(periodStart);
+    const diff = Math.floor((date.getTime() - start.getTime()) / 86_400_000);
+    const cd = ((diff % cycleLength) + cycleLength) % cycleLength + 1;
+    const remaining = cycleLength - periodLength;
+    const follEnd = periodLength + Math.round(remaining * 0.4);
+    const ovulEnd = follEnd + Math.round(remaining * 0.12);
+    if (cd <= periodLength) return "#E8A0B8";
+    if (cd <= follEnd) return "#B8A5D8";
+    if (cd <= ovulEnd) return "#D4A0C8";
+    return "#D4CCE6";
+  }
+
+  const activeKey = selectedKey ?? todayKey;
+  const activeCheckIn = checkIns[activeKey];
+  const activeDate = new Date(activeKey);
+  const isFutureActive = activeDate > today;
+
+  return (
+    <div>
+      {/* Date header */}
+      <div className="flex items-center justify-center mb-3">
+        <p className="text-sm font-semibold text-mira-text capitalize">
+          {selectedKey && selectedKey !== todayKey
+            ? new Date(selectedKey).toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "short" })
+            : `Сегодня, ${todayStr}`
+          }
+        </p>
+      </div>
+
+      {/* Pills row — full width, equal spacing */}
+      <div className="grid grid-cols-7 gap-1.5 mb-5">
+        {days.map((d, i) => {
+          const phaseColor = getPhaseColor(d.date);
+          const hasData = !!checkIns[d.key];
+          const isFuture = d.date > today;
+          const isSelected = d.key === activeKey;
+
+          return (
+            <motion.button
+              key={d.key}
+              onClick={() => {
+                setSelectedKey(d.key === todayKey ? null : d.key);
+                if (!isFuture && onCheckIn) onCheckIn();
+              }}
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: i * 0.03, type: "spring", stiffness: 250 }}
+              className="flex flex-col items-center gap-1"
+            >
+              <span className={`text-xs font-semibold ${isSelected ? "text-mira-primary" : "text-mira-muted"}`}>
+                {d.weekDay}
+              </span>
+              {isSelected && <span className="text-[8px] text-mira-primary leading-none">▼</span>}
+              {!isSelected && <span className="h-[10px]" />}
+              <div className={`relative w-full flex items-center justify-center rounded-[20px] h-16 transition-all ${
+                isSelected ? "ring-[2.5px] ring-mira-primary shadow-glow" : ""
+              }`} style={{
+                background: isFuture ? "#EDE8F5" : isSelected ? phaseColor : `${phaseColor}40`,
+              }}>
+                <span className={`text-base font-bold ${
+                  isSelected ? "text-white" : isFuture ? "text-mira-muted/40" : "text-mira-text"
+                }`}>{d.day}</span>
+                {hasData && (
+                  <span className={`absolute bottom-1.5 h-1.5 w-1.5 rounded-full ${isSelected ? "bg-white" : "bg-mira-primary"}`} />
+                )}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Cycle Timeline ──
+
 function CycleTimeline({ cycleDay, cycleLength, periodLength }: {
   cycleDay: number; cycleLength: number; periodLength: number;
 }) {
@@ -122,7 +229,7 @@ function EnergyBar({ level }: { level: number }) {
   );
 }
 
-export function TodayScreen({ data, navigate, onCheckIn }: ScreenProps) {
+export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps) {
   const profile = data.profile;
   const cycleDay = getCycleDay(profile);
   const cycleLength = profile?.cycleConfig.cycleLength ?? 28;
@@ -147,9 +254,7 @@ export function TodayScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const normPercent = getNormOverallPercent(data);
   const normMap = getNormMap(data);
 
-  const daysRange = daysUntil > 2
-    ? `через ${daysUntil - 2}–${daysUntil + 2} дней`
-    : daysUntil > 0 ? `через ${daysUntil} дн.` : "ожидаются сегодня";
+  const daysRange = getPeriodForecast(profile).text;
 
   const quickButtons = isIslamic || !ageConfig.showSex
     ? [{ l: "✅", t: "Всё ок" }, { l: "😣", t: "Боль" }, { l: "😴", t: "Плохой сон" }, { l: "😤", t: "ПМС" }]
@@ -202,13 +307,40 @@ export function TodayScreen({ data, navigate, onCheckIn }: ScreenProps) {
         </motion.div>
       )}
 
-      {/* Header */}
-      <motion.div variants={fadeUp} className="flex items-center justify-between mb-5">
-        <div>
-          <p className="text-sm text-mira-muted">{new Date().getHours() < 12 ? "Доброе утро" : new Date().getHours() < 18 ? "Добрый день" : "Добрый вечер"}</p>
-          <p className="text-2xl font-bold text-mira-text">{name}</p>
+      {/* Header — Flo style: avatar left, date center, calendar right */}
+      <motion.div variants={fadeUp} className="flex items-center justify-between mb-4">
+        {/* Profile avatar */}
+        <button onClick={() => navigate("profile")}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-mira-rose-light to-mira-lavender-light text-base font-bold text-mira-primary shadow-card transition active:scale-95">
+          {name.charAt(0).toUpperCase()}
+        </button>
+
+        {/* Date center */}
+        <div className="text-center">
+          <p className="text-sm font-semibold text-mira-text">
+            {new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}
+          </p>
         </div>
-        <Badge>День {cycleDay}</Badge>
+
+        {/* Full calendar button */}
+        <button onClick={() => navigate("analytics")}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-mira-lavender/30 bg-white text-mira-muted shadow-card transition hover:border-mira-primary/30 active:scale-95">
+          <span className="text-lg">📅</span>
+        </button>
+      </motion.div>
+
+      {/* Cycle Calendar */}
+      <motion.div variants={fadeUp} className="mb-5">
+        <CycleCalendar
+          cycleDay={cycleDay}
+          cycleLength={cycleLength}
+          periodLength={periodLength}
+          checkIns={data.checkIns}
+          periodStart={profile?.cycleConfig.periodStart ?? ""}
+          onCheckIn={onCheckIn}
+          persist={persist}
+          data={data}
+        />
       </motion.div>
 
       {/* Timeline */}
@@ -359,46 +491,11 @@ export function TodayScreen({ data, navigate, onCheckIn }: ScreenProps) {
         </Card>
       </motion.div>
 
-      {/* CTA + Quick buttons */}
-      <motion.div variants={fadeUp} className="mb-4">
-        <Button className="w-full mb-3" size="lg" onClick={onCheckIn}>
-          + Отметить за 10 секунд <ChevronRight className="h-4 w-4" />
+      {/* CTA */}
+      <motion.div variants={fadeUp}>
+        <Button className="w-full" size="lg" onClick={onCheckIn}>
+          + Отметить состояние <ChevronRight className="h-4 w-4" />
         </Button>
-        <div className="flex flex-wrap gap-2 justify-center">
-          {quickButtons.map(b => (
-            <button key={b.t} onClick={onCheckIn}
-              className="flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur-sm px-3.5 py-2 text-xs font-semibold text-mira-text shadow-card transition hover:shadow-card-hover active:scale-95">
-              <span>{b.l}</span>{b.t}
-            </button>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Shortcuts */}
-      <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 mb-3">
-        {[
-          { emoji: "💊", label: "Витамины", page: "care" as const },
-          { emoji: "🍶", label: `${waterEntry.glasses * 250} мл`, page: "care" as const },
-          { emoji: "🍽️", label: "Еда", page: "care" as const },
-          { emoji: "🏋️", label: "Тренировка", page: "care" as const },
-        ].map(s => (
-          <Card key={s.label} className="p-2.5 flex flex-col items-center gap-1 cursor-pointer hover:shadow-card-hover transition-all hover:translate-y-[-1px] active:scale-95" onClick={() => navigate(s.page)}>
-            <span className="text-base">{s.emoji}</span>
-            <span className="text-[9px] font-semibold text-mira-text">{s.label}</span>
-          </Card>
-        ))}
-      </motion.div>
-      <motion.div variants={fadeUp} className="grid grid-cols-3 gap-2">
-        {[
-          { icon: HeartPulse, label: "Забота", page: "care" as const, color: "text-mira-primary" },
-          { icon: BarChart3, label: "Аналитика", page: "analytics" as const, color: "text-[#9B8EC4]" },
-          { icon: FileText, label: "Отчёт", page: "report" as const, color: "text-[#C4B07E]" },
-        ].map(s => (
-          <Card key={s.label} className="p-2.5 flex flex-col items-center gap-1 cursor-pointer hover:shadow-card-hover transition-all active:scale-95" onClick={() => navigate(s.page)}>
-            <s.icon className={`h-4 w-4 ${s.color}`} />
-            <span className="text-[9px] font-semibold text-mira-text">{s.label}</span>
-          </Card>
-        ))}
       </motion.div>
     </motion.div>
   );

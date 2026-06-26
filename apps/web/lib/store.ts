@@ -1,4 +1,5 @@
 import type { MiraLocalData, DailyCheckIn, WorkoutLog, UserProfile, IslamicEntry, CyclePhase, WaterEntry } from "./types";
+import { getCycleNorm } from "./cycleEngine";
 
 const STORAGE_KEY = "mira:data";
 const DATA_VERSION = 2;
@@ -116,10 +117,9 @@ export function isInPurity(data: MiraLocalData): boolean {
 
 export function getCycleDay(profile: UserProfile | undefined): number {
   if (!profile?.cycleConfig.periodStart) return 1;
-  const start = new Date(profile.cycleConfig.periodStart);
-  const today = new Date();
-  const days = Math.max(0, Math.floor((today.getTime() - start.getTime()) / 86_400_000));
-  return (days % profile.cycleConfig.cycleLength) + 1;
+  // Движок нормы: считает день цикла от реального последнего старта
+  // и медианной длины из истории месячных, а не из онбординг-оценки.
+  return getCycleNorm(profile).cycleDay;
 }
 
 export function getCyclePhase(day: number, periodLength = 5, cycleLength = 28): CyclePhase {
@@ -144,8 +144,7 @@ export function getPhaseLabel(phase: CyclePhase): string {
 
 export function getDaysUntilPeriod(profile: UserProfile | undefined): number {
   if (!profile) return 0;
-  const day = getCycleDay(profile);
-  return Math.max(0, profile.cycleConfig.cycleLength - day);
+  return getCycleNorm(profile).daysUntilPeriod;
 }
 
 // ── Water tracking ──

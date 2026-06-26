@@ -7,6 +7,7 @@ import { AlertCircle, TrendingUp, Moon, Brain, Zap, Activity, Lightbulb, Link2 }
 import { NormMap } from "./NormMap";
 import { getSmartInsights } from "@/lib/insights";
 import { getPhaseCorrelations } from "@/lib/alerts";
+import { getCycleNorm } from "@/lib/cycleEngine";
 import type { ScreenProps } from "./types";
 
 function Progress({ value, color = "bg-mira-primary" }: { value: number; color?: string }) {
@@ -36,7 +37,8 @@ function countBy<T>(arr: T[], fn: (item: T) => string): Record<string, number> {
 export function AnalyticsScreen({ data }: ScreenProps) {
   const [activeTab, setActiveTab] = useState(0);
   const profile = data.profile;
-  const cycleLength = profile?.cycleConfig.cycleLength ?? 28;
+  const norm = getCycleNorm(profile);
+  const cycleLength = norm.cycleLength; // реальная медианная длина из истории
   const periodLength = profile?.cycleConfig.periodLength ?? 5;
   const checkIns = Object.values(data.checkIns);
   const totalDays = checkIns.length;
@@ -150,14 +152,28 @@ export function AnalyticsScreen({ data }: ScreenProps) {
       {activeTab === 0 && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Длительность цикла</p>
-            <p className="mt-2 text-3xl font-bold text-mira-text">{cycleLength} <span className="text-lg font-normal text-mira-muted">дней</span></p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Длительность цикла</p>
+              <Badge className="text-[9px]">
+                {norm.confidence === "high" ? "Точная норма" : norm.confidence === "medium" ? "Уточняется" : "Оценка"}
+              </Badge>
+            </div>
+            <p className="mt-2 text-3xl font-bold text-mira-text">
+              {cycleLength} <span className="text-lg font-normal text-mira-muted">дней</span>
+              {norm.observedCycles >= 2 && norm.spread > 0 && (
+                <span className="text-sm font-normal text-mira-muted"> ({norm.minLength}–{norm.maxLength})</span>
+              )}
+            </p>
             <div className="mt-3 rounded-xl bg-mira-bg p-3">
               <p className="text-xs text-mira-text">
-                <span className="font-semibold">Что это значит:</span> Твой цикл обычно длится {cycleLength} дней.
-                {cycleLength < 25 ? " Это короче среднего. Стоит обратить внимание." :
-                 cycleLength > 35 ? " Это длиннее среднего. Можно обсудить с врачом." :
-                 " Это в пределах нормы."}
+                <span className="font-semibold">Что это значит:</span>{" "}
+                {norm.observedCycles === 0
+                  ? `Пока это оценка из онбординга. Отмечай начало месячных — и я посчитаю твою реальную норму.`
+                  : norm.observedCycles === 1
+                    ? `Зафиксирован 1 цикл (${cycleLength} дн.). Нужно ещё хотя бы один, чтобы понять твой ритм.`
+                    : norm.isRegular
+                      ? `Твой цикл регулярный: ${cycleLength} дн. (по ${norm.observedCycles} циклам). Разброс всего ${norm.spread} дн.`
+                      : `Цикл нерегулярный: от ${norm.minLength} до ${norm.maxLength} дн. (по ${norm.observedCycles} циклам). Это бывает — но если разброс большой, стоит обсудить с врачом.`}
               </p>
             </div>
           </Card>

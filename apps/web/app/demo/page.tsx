@@ -25,11 +25,20 @@ function makeData(
   checkIns: [string, DailyCheckIn][],
   opts?: { age?: number; islam?: boolean; madhab?: "hanafi" | "shafii" | "maliki" | "hanbali" },
 ): MiraLocalData {
+  // История реальных стартов месячных: 4 прошлых цикла с лёгким разбросом ±1-2 дня
+  const periodStarts: string[] = [];
+  let anchor = periodStartDaysAgo;
+  for (let i = 0; i < 4; i++) {
+    periodStarts.unshift(dateStr(anchor));
+    const variance = (i % 2 === 0 ? 1 : -1) * (i + 1); // небольшой реалистичный разброс
+    anchor += cycleLength + variance;
+  }
+
   const profile: UserProfile = {
     name,
     age: opts?.age,
     showCalories: false,
-    cycleConfig: { periodStart: dateStr(periodStartDaysAgo), cycleLength, periodLength },
+    cycleConfig: { periodStart: dateStr(periodStartDaysAgo), cycleLength, periodLength, periodStarts },
     trackingPreferences: ["cycle", "pain", "mood", "energy", "sleep"],
     additionalMode: opts?.islam ? "islam" : "none",
     madhab: opts?.madhab,

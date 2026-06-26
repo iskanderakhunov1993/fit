@@ -4,9 +4,10 @@
 export type CyclePhase = "menstruation" | "follicular" | "ovulation" | "luteal";
 
 export type CycleConfig = {
-  periodStart: string; // ISO date of last period start
-  cycleLength: number; // days, default 28
+  periodStart: string; // ISO date of last period start (онбординг / последний якорь)
+  cycleLength: number; // days, default 28 (онбординг-оценка, fallback)
   periodLength: number; // days, default 5
+  periodStarts?: string[]; // ISO даты реальных стартов месячных (история, по возрастанию)
 };
 
 // Tracking — 9 categories

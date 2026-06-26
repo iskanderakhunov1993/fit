@@ -2,15 +2,14 @@
 
 import { useState } from "react";
 import {
-  UserRound, Calendar, Shield, Salad, Star,
-  Download, Trash2, ChevronRight, Lock, Bell,
-  Heart, Eye, Infinity,
+  UserRound, Calendar, Shield, Download, Trash2,
+  ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon,
 } from "lucide-react";
+import { madhabs, type Madhab } from "@/lib/islamic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { saveProfile, clearData } from "@/lib/store";
 import type { ScreenProps } from "./types";
-import type { UserProfile, AdditionalMode } from "@/lib/types";
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -29,41 +28,179 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
       <div>
         <h1 className="mb-6 text-2xl font-bold text-mira-text">Профиль</h1>
         <Card className="p-6">
-          <p className="text-sm text-mira-muted">Пройдите онбординг чтобы настроить профиль</p>
+          <p className="text-sm text-mira-muted">Пройди онбординг чтобы настроить профиль</p>
         </Card>
       </div>
     );
   }
 
   const menuItems = [
-    { icon: UserRound, label: "Мои данные", desc: "Рост, вес, возраст, активность", id: "data" },
+    { icon: UserRound, label: "Мои данные", desc: "Имя", id: "data" },
     { icon: Calendar, label: "Настройки цикла", desc: `${profile.cycleConfig.cycleLength} дн., период ${profile.cycleConfig.periodLength} дн.`, id: "cycle" },
-    { icon: Shield, label: "Приватность", desc: "PIN, уведомления, отметки", id: "privacy" },
-    { icon: Salad, label: "Питание", desc: profile.showCalories ? "Калории включены" : "Калории выключены", id: "nutrition" },
-    { icon: Star, label: "Дополнительный режим", desc: profile.additionalMode === "islam" ? "Ислам · активен" : "Не выбран", id: "mode" },
+    { icon: Shield, label: "Приватность", desc: "Уведомления, отметки", id: "privacy" },
+    { icon: Moon, label: "Режим мусульманки", desc: profile.additionalMode === "islam" ? `${madhabs[profile.madhab ?? "hanafi"].name} · активен` : "Не активен", id: "islamic" },
+    { icon: Users, label: "Режим партнёра", desc: "Поделись фазой цикла", id: "partner" },
+    { icon: Database, label: "Мои данные", desc: "Что храним и где", id: "mydata" },
     { icon: Download, label: "Экспорт данных", desc: "Скачать свои данные", id: "export" },
   ];
+
+  if (section === "islamic") {
+    const currentMadhab = profile.madhab ?? "hanafi";
+    const isActive = profile.additionalMode === "islam";
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">Режим мусульманки</h1>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
+        <Card className="max-w-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Moon className="h-5 w-5 text-mira-primary" />
+              <div>
+                <p className="text-sm font-bold text-mira-text">Исламский режим</p>
+                <p className="text-xs text-mira-muted">Хайд, истихада, каза, дуа</p>
+              </div>
+            </div>
+            <Toggle on={isActive} onToggle={() => {
+              persist(saveProfile(data, { ...profile, additionalMode: isActive ? "none" : "islam" }));
+            }} />
+          </div>
+
+          {isActive && (
+            <>
+              <p className="text-sm font-semibold text-mira-text mb-3">Выбери мазхаб</p>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {(["hanafi", "shafii", "maliki", "hanbali"] as Madhab[]).map(m => (
+                  <button key={m} onClick={() => persist(saveProfile(data, { ...profile, madhab: m }))}
+                    className={`rounded-2xl border-2 p-3.5 text-left transition active:scale-[0.97] ${
+                      currentMadhab === m ? "border-mira-primary bg-mira-lavender-light" : "border-mira-lavender/20"
+                    }`}>
+                    <p className={`text-sm font-semibold ${currentMadhab === m ? "text-mira-primary" : "text-mira-text"}`}>
+                      {madhabs[m].name}
+                    </p>
+                    <p className="text-[10px] text-mira-muted">{madhabs[m].nameAr}</p>
+                    <p className="mt-1 text-[10px] text-mira-muted">Хайд: {madhabs[m].haydMin}–{madhabs[m].haydMax} дн.</p>
+                  </button>
+                ))}
+              </div>
+              <div className="rounded-2xl border border-mira-success/15 bg-[#E0F5E8]/30 p-3">
+                <p className="text-xs text-mira-success">Приложение не является источником фетв. В спорных вопросах обращайся к знающему учёному.</p>
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
+  if (section === "partner") {
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">Режим партнёра</h1>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
+        <Card className="max-w-lg p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mira-lavender-light">
+              <Users className="h-6 w-6 text-mira-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-mira-text">Покажи партнёру, что происходит</p>
+              <p className="text-xs text-mira-muted">Без интимных деталей — только фаза и советы</p>
+            </div>
+          </div>
+          <p className="text-sm text-mira-muted mb-4">
+            Партнёр увидит: текущую фазу цикла, что это значит для настроения и энергии, и что лучше делать / не делать. Никаких личных данных, симптомов или деталей.
+          </p>
+          <Button className="w-full" onClick={() => {
+            const url = `${window.location.origin}/partner`;
+            if (navigator.share) {
+              navigator.share({ title: "Моя Норма — Режим партнёра", url }).catch(() => {});
+            } else {
+              navigator.clipboard.writeText(url).catch(() => {});
+              alert("Ссылка скопирована!");
+            }
+          }}>
+            <Users className="h-4 w-4" /> Поделиться ссылкой
+          </Button>
+          <div className="mt-4 rounded-2xl border border-mira-success/15 bg-[#E0F5E8]/30 p-3">
+            <p className="text-xs text-mira-success">Партнёр должен открыть ссылку на том же устройстве. Данные не передаются на сервер.</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (section === "mydata") {
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">Мои данные</h1>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
+        <Card className="max-w-lg p-6">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-mira-success/20 bg-[#E0F5E8]/40 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Lock className="h-4 w-4 text-mira-success" />
+                <p className="text-sm font-bold text-mira-success">Только на твоём устройстве</p>
+              </div>
+              <p className="text-xs text-mira-muted">Мы не собираем, не передаём и не продаём твои данные. Нет аккаунта, нет сервера, нет рекламных трекеров.</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-mira-text">Что мы храним</p>
+              {[
+                { label: "Профиль", desc: "Имя, настройки цикла" },
+                { label: "Ежедневные отметки", desc: "Боль, настроение, сон, энергия, ПМС" },
+                { label: "Водный баланс", desc: "Стаканы воды по дням" },
+              ].map(item => (
+                <div key={item.label} className="flex items-center gap-3 rounded-xl bg-mira-bg p-3">
+                  <Eye className="h-4 w-4 text-mira-muted shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-mira-text">{item.label}</p>
+                    <p className="text-[11px] text-mira-muted">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-mira-text">Зачем мы это используем</p>
+              <p className="text-xs text-mira-muted">Только для расчёта твоей личной нормы, прогнозов и аналитики. Ничего не покидает устройство.</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-mira-text">Как удалить</p>
+              <p className="text-xs text-mira-muted">Профиль → «Удалить данные» — безвозвратно удаляет всё. Или очисти localStorage браузера.</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-mira-text">Как экспортировать</p>
+              <p className="text-xs text-mira-muted">Профиль → «Экспорт данных» — скачивает JSON-файл со всеми твоими записями.</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   if (section === "export") {
     return (
       <div>
         <h1 className="mb-6 text-2xl font-bold text-mira-text">Экспорт данных</h1>
-        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary">← Назад</button>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
         <Card className="max-w-lg p-6">
-          <p className="mb-4 text-sm text-mira-muted">Скачайте свои данные в формате JSON. Файл содержит все ваши записи, профиль и настройки.</p>
+          <p className="mb-4 text-sm text-mira-muted">Скачай свои данные в формате JSON. Файл содержит все записи, профиль и настройки.</p>
           <Button className="w-full" onClick={() => {
             const exported = { ...data, exportedAt: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(exported, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `mira-export-${new Date().toISOString().slice(0, 10)}.json`;
+            a.download = `moya-norma-export-${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
             URL.revokeObjectURL(url);
           }}>
             <Download className="h-4 w-4" /> Скачать JSON
           </Button>
-          <p className="mt-4 text-xs text-mira-muted">Данные сохраняются только на вашем устройстве. Экспорт создаёт копию для резервного хранения.</p>
+          <p className="mt-4 text-xs text-mira-muted">Данные сохраняются только на твоём устройстве. Экспорт создаёт копию для резервного хранения.</p>
         </Card>
       </div>
     );
@@ -73,32 +210,13 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
     return (
       <div>
         <h1 className="mb-6 text-2xl font-bold text-mira-text">Мои данные</h1>
-        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary">← Назад</button>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
         <Card className="max-w-lg p-6">
-          <div className="space-y-3">
-            {[
-              { label: "Имя", value: profile.name, onChange: (v: string) => persist(saveProfile(data, { ...profile, name: v })), type: "text" },
-              { label: "Рост (см)", value: profile.height ?? "", onChange: (v: string) => persist(saveProfile(data, { ...profile, height: v ? +v : undefined })), type: "number" },
-              { label: "Вес (кг)", value: profile.weight ?? "", onChange: (v: string) => persist(saveProfile(data, { ...profile, weight: v ? +v : undefined })), type: "number" },
-              { label: "Возраст", value: profile.age ?? "", onChange: (v: string) => persist(saveProfile(data, { ...profile, age: v ? +v : undefined })), type: "number" },
-            ].map(f => (
-              <div key={f.label} className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
-                <label className="text-xs text-mira-muted">{f.label}</label>
-                <input type={f.type} value={f.value} onChange={e => f.onChange(e.target.value)}
-                  className="mt-1 w-full bg-transparent text-sm font-semibold text-mira-text focus:outline-none" />
-              </div>
-            ))}
-            <div>
-              <p className="mb-2 text-xs text-mira-muted">Уровень активности</p>
-              <div className="flex gap-2">
-                {(["low", "medium", "high"] as const).map(v => (
-                  <button key={v} onClick={() => persist(saveProfile(data, { ...profile, activityLevel: v }))}
-                    className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
-                      profile.activityLevel === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/40 bg-white text-mira-muted"
-                    }`}>{{ low: "Низкий", medium: "Средний", high: "Высокий" }[v]}</button>
-                ))}
-              </div>
-            </div>
+          <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+            <label className="text-xs text-mira-muted">Имя</label>
+            <input type="text" value={profile.name}
+              onChange={e => persist(saveProfile(data, { ...profile, name: e.target.value }))}
+              className="mt-1 w-full bg-transparent text-sm font-semibold text-mira-text focus:outline-none" />
           </div>
         </Card>
       </div>
@@ -109,7 +227,7 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
     return (
       <div>
         <h1 className="mb-6 text-2xl font-bold text-mira-text">Настройки цикла</h1>
-        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary">← Назад</button>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
         <Card className="max-w-lg p-6">
           <div className="space-y-3">
             <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
@@ -140,14 +258,12 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
     return (
       <div>
         <h1 className="mb-6 text-2xl font-bold text-mira-text">Приватность</h1>
-        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary">← Назад</button>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
         <Card className="max-w-lg p-6">
           <div className="space-y-4">
             {[
-              { icon: Lock, label: "PIN-код", desc: "Защита входа в приложение", key: "pinEnabled" as const },
               { icon: Bell, label: "Скрытые уведомления", desc: "Без деталей на экране блокировки", key: "hiddenNotifications" as const },
               { icon: Heart, label: "Приватные отметки", desc: "Интимность скрыта по умолчанию", key: "privateMarks" as const },
-              { icon: Eye, label: "Калории", desc: "Показывать калории в питании", key: "showCalories" as const },
             ].map(item => (
               <div key={item.key} className="flex items-center gap-3 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mira-lavender-light text-mira-primary">
@@ -163,50 +279,8 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
               </div>
             ))}
           </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (section === "mode") {
-    return (
-      <div>
-        <h1 className="mb-6 text-2xl font-bold text-mira-text">Дополнительный режим</h1>
-        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary">← Назад</button>
-        <Card className="max-w-lg p-6">
-          <p className="mb-4 text-sm text-mira-muted">
-            Mira может добавить специальные отметки и настройки. Это необязательно, приватно и можно изменить позже.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Без режима", value: "none" as AdditionalMode, enabled: true },
-              { label: "Ислам", value: "islam" as AdditionalMode, enabled: true },
-              { label: "Христианство", value: null, enabled: false },
-              { label: "Иудаизм", value: null, enabled: false },
-              { label: "Буддизм", value: null, enabled: false },
-            ].map(opt => (
-              <button
-                key={opt.label}
-                disabled={!opt.enabled}
-                onClick={() => opt.value && persist(saveProfile(data, { ...profile, additionalMode: opt.value }))}
-                className={`rounded-2xl border p-4 text-left transition ${
-                  profile.additionalMode === opt.value
-                    ? "border-mira-primary bg-mira-lavender-light shadow-card"
-                    : opt.enabled
-                      ? "border-mira-lavender/30 bg-white hover:border-mira-primary/30"
-                      : "border-mira-lavender/20 bg-mira-bg opacity-50"
-                }`}
-              >
-                <p className={`text-sm font-semibold ${profile.additionalMode === opt.value ? "text-mira-primary" : "text-mira-text"}`}>
-                  {opt.label}
-                </p>
-                {!opt.enabled && <p className="mt-1 text-[10px] text-mira-muted">Скоро</p>}
-              </button>
-            ))}
-          </div>
-          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-mira-success/20 bg-[#E0F5E8]/50 p-3">
-            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-mira-success" />
-            <p className="text-xs text-mira-success">Mira не является источником фетв. В спорных вопросах лучше обратиться к знающему специалисту.</p>
+          <div className="mt-4 rounded-2xl border border-mira-success/15 bg-[#E0F5E8]/30 p-3">
+            <p className="text-xs text-mira-success">Все данные хранятся только на твоём устройстве.</p>
           </div>
         </Card>
       </div>
@@ -224,7 +298,7 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
           </div>
           <div>
             <p className="text-lg font-bold text-mira-text">{profile.name}</p>
-            {profile.email && <p className="text-sm text-mira-muted">{profile.email}</p>}
+            <p className="text-xs text-mira-muted">Моя Норма</p>
           </div>
         </div>
 

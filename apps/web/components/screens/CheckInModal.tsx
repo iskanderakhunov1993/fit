@@ -4,24 +4,34 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Droplets, Activity, Brain, Flame, BedDouble, Heart,
-  Sparkles, Salad, BookOpen, RotateCcw, X, Eye,
+  Sparkles, BookOpen, RotateCcw, X, Eye, CircleDot,
+  ThermometerSun, Check, AlertCircle, Lightbulb,
 } from "lucide-react";
+import { getMicroInsight } from "@/lib/insights";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { saveCheckIn, dateKey, getCheckIn } from "@/lib/store";
-import type { MiraLocalData, DailyCheckIn, PeriodIntensity, PeriodType, PainKind, PainLevel, MoodValue, EnergyValue, SleepQuality, IntimacyProtection, IntimacyFeeling } from "@/lib/types";
+import type {
+  MiraLocalData, DailyCheckIn, PeriodIntensity, PeriodType,
+  PainKind, PainLevel, MoodValue, EnergyValue, SleepQuality,
+  IntimacyProtection, IntimacyFeeling,
+} from "@/lib/types";
 
-type Category = "period" | "pain" | "mood" | "energy" | "sleep" | "intimacy" | "pms" | "nutrition_note" | "note";
+type Category =
+  | "period" | "bleeding" | "pain" | "mood" | "energy" | "sleep"
+  | "sex" | "discharge" | "stress" | "pms" | "note";
 
 const categories: { id: Category; label: string; icon: typeof Droplets; color: string }[] = [
   { id: "period", label: "Месячные", icon: Droplets, color: "text-[#C47E9B] bg-[#F5E0EA]" },
+  { id: "bleeding", label: "Кровотечение", icon: CircleDot, color: "text-[#C47E7E] bg-[#F5E0E0]" },
   { id: "pain", label: "Боль", icon: Activity, color: "text-[#C4A07E] bg-[#F5ECE0]" },
   { id: "mood", label: "Настроение", icon: Brain, color: "text-[#9B8EC4] bg-[#EDE8F5]" },
-  { id: "energy", label: "Энергия", icon: Flame, color: "text-[#C4B07E] bg-[#F5F0E0]" },
   { id: "sleep", label: "Сон", icon: BedDouble, color: "text-[#7E8EC4] bg-[#E0E8F5]" },
-  { id: "intimacy", label: "Интимность", icon: Heart, color: "text-[#C47E9B] bg-[#F5E0EA]" },
+  { id: "energy", label: "Энергия", icon: Flame, color: "text-[#C4B07E] bg-[#F5F0E0]" },
+  { id: "sex", label: "Секс", icon: Heart, color: "text-[#C47E9B] bg-[#F5E0EA]" },
+  { id: "discharge", label: "Выделения", icon: ThermometerSun, color: "text-[#7BAF8D] bg-[#E0F5E8]" },
+  { id: "stress", label: "Стресс", icon: AlertCircle, color: "text-[#C4887E] bg-[#F5E8E0]" },
   { id: "pms", label: "ПМС", icon: Sparkles, color: "text-[#A07EC4] bg-[#EDE0F5]" },
-  { id: "nutrition_note", label: "Питание", icon: Salad, color: "text-[#7BAF8D] bg-[#E0F5E8]" },
   { id: "note", label: "Заметка", icon: BookOpen, color: "text-mira-muted bg-mira-lavender-light" },
 ];
 
@@ -32,7 +42,7 @@ const pmsSymptoms = [
 
 function Chip({ label, active, onClick }: { label: string; active?: boolean; onClick?: () => void }) {
   return (
-    <button onClick={onClick} className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+    <button onClick={onClick} className={`rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
       active ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/40 bg-white text-mira-muted hover:border-mira-primary/30"
     }`}>{label}</button>
   );
@@ -55,13 +65,15 @@ type Props = {
 
 export function CheckInModal({ open, onClose, data, persist }: Props) {
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
+  const [insightData, setInsightData] = useState<ReturnType<typeof getMicroInsight> | null>(null);
   const existing = getCheckIn(data);
 
-  // Form state
   const [periodIntensity, setPeriodIntensity] = useState<PeriodIntensity | null>(null);
   const [periodType, setPeriodType] = useState<PeriodType | null>(null);
+  const [bleedingLevel, setBleedingLevel] = useState<string | null>(null);
   const [painKinds, setPainKinds] = useState<PainKind[]>([]);
   const [painLevel, setPainLevel] = useState<PainLevel | null>(null);
+  const [painImpact, setPainImpact] = useState<boolean>(false);
   const [mood, setMood] = useState<MoodValue | null>(null);
   const [energy, setEnergy] = useState<EnergyValue | null>(null);
   const [sleepQuality, setSleepQuality] = useState<SleepQuality | null>(null);
@@ -70,10 +82,11 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
   const [intimacyProtection, setIntimacyProtection] = useState<IntimacyProtection | null>(null);
   const [intimacyFeeling, setIntimacyFeeling] = useState<IntimacyFeeling | null>(null);
   const [intimacyShowCalendar, setIntimacyShowCalendar] = useState(false);
+  const [discharge, setDischarge] = useState<string | null>(null);
+  const [stressLevel, setStressLevel] = useState<string | null>(null);
   const [pmsSelected, setPmsSelected] = useState<string[]>([]);
   const [noteText, setNoteText] = useState("");
 
-  // Sync form state with existing data when opening
   useEffect(() => {
     if (open && existing) {
       setPeriodIntensity(existing.period?.intensity ?? null);
@@ -112,10 +125,30 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
     }
     if (pmsSelected.length > 0) checkIn.pms = { symptoms: pmsSelected };
     if (noteText.trim()) checkIn.note = { text: noteText.trim() };
+    if (discharge) checkIn.discharge = discharge;
+    if (stressLevel) checkIn.stress = stressLevel;
 
-    persist(saveCheckIn(data, checkIn));
+    const newData = saveCheckIn(data, checkIn);
+    persist(newData);
     setActiveCategory(null);
-    onClose();
+    const insight = getMicroInsight(newData, checkIn);
+    setInsightData(insight);
+  }
+
+  function saveAsUsual() {
+    const date = dateKey();
+    const checkIn: DailyCheckIn = {
+      date,
+      savedAt: new Date().toISOString(),
+      ...(existing ?? {}),
+      mood: { value: "normal" },
+      energy: { value: "normal" },
+      sleep: { quality: "normal" },
+    };
+    const newData = saveCheckIn(data, checkIn);
+    persist(newData);
+    const insight = getMicroInsight(newData, checkIn);
+    setInsightData(insight);
   }
 
   function repeatYesterday() {
@@ -124,7 +157,6 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
     const yKey = dateKey(yesterday);
     const yData = data.checkIns[yKey];
     if (!yData) return;
-
     const date = dateKey();
     const checkIn: DailyCheckIn = { ...yData, date, savedAt: new Date().toISOString() };
     persist(saveCheckIn(data, checkIn));
@@ -140,9 +172,11 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
   function hasData(cat: Category): boolean {
     if (!existing) return false;
     const m: Record<Category, boolean> = {
-      period: !!existing.period, pain: !!existing.pain, mood: !!existing.mood,
-      energy: !!existing.energy, sleep: !!existing.sleep, intimacy: !!existing.intimacy,
-      pms: !!existing.pms, nutrition_note: (existing.meals?.length ?? 0) > 0, note: !!existing.note,
+      period: !!existing.period, bleeding: !!existing.period,
+      pain: !!existing.pain, mood: !!existing.mood,
+      energy: !!existing.energy, sleep: !!existing.sleep,
+      sex: !!existing.intimacy, discharge: false,
+      stress: false, pms: !!existing.pms, note: !!existing.note,
     };
     return m[cat];
   }
@@ -151,52 +185,140 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
     setPmsSelected(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   }
 
+  function closeAndReset() {
+    setInsightData(null);
+    setActiveCategory(null);
+    onClose();
+  }
+
+  if (insightData) {
+    const insightIcons: Record<string, string> = {
+      pain: "text-[#C47E9B] bg-[#F5E0EA]",
+      sleep: "text-[#7E8EC4] bg-[#E0E8F5]",
+      mood: "text-[#9B8EC4] bg-[#EDE8F5]",
+      energy: "text-[#C4B07E] bg-[#F5F0E0]",
+      pms: "text-[#A07EC4] bg-[#EDE0F5]",
+      cycle: "text-mira-primary bg-mira-lavender-light",
+      norm: "text-mira-primary bg-mira-lavender-light",
+      positive: "text-mira-success bg-[#E0F5E8]",
+    };
+    const typeLabels: Record<string, string> = {
+      observation: "Наблюдение",
+      connection: "Связь",
+      action: "Рекомендация",
+    };
+    const insightContent = (
+      <div className="flex flex-col items-center text-center py-4">
+        <motion.div
+          initial={{ scale: 0 }} animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          className={`flex h-16 w-16 items-center justify-center rounded-full ${insightIcons[insightData.icon] ?? "bg-mira-lavender-light text-mira-primary"}`}
+        >
+          <Lightbulb className="h-7 w-7" />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <span className="mt-4 inline-block rounded-full bg-mira-lavender-light px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-mira-primary">
+            {typeLabels[insightData.type]}
+          </span>
+          <h3 className="mt-3 text-lg font-bold text-mira-text">{insightData.title}</h3>
+          <p className="mt-2 text-sm text-mira-muted leading-relaxed max-w-xs mx-auto">{insightData.body}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 w-full">
+          <Button className="w-full" onClick={closeAndReset}>Понятно</Button>
+        </motion.div>
+      </div>
+    );
+
+    return (
+      <>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" onClick={closeAndReset} />
+        <motion.div initial={{ x: 420 }} animate={{ x: 0 }} exit={{ x: 420 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="fixed inset-y-0 right-0 z-50 hidden w-[420px] overflow-y-auto border-l border-mira-lavender/20 bg-white p-6 shadow-soft lg:flex lg:items-center">
+          <div className="w-full">{insightContent}</div>
+        </motion.div>
+        <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-mira-lavender/20 bg-white p-5 shadow-soft lg:hidden">
+          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-mira-lavender" />
+          {insightContent}
+        </motion.div>
+      </>
+    );
+  }
+
   const categoryContent = activeCategory ? (
     <div>
-      <button onClick={() => setActiveCategory(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary">← Назад</button>
+      <button onClick={() => setActiveCategory(null)} className="mb-4 flex items-center gap-1 text-sm text-mira-muted hover:text-mira-primary transition">
+        ← Назад
+      </button>
 
       {activeCategory === "period" && (
         <>
-          <h3 className="mb-4 text-lg font-bold text-mira-text">Месячные</h3>
-          <p className="mb-2 text-sm font-semibold text-mira-text">Интенсивность</p>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {(["light", "moderate", "heavy", "very_heavy"] as PeriodIntensity[]).map(v => (
-              <Chip key={v} label={periodL(v)} active={periodIntensity === v} onClick={() => setPeriodIntensity(v)} />
-            ))}
+          <h3 className="mb-1 text-lg font-bold text-mira-text">Месячные</h3>
+          <p className="mb-4 text-xs text-mira-muted">Начались или закончились?</p>
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            <button onClick={() => setPeriodIntensity("moderate")} className={`rounded-2xl border p-3 text-sm font-semibold transition ${periodIntensity ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"}`}>
+              Начались
+            </button>
+            <button onClick={() => { setPeriodIntensity(null); setPeriodType(null); }} className={`rounded-2xl border p-3 text-sm font-semibold transition ${!periodIntensity ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"}`}>
+              Закончились
+            </button>
           </div>
-          <p className="mb-2 text-sm font-semibold text-mira-text">Тип выделений</p>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {(["normal", "spotting", "brown", "clots"] as PeriodType[]).map(v => (
-              <Chip key={v} label={periodTL(v)} active={periodType === v} onClick={() => setPeriodType(v)} />
-            ))}
-          </div>
-          {periodIntensity === "very_heavy" && (
-            <div className="mb-4 rounded-2xl border border-[#C4B07E]/20 bg-[#F5F0E0]/50 p-3">
-              <p className="text-xs text-[#A09060]">Если это необычно для вас или сопровождается сильной слабостью, лучше обратиться к специалисту.</p>
-            </div>
+          {periodIntensity && (
+            <>
+              <p className="mb-2 text-sm font-semibold text-mira-text">Интенсивность</p>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {(["light", "moderate", "heavy", "very_heavy"] as PeriodIntensity[]).map(v => (
+                  <Chip key={v} label={periodL(v)} active={periodIntensity === v} onClick={() => setPeriodIntensity(v)} />
+                ))}
+              </div>
+            </>
           )}
+        </>
+      )}
+
+      {activeCategory === "bleeding" && (
+        <>
+          <h3 className="mb-4 text-lg font-bold text-mira-text">Кровотечение</h3>
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            {["Нет", "Мало", "Средне", "Сильно"].map(v => (
+              <button key={v} onClick={() => setBleedingLevel(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                bleedingLevel === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              }`}>{v}</button>
+            ))}
+          </div>
         </>
       )}
 
       {activeCategory === "pain" && (
         <>
           <h3 className="mb-4 text-lg font-bold text-mira-text">Боль</h3>
-          <p className="mb-2 text-sm font-semibold text-mira-text">Тип</p>
+          <p className="mb-2 text-sm font-semibold text-mira-text">Интенсивность</p>
+          <div className="mb-4 flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map(n => (
+              <button key={n} onClick={() => setPainLevel(n <= 2 ? "light" : n <= 3 ? "medium" : "strong")}
+                className={`flex-1 rounded-xl py-3 text-sm font-bold transition ${
+                  (painLevel === "light" && n <= 2) || (painLevel === "medium" && n === 3) || (painLevel === "strong" && n >= 4)
+                    ? "bg-mira-cycle text-white" : "bg-mira-lavender-light text-mira-muted"
+                }`}>{n}</button>
+            ))}
+          </div>
+          <p className="mb-2 text-sm font-semibold text-mira-text">Где болит</p>
           <div className="mb-4 flex flex-wrap gap-2">
-            {(["none", "cramps", "lower_abdomen", "headache", "breast", "back", "ovulatory"] as PainKind[]).map(v => (
+            {(["cramps", "lower_abdomen", "headache", "breast", "back"] as PainKind[]).map(v => (
               <Chip key={v} label={painKL(v)} active={painKinds.includes(v)}
                 onClick={() => setPainKinds(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])} />
             ))}
           </div>
-          <p className="mb-2 text-sm font-semibold text-mira-text">Сила</p>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {(["light", "medium", "strong"] as PainLevel[]).map(v => (
-              <Chip key={v} label={painLL(v)} active={painLevel === v} onClick={() => setPainLevel(v)} />
-            ))}
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+            <span className="text-sm text-mira-text">Мешало делам?</span>
+            <Toggle on={painImpact} onToggle={() => setPainImpact(!painImpact)} />
           </div>
           {painLevel === "strong" && (
             <div className="mb-4 rounded-2xl border border-mira-cycle/15 bg-mira-rose-light/30 p-3">
-              <p className="text-xs text-mira-cycle">При сильной боли Mira не предложит интенсивную тренировку.</p>
+              <p className="text-xs text-mira-cycle">Если сильная боль повторяется, стоит обсудить это с врачом.</p>
             </div>
           )}
         </>
@@ -205,9 +327,11 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
       {activeCategory === "mood" && (
         <>
           <h3 className="mb-4 text-lg font-bold text-mira-text">Настроение</h3>
-          <div className="mb-4 flex flex-wrap gap-2">
+          <div className="mb-4 grid grid-cols-2 gap-2">
             {(["normal", "joy", "sadness", "anger", "anxiety", "swings"] as MoodValue[]).map(v => (
-              <Chip key={v} label={moodL(v)} active={mood === v} onClick={() => setMood(v)} />
+              <button key={v} onClick={() => setMood(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                mood === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              }`}>{moodL(v)}</button>
             ))}
           </div>
         </>
@@ -229,65 +353,86 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
       {activeCategory === "sleep" && (
         <>
           <h3 className="mb-4 text-lg font-bold text-mira-text">Сон</h3>
-          <p className="mb-2 text-sm font-semibold text-mira-text">Качество</p>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {(["good", "normal", "bad", "little", "insomnia"] as SleepQuality[]).map(v => (
-              <Chip key={v} label={sleepQL(v)} active={sleepQuality === v} onClick={() => setSleepQuality(v)} />
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            {(["good", "normal", "bad"] as SleepQuality[]).map(v => (
+              <button key={v} onClick={() => setSleepQuality(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                sleepQuality === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              }`}>{sleepQL(v)}</button>
             ))}
           </div>
-          <p className="mb-2 text-sm font-semibold text-mira-text">Продолжительность</p>
-          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-mira-lavender/30 bg-mira-bg p-1">
-            {[5, 6, 7, 8].map(h => (
+          <p className="mb-2 text-sm font-semibold text-mira-text">Часов сна</p>
+          <div className="mb-4 flex items-center gap-1 rounded-2xl border border-mira-lavender/30 bg-mira-bg p-1">
+            {[4, 5, 6, 7, 8, 9].map(h => (
               <button key={h} onClick={() => setSleepHours(h)} className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
                 sleepHours === h ? "bg-white text-mira-primary shadow-card" : "text-mira-muted"
-              }`}>{h} ч</button>
+              }`}>{h}</button>
             ))}
           </div>
         </>
       )}
 
-      {activeCategory === "intimacy" && (
+      {activeCategory === "sex" && (
         <>
-          <h3 className="mb-1 text-lg font-bold text-mira-text">Интимность</h3>
+          <h3 className="mb-1 text-lg font-bold text-mira-text">Секс</h3>
           <p className="mb-4 text-xs text-mira-muted">Данные приватны и скрыты по умолчанию</p>
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            <button onClick={() => setIntimacyHappened(false)} className={`rounded-2xl border p-3 text-sm font-semibold ${
-              !intimacyHappened ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
-            }`}>Не было</button>
-            <button onClick={() => setIntimacyHappened(true)} className={`rounded-2xl border p-3 text-sm font-semibold ${
-              intimacyHappened ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
-            }`}>Была</button>
+          <p className="mb-2 text-sm font-semibold text-mira-text">Был защищённый секс?</p>
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            {[
+              { label: "Да", value: "protected" as IntimacyProtection },
+              { label: "Нет", value: "unprotected" as IntimacyProtection },
+              { label: "Не хочу указывать", value: null },
+            ].map(opt => (
+              <button key={opt.label} onClick={() => { setIntimacyHappened(true); setIntimacyProtection(opt.value); }}
+                className={`rounded-2xl border p-3 text-xs font-semibold transition ${
+                  intimacyHappened && intimacyProtection === opt.value ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+                }`}>{opt.label}</button>
+            ))}
           </div>
-          {intimacyHappened && (
-            <>
-              <p className="mb-2 text-sm font-semibold text-mira-text">Детали</p>
-              <div className="mb-4 flex flex-wrap gap-2">
-                {(["protected", "unprotected", "interrupted", "masturbation", "toy"] as IntimacyProtection[]).map(v => (
-                  <Chip key={v} label={intimPL(v)} active={intimacyProtection === v} onClick={() => setIntimacyProtection(v)} />
-                ))}
-              </div>
-              <p className="mb-2 text-sm font-semibold text-mira-text">Ощущения</p>
-              <div className="mb-4 flex flex-wrap gap-2">
-                {(["good", "normal", "discomfort", "pain"] as IntimacyFeeling[]).map(v => (
-                  <Chip key={v} label={intimFL(v)} active={intimacyFeeling === v} onClick={() => setIntimacyFeeling(v)} />
-                ))}
-              </div>
-              <div className="mb-4 flex items-center justify-between rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
-                <div className="flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-mira-muted" />
-                  <span className="text-sm text-mira-text">Показывать в календаре</span>
-                </div>
-                <Toggle on={intimacyShowCalendar} onToggle={() => setIntimacyShowCalendar(!intimacyShowCalendar)} />
-              </div>
-            </>
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-mira-muted" />
+              <span className="text-sm text-mira-text">Показывать в календаре</span>
+            </div>
+            <Toggle on={intimacyShowCalendar} onToggle={() => setIntimacyShowCalendar(!intimacyShowCalendar)} />
+          </div>
+        </>
+      )}
+
+      {activeCategory === "discharge" && (
+        <>
+          <h3 className="mb-4 text-lg font-bold text-mira-text">Выделения</h3>
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            {["Обычные", "Необычные"].map(v => (
+              <button key={v} onClick={() => setDischarge(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                discharge === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              }`}>{v}</button>
+            ))}
+          </div>
+          {discharge === "Необычные" && (
+            <div className="mb-4 rounded-2xl border border-[#C4B07E]/15 bg-[#F5F0E0]/40 p-3">
+              <p className="text-xs text-[#A09060]">Если необычные выделения продолжаются, стоит обратиться к специалисту.</p>
+            </div>
           )}
+        </>
+      )}
+
+      {activeCategory === "stress" && (
+        <>
+          <h3 className="mb-4 text-lg font-bold text-mira-text">Стресс</h3>
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            {["Низкий", "Средний", "Высокий"].map(v => (
+              <button key={v} onClick={() => setStressLevel(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                stressLevel === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              }`}>{v}</button>
+            ))}
+          </div>
         </>
       )}
 
       {activeCategory === "pms" && (
         <>
           <h3 className="mb-4 text-lg font-bold text-mira-text">ПМС</h3>
-          <p className="mb-3 text-sm text-mira-muted">Выберите симптомы</p>
+          <p className="mb-3 text-xs text-mira-muted">Выбери симптомы</p>
           <div className="mb-4 flex flex-wrap gap-2">
             {pmsSymptoms.map(s => (
               <Chip key={s} label={s} active={pmsSelected.includes(s)} onClick={() => togglePms(s)} />
@@ -300,31 +445,43 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
         <>
           <h3 className="mb-4 text-lg font-bold text-mira-text">Заметка</h3>
           <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
-            placeholder="Запишите что-нибудь..."
+            placeholder="Запиши что-нибудь..."
             className="mb-4 w-full rounded-2xl border border-mira-lavender/30 bg-mira-bg p-3 text-sm text-mira-text placeholder:text-mira-muted focus:border-mira-primary focus:outline-none"
             rows={4} />
         </>
       )}
 
-      {activeCategory === "nutrition_note" && (
-        <p className="text-sm text-mira-muted">Используйте раздел «Питание» для добавления приёмов пищи</p>
-      )}
-
-      {activeCategory !== "nutrition_note" && (
-        <Button className="w-full" onClick={save}>Сохранить</Button>
-      )}
+      <Button className="w-full" onClick={save}>Сохранить</Button>
     </div>
   ) : (
     <div>
-      {hasYesterday && (
-        <Button variant="secondary" size="sm" className="mb-4 w-full" onClick={repeatYesterday}>
-          <RotateCcw className="h-3.5 w-3.5" /> Повторить вчерашние отметки
-        </Button>
-      )}
-      <div className="grid grid-cols-3 gap-3">
-        {categories.map(cat => (
+      {/* Quick actions */}
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <button
+          onClick={saveAsUsual}
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-mira-success/30 bg-[#E0F5E8]/40 p-3.5 text-sm font-semibold text-mira-success transition hover:bg-[#E0F5E8]/70 active:scale-[0.98]"
+        >
+          <Check className="h-4 w-4" />
+          Всё как обычно
+        </button>
+        {hasYesterday && (
+          <Button variant="secondary" size="sm" className="h-auto py-3.5" onClick={repeatYesterday}>
+            <RotateCcw className="h-3.5 w-3.5" /> Как вчера
+          </Button>
+        )}
+      </div>
+
+      {/* Categories grid */}
+      <div className="grid grid-cols-3 gap-2.5">
+        {categories.filter(cat => {
+          const isIslam = data.profile?.additionalMode === "islam";
+          const age = data.profile?.age;
+          const isTeen = !age || age < 18;
+          if (isIslam || isTeen) return !["sex", "discharge"].includes(cat.id);
+          return true;
+        }).map(cat => (
           <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-mira-lavender/20 bg-white p-3 shadow-card transition hover:shadow-soft active:scale-[0.98]">
+            className="flex flex-col items-center gap-2 rounded-2xl border border-mira-lavender/20 bg-white p-3 shadow-card transition hover:shadow-soft active:scale-[0.97]">
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${cat.color}`}>
               <cat.icon className="h-5 w-5" />
             </div>
@@ -338,21 +495,20 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
 
   return (
     <>
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" onClick={onClose}
       />
 
-      {/* Desktop: side panel from right */}
+      {/* Desktop: side panel */}
       <motion.div
         initial={{ x: 420 }} animate={{ x: 0 }} exit={{ x: 420 }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
         className="fixed inset-y-0 right-0 z-50 hidden w-[420px] overflow-y-auto border-l border-mira-lavender/20 bg-white p-6 shadow-soft lg:block"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-mira-text">Отследить сегодня</h2>
-          <button onClick={onClose} className="rounded-xl p-2 text-mira-muted hover:bg-mira-lavender-light">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-mira-text">Отметить состояние</h2>
+          <button onClick={onClose} className="rounded-xl p-2 text-mira-muted hover:bg-mira-lavender-light transition">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -366,9 +522,9 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
         className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-mira-lavender/20 bg-white p-5 shadow-soft lg:hidden"
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-mira-lavender" />
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-mira-text">Отследить сегодня</h2>
-          <button onClick={onClose} className="rounded-xl p-2 text-mira-muted hover:bg-mira-lavender-light">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-mira-text">Отметить состояние</h2>
+          <button onClick={onClose} className="rounded-xl p-2 text-mira-muted hover:bg-mira-lavender-light transition">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -378,13 +534,8 @@ export function CheckInModal({ open, onClose, data, persist }: Props) {
   );
 }
 
-// Label helpers
 function periodL(v: string) { return ({ light: "Скудная", moderate: "Умеренная", heavy: "Обильная", very_heavy: "Очень сильная" } as Record<string, string>)[v] ?? v; }
-function periodTL(v: string) { return ({ normal: "Обычные", spotting: "Мажущие", brown: "Коричневые", clots: "Сгустки" } as Record<string, string>)[v] ?? v; }
-function painKL(v: string) { return ({ none: "Нет боли", cramps: "Спазмы", lower_abdomen: "Низ живота", headache: "Голова", breast: "Грудь", back: "Спина", ovulatory: "Овуляторная" } as Record<string, string>)[v] ?? v; }
-function painLL(v: string) { return ({ light: "Лёгкая", medium: "Средняя", strong: "Сильная" } as Record<string, string>)[v] ?? v; }
-function moodL(v: string) { return ({ normal: "Нормально", joy: "Радость", sadness: "Грусть", anger: "Злость", anxiety: "Тревога", swings: "Перепады" } as Record<string, string>)[v] ?? v; }
-function energyL(v: string) { return ({ exhausted: "Истощение", low: "Мало сил", normal: "Нормально", high: "Много сил" } as Record<string, string>)[v] ?? v; }
-function sleepQL(v: string) { return ({ good: "Хороший", normal: "Нормальный", bad: "Плохой", little: "Мало сна", insomnia: "Бессонница" } as Record<string, string>)[v] ?? v; }
-function intimPL(v: string) { return ({ protected: "С защитой", unprotected: "Без защиты", interrupted: "Прерванный акт", masturbation: "Мастурбация", toy: "Секс-игрушка" } as Record<string, string>)[v] ?? v; }
-function intimFL(v: string) { return ({ good: "Хорошо", normal: "Нормально", discomfort: "Дискомфорт", pain: "Боль" } as Record<string, string>)[v] ?? v; }
+function painKL(v: string) { return ({ cramps: "Спазмы", lower_abdomen: "Низ живота", headache: "Голова", breast: "Грудь", back: "Спина" } as Record<string, string>)[v] ?? v; }
+function moodL(v: string) { return ({ normal: "Спокойно", joy: "Радость", sadness: "Грусть", anger: "Раздражение", anxiety: "Тревога", swings: "Перепады" } as Record<string, string>)[v] ?? v; }
+function energyL(v: string) { return ({ exhausted: "Истощение", low: "Низкая", normal: "Нормальная", high: "Высокая" } as Record<string, string>)[v] ?? v; }
+function sleepQL(v: string) { return ({ good: "Хорошо", normal: "Нормально", bad: "Плохо" } as Record<string, string>)[v] ?? v; }

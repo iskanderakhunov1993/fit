@@ -9,11 +9,10 @@ import type { MiraLocalData } from "@/lib/types";
 import { readData, writeData, createEmpty } from "@/lib/store";
 
 import { TodayScreen } from "@/components/screens/TodayScreen";
-import { CycleScreen } from "@/components/screens/CycleScreen";
-import { DiaryScreen } from "@/components/screens/DiaryScreen";
-import { NutritionScreen } from "@/components/screens/NutritionScreen";
-import { WorkoutScreen } from "@/components/screens/WorkoutScreen";
 import { AnalyticsScreen } from "@/components/screens/AnalyticsScreen";
+import { CareScreen } from "@/components/screens/CareScreen";
+import { IslamicScreen } from "@/components/screens/IslamicScreen";
+import { ReportScreen } from "@/components/screens/ReportScreen";
 import { ProfileScreen } from "@/components/screens/ProfileScreen";
 import { OnboardingScreen } from "@/components/screens/OnboardingScreen";
 import { CheckInModal } from "@/components/screens/CheckInModal";
@@ -64,22 +63,22 @@ export function AppShell() {
   }
 
   const screenProps = { data, persist, navigate: setPage, onCheckIn: openCheckIn };
+  const isIslamic = data.profile?.additionalMode === "islam";
 
   const screens: Record<NavPage, React.ReactNode> = {
     today: <TodayScreen {...screenProps} />,
-    cycle: <CycleScreen {...screenProps} />,
-    diary: <DiaryScreen {...screenProps} />,
-    nutrition: <NutritionScreen {...screenProps} />,
-    workout: <WorkoutScreen {...screenProps} />,
     analytics: <AnalyticsScreen {...screenProps} />,
+    care: <CareScreen {...screenProps} />,
+    islamic: <IslamicScreen {...screenProps} />,
+    report: <ReportScreen {...screenProps} />,
     profile: <ProfileScreen {...screenProps} />,
   };
 
   return (
     <div className="min-h-screen bg-mira-bg text-mira-text lg:flex">
-      <Sidebar active={page} onChange={setPage} />
-      <main className="flex-1 pb-20 lg:pb-0">
-        <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
+      <Sidebar active={page} onChange={setPage} onCheckIn={openCheckIn} isIslamic={isIslamic} />
+      <main className="flex-1 pb-24 lg:pb-0">
+        <div className="mx-auto max-w-[960px] px-4 py-6 sm:px-6 lg:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={page}
@@ -93,9 +92,16 @@ export function AppShell() {
           </AnimatePresence>
         </div>
       </main>
-      <BottomNav active={page} onChange={setPage} />
+      <BottomNav active={page} onChange={setPage} onCheckIn={openCheckIn} isIslamic={isIslamic} />
       <AnimatePresence>
-        {checkInOpen && <CheckInModal open={checkInOpen} onClose={() => setCheckInOpen(false)} data={data} persist={persist} />}
+        {checkInOpen && (
+          <CheckInModal
+            open={checkInOpen}
+            onClose={() => setCheckInOpen(false)}
+            data={data}
+            persist={persist}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

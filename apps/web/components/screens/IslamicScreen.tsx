@@ -1,196 +1,392 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import {
+  Moon, Droplets, BookOpen, Check, Calendar,
+  ChevronRight, Sparkles, Shield, Plus, Minus,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { saveIslamicEntry, getIslamicEntry, countQadaDays, dateKey } from "@/lib/store";
-import type { MiraLocalData, IslamicEntry, FastingStatus } from "@/lib/types";
+import { saveIslamicEntry, dateKey } from "@/lib/store";
+import {
+  madhabs, getDayStatus, getBleedingAdvice, getQadaStats,
+  getRamadanInfo, haydDuas, educationCards,
+  type Madhab,
+} from "@/lib/islamic";
+import type { ScreenProps } from "./types";
+import type { IslamicEntry, FastingStatus } from "@/lib/types";
 
-type Props = {
-  data: MiraLocalData;
-  persist: (data: MiraLocalData) => void;
-};
+export function IslamicScreen({ data, persist }: ScreenProps) {
+  const profile = data.profile;
+  const madhab: Madhab = profile?.madhab ?? "hanafi";
+  const rules = madhabs[madhab];
+  const todayKey = dateKey();
+  const todayEntry = data.islamicEntries?.[todayKey];
+  const dayStatus = getDayStatus(data, madhab);
+  const qadaStats = getQadaStats(data);
+  const ramadanInfo = getRamadanInfo(data);
 
-const islamicCategories = [
-  { id: "hayd" as const, label: "Хайд", desc: "Менструация (фикх)", emoji: "🔴", info: "Период хайда — освобождение от намаза и поста" },
-  { id: "istihadha" as const, label: "Истихада", desc: "Кровотечение вне хайда", emoji: "🟡", info: "Кровотечение, не являющееся хайдом" },
-  { id: "nifas" as const, label: "Нифас", desc: "Послеродовое кровотечение", emoji: "🟣", info: "Период после родов" },
-  { id: "purity" as const, label: "Чистота", desc: "Состояние тахара", emoji: "⚪", info: "Чистое состояние — все обязанности в силе" },
-  { id: "ghusl" as const, label: "Гусль", desc: "Полное омовение", emoji: "💧", info: "Отметить совершение полного омовения" },
-];
+  const [activeTab, setActiveTab] = useState(0);
+  const [showDuaIndex, setShowDuaIndex] = useState(0);
+  const [addQadaYear, setAddQadaYear] = useState(new Date().getFullYear());
+  const [addQadaDays, setAddQadaDays] = useState(0);
 
-const fastingOptions: { id: FastingStatus; label: string; desc: string }[] = [
-  { id: "fasted", label: "Постилась", desc: "Пост выдержан" },
-  { id: "missed", label: "Пропущен", desc: "Добавится к восполнению" },
-  { id: "exempt", label: "Освобождена", desc: "Хайд/нифас/болезнь" },
-  { id: "makeup", label: "Восполнение", desc: "Каза — восполнение пропущенного" },
-];
+  const tabs = ["Сегодня", "Каза", "Знание"];
+  const tabIcons = [Moon, Calendar, BookOpen];
 
-export function IslamicScreen({ data, persist }: Props) {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const today = dateKey();
-  const entry = getIslamicEntry(data) ?? {};
-  const qadaDays = countQadaDays(data);
+  const fadeUp = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
 
-  function toggle(key: "hayd" | "istihadha" | "nifas" | "purity" | "ghusl") {
-    const updated: IslamicEntry = { ...entry, [key]: !entry[key] };
-    // Mutual exclusivity: hayd/nifas/purity/istihadha
-    if (key === "hayd" && updated.hayd) { updated.nifas = false; updated.purity = false; updated.istihadha = false; }
-    if (key === "nifas" && updated.nifas) { updated.hayd = false; updated.purity = false; updated.istihadha = false; }
-    if (key === "purity" && updated.purity) { updated.hayd = false; updated.nifas = false; updated.istihadha = false; }
-    if (key === "istihadha" && updated.istihadha) { updated.hayd = false; updated.nifas = false; }
-    persist(saveIslamicEntry(data, today, updated));
+  function setTodayStatus(entry: Partial<IslamicEntry>) {
+    const existing = data.islamicEntries?.[todayKey] ?? {};
+    const cleared: IslamicEntry = { hayd: false, istihadha: false, nifas: false, purity: false, ...existing, ...entry };
+    persist(saveIslamicEntry(data, todayKey, cleared));
   }
 
   function setFasting(status: FastingStatus) {
-    const updated: IslamicEntry = { ...entry, fasting: entry.fasting === status ? undefined : status };
-    persist(saveIslamicEntry(data, today, updated));
+    const existing = data.islamicEntries?.[todayKey] ?? {};
+    persist(saveIslamicEntry(data, todayKey, { ...existing, fasting: status }));
   }
 
-  function saveNote(text: string) {
-    persist(saveIslamicEntry(data, today, { ...entry, note: text }));
+  function addQadaMissed() {
+    for (let i = 0; i < addQadaDays; i++) {
+      const fakeDate = `${addQadaYear}-01-${String(i + 1).padStart(2, "0")}`;
+      const existing = data.islamicEntries?.[fakeDate] ?? {};
+      data = saveIslamicEntry(data, fakeDate, { ...existing, fasting: "missed" });
+    }
+    persist(data);
+    setAddQadaDays(0);
   }
 
-  // Status summary
-  const statusLabel = entry.hayd ? "Хайд" : entry.nifas ? "Нифас" : entry.istihadha ? "Истихада" : entry.purity ? "Чистота" : "Не отмечено";
-  const statusColor = entry.hayd ? "text-[#C47E9B]" : entry.nifas ? "text-[#A07EC4]" : entry.purity ? "text-mira-success" : "text-mira-muted";
+  function markQadaMadeUp() {
+    persist(saveIslamicEntry(data, todayKey, { ...data.islamicEntries?.[todayKey], fasting: "makeup" }));
+  }
+
+  const statusColors: Record<string, string> = {
+    hayd: "border-[#C47E9B]/20 bg-[#F5E0EA]/30",
+    nifas: "border-[#C47E9B]/20 bg-[#F5E0EA]/30",
+    istihada: "border-[#C4B07E]/20 bg-[#F5F0E0]/30",
+    purity: "border-mira-success/20 bg-[#E0F5E8]/30",
+    unknown: "border-mira-lavender/20 bg-mira-bg",
+  };
 
   return (
-    <div>
-      <h1 className="mb-2 text-2xl font-bold text-mira-text">Исламский режим</h1>
-      <p className="mb-6 text-sm text-mira-muted">Дополнительные отметки для отслеживания</p>
+    <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.06 } } }}>
+      {/* Header */}
+      <motion.div variants={fadeUp} className="mb-6">
+        <div className="flex items-center gap-2">
+          <Moon className="h-5 w-5 text-mira-primary" />
+          <h1 className="text-2xl font-bold text-mira-text">Мусульманка</h1>
+        </div>
+        <p className="mt-1 text-sm text-mira-muted">Мазхаб: {rules.name} · {rules.nameAr}</p>
+      </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        {/* Main column */}
+      {/* Tabs */}
+      <motion.div variants={fadeUp} className="mb-6 flex gap-1 rounded-2xl bg-white p-1 shadow-card">
+        {tabs.map((t, i) => {
+          const Icon = tabIcons[i];
+          return (
+            <button key={t} onClick={() => setActiveTab(i)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition ${
+              activeTab === i ? "bg-mira-lavender-light text-mira-primary shadow-card" : "text-mira-muted"
+            }`}>
+              <Icon className="h-3.5 w-3.5" />
+              {t}
+            </button>
+          );
+        })}
+      </motion.div>
+
+      {/* ══════ TAB: Сегодня ══════ */}
+      {activeTab === 0 && (
         <div className="space-y-4">
           {/* Current status */}
-          <Card className="border-mira-primary/15 bg-gradient-to-br from-mira-lavender-light/50 to-white p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Состояние сегодня</p>
-            <p className={`mt-1 text-xl font-bold ${statusColor}`}>{statusLabel}</p>
-            {entry.ghusl && <Badge className="mt-2 border-[#7E8EC4]/30 bg-[#E0E8F5] text-[#7E8EC4]">Гусль совершён</Badge>}
-          </Card>
+          <motion.div variants={fadeUp}>
+            <Card className={`p-5 ${statusColors[dayStatus.status]}`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-bold text-mira-text">
+                  {dayStatus.status === "hayd" && "🩸 Хайд"}
+                  {dayStatus.status === "istihada" && "🔶 Истихада"}
+                  {dayStatus.status === "nifas" && "🤱 Нифас"}
+                  {dayStatus.status === "purity" && "✨ Чистота"}
+                  {dayStatus.status === "unknown" && "❓ Не отмечено"}
+                </p>
+                {dayStatus.shouldPray ? (
+                  <Badge className="bg-mira-success/15 text-mira-success border-mira-success/30">Молись</Badge>
+                ) : (
+                  <Badge className="bg-[#F5E0EA] text-[#C47E9B] border-[#C47E9B]/30">Намаз не обязателен</Badge>
+                )}
+              </div>
+              <p className="text-xs text-mira-muted leading-relaxed">{dayStatus.explanation}</p>
+            </Card>
+          </motion.div>
 
-          {/* Category buttons */}
-          <Card className="p-5">
-            <p className="mb-4 text-sm font-semibold text-mira-text">Состояние</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {islamicCategories.map(cat => {
-                const isActive = cat.id === "ghusl" ? !!entry.ghusl : !!entry[cat.id];
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => toggle(cat.id)}
-                    className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition active:scale-[0.98] ${
-                      isActive
-                        ? "border-mira-primary bg-mira-lavender-light shadow-card"
-                        : "border-mira-lavender/20 bg-white hover:border-mira-primary/30"
-                    }`}
-                  >
-                    <span className="text-xl">{cat.emoji}</span>
-                    <div>
-                      <p className={`text-sm font-semibold ${isActive ? "text-mira-primary" : "text-mira-text"}`}>{cat.label}</p>
-                      <p className="text-[10px] text-mira-muted">{cat.desc}</p>
-                    </div>
-                    {isActive && <Check className="ml-auto h-4 w-4 text-mira-primary" />}
+          {/* Set today's status */}
+          <motion.div variants={fadeUp}>
+            <Card className="p-5">
+              <p className="text-sm font-bold text-mira-text mb-3">Отметь статус</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Хайд", key: "hayd", emoji: "🩸", desc: "Менструация" },
+                  { label: "Чистота", key: "purity", emoji: "✨", desc: "Тухр" },
+                  { label: "Истихада", key: "istihadha", emoji: "🔶", desc: "Аномальное кровотечение" },
+                  { label: "Нифас", key: "nifas", emoji: "🤱", desc: "Послеродовое" },
+                ].map(opt => {
+                  const isActive = (opt.key === "hayd" && todayEntry?.hayd) ||
+                    (opt.key === "purity" && todayEntry?.purity) ||
+                    (opt.key === "istihadha" && todayEntry?.istihadha) ||
+                    (opt.key === "nifas" && todayEntry?.nifas);
+                  return (
+                    <button key={opt.key}
+                      onClick={() => setTodayStatus({
+                        hayd: opt.key === "hayd",
+                        purity: opt.key === "purity",
+                        istihadha: opt.key === "istihadha",
+                        nifas: opt.key === "nifas",
+                      })}
+                      className={`flex items-center gap-3 rounded-2xl border-2 p-3.5 text-left transition active:scale-[0.97] ${
+                        isActive ? "border-mira-primary bg-mira-lavender-light" : "border-mira-lavender/20"
+                      }`}>
+                      <span className="text-lg">{opt.emoji}</span>
+                      <div>
+                        <p className={`text-sm font-semibold ${isActive ? "text-mira-primary" : "text-mira-text"}`}>{opt.label}</p>
+                        <p className="text-[10px] text-mira-muted">{opt.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Fasting status */}
+          <motion.div variants={fadeUp}>
+            <Card className="p-5">
+              <p className="text-sm font-bold text-mira-text mb-3">Пост сегодня</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Постилась", status: "fasted" as FastingStatus, emoji: "✅" },
+                  { label: "Пропуск (каза)", status: "missed" as FastingStatus, emoji: "📋" },
+                  { label: "Освобождена", status: "exempt" as FastingStatus, emoji: "🩸" },
+                  { label: "Возмещение", status: "makeup" as FastingStatus, emoji: "🔄" },
+                ].map(opt => (
+                  <button key={opt.status} onClick={() => setFasting(opt.status)}
+                    className={`flex items-center gap-2 rounded-2xl border-2 p-3 text-left transition active:scale-[0.97] ${
+                      todayEntry?.fasting === opt.status ? "border-mira-primary bg-mira-lavender-light" : "border-mira-lavender/20"
+                    }`}>
+                    <span>{opt.emoji}</span>
+                    <span className={`text-xs font-semibold ${todayEntry?.fasting === opt.status ? "text-mira-primary" : "text-mira-text"}`}>{opt.label}</span>
                   </button>
-                );
-              })}
-            </div>
-          </Card>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
 
-          {/* Fasting */}
-          <Card className="p-5">
-            <p className="mb-2 text-sm font-semibold text-mira-text">🌙 Пост</p>
-            <p className="mb-4 text-xs text-mira-muted">Отметьте статус поста на сегодня</p>
-            <div className="grid grid-cols-2 gap-2">
-              {fastingOptions.map(opt => (
-                <button
-                  key={opt.id}
-                  onClick={() => setFasting(opt.id)}
-                  className={`rounded-2xl border p-3 text-left transition ${
-                    entry.fasting === opt.id
-                      ? "border-mira-primary bg-mira-lavender-light"
-                      : "border-mira-lavender/20 bg-white hover:border-mira-primary/30"
-                  }`}
-                >
-                  <p className={`text-sm font-semibold ${entry.fasting === opt.id ? "text-mira-primary" : "text-mira-text"}`}>{opt.label}</p>
-                  <p className="text-[10px] text-mira-muted">{opt.desc}</p>
-                </button>
-              ))}
-            </div>
-          </Card>
+          {/* Ghusl reminder */}
+          {todayEntry?.purity && !todayEntry?.ghusl && (
+            <motion.div variants={fadeUp}>
+              <Card className="border-mira-primary/15 bg-mira-lavender-light/30 p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Droplets className="h-4 w-4 text-mira-primary" />
+                  <p className="text-sm font-semibold text-mira-text">Напоминание: гусль</p>
+                </div>
+                <p className="text-xs text-mira-muted mb-2">Если хайд/нифас закончился — прими полное омовение перед намазом.</p>
+                <Button size="sm" onClick={() => {
+                  persist(saveIslamicEntry(data, todayKey, { ...todayEntry, ghusl: true }));
+                }}>
+                  <Check className="h-3.5 w-3.5" /> Гусль совершён
+                </Button>
+              </Card>
+            </motion.div>
+          )}
 
-          {/* Note */}
-          <Card className="p-5">
-            <p className="mb-2 text-sm font-semibold text-mira-text">Заметка</p>
-            <textarea
-              value={entry.note ?? ""}
-              onChange={e => saveNote(e.target.value)}
-              placeholder="Приватная заметка..."
-              className="w-full rounded-2xl border border-mira-lavender/30 bg-mira-bg p-3 text-sm text-mira-text placeholder:text-mira-muted focus:border-mira-primary focus:outline-none"
-              rows={3}
-            />
-          </Card>
+          {/* Daily dua */}
+          {dayStatus.status === "hayd" && (
+            <motion.div variants={fadeUp}>
+              <Card className="border-mira-primary/10 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-mira-primary" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-mira-primary">Зикр для дней хайда</p>
+                  </div>
+                  <button onClick={() => setShowDuaIndex((showDuaIndex + 1) % haydDuas.length)}
+                    className="text-xs text-mira-muted hover:text-mira-primary">Ещё →</button>
+                </div>
+                <div className="text-center">
+                  <p className="text-xl font-bold text-mira-text mb-2 leading-relaxed" dir="rtl">{haydDuas[showDuaIndex].arabic}</p>
+                  <p className="text-sm text-mira-primary font-semibold mb-1">{haydDuas[showDuaIndex].transliteration}</p>
+                  <p className="text-xs text-mira-muted mb-2">{haydDuas[showDuaIndex].translation}</p>
+                  <p className="text-[10px] text-mira-muted italic">{haydDuas[showDuaIndex].context}</p>
+                </div>
+              </Card>
+            </motion.div>
+          )}
         </div>
+      )}
 
-        {/* Right column */}
+      {/* ══════ TAB: Каза ══════ */}
+      {activeTab === 1 && (
         <div className="space-y-4">
-          {/* Qada counter */}
-          <Card className="border-mira-primary/15 bg-mira-lavender-light/50 p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Дни к восполнению</p>
-            <p className="mt-1 text-4xl font-bold text-mira-primary">{qadaDays}</p>
-            <p className="mt-1 text-xs text-mira-muted">
-              {qadaDays === 0 ? "Нет пропущенных дней" : `Пропущенных дней поста`}
-            </p>
-            {qadaDays > 0 && (
-              <Button size="sm" variant="secondary" className="mt-3" onClick={() => setFasting("makeup")}>
-                Отметить восполнение сегодня
-              </Button>
-            )}
-          </Card>
+          {/* Qada summary */}
+          <motion.div variants={fadeUp}>
+            <Card className="p-5 text-center">
+              <p className="text-xs text-mira-muted">Осталось возместить</p>
+              <p className="text-4xl font-bold text-mira-text mt-1">{qadaStats.remaining}</p>
+              <p className="text-sm text-mira-muted mt-1">
+                {qadaStats.remaining === 0 ? "дней" : qadaStats.remaining === 1 ? "день" : qadaStats.remaining < 5 ? "дня" : "дней"} поста
+              </p>
+              {qadaStats.remaining > 0 && (
+                <p className="text-xs text-mira-primary font-semibold mt-2">
+                  Совет: возмещай по 1 дню в пн и чт — это ещё и сунна
+                </p>
+              )}
+            </Card>
+          </motion.div>
 
-          {/* Recent history */}
-          <Card className="p-5">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-mira-muted">Последние записи</p>
-            <div className="space-y-2">
-              {Object.entries(data.islamicEntries ?? {})
-                .sort(([a], [b]) => b.localeCompare(a))
-                .slice(0, 7)
-                .map(([date, e]) => (
-                  <div key={date} className="flex items-center justify-between rounded-xl bg-mira-bg p-2.5">
-                    <span className="text-xs text-mira-muted">{formatDate(date)}</span>
-                    <div className="flex gap-1.5">
-                      {e.hayd && <span className="rounded-full bg-[#F5E0EA] px-2 py-0.5 text-[10px] font-semibold text-[#C47E9B]">Хайд</span>}
-                      {e.nifas && <span className="rounded-full bg-[#EDE0F5] px-2 py-0.5 text-[10px] font-semibold text-[#A07EC4]">Нифас</span>}
-                      {e.istihadha && <span className="rounded-full bg-[#F5F0E0] px-2 py-0.5 text-[10px] font-semibold text-[#A09060]">Истихада</span>}
-                      {e.purity && <span className="rounded-full bg-[#E0F5E8] px-2 py-0.5 text-[10px] font-semibold text-mira-success">Чистота</span>}
-                      {e.ghusl && <span className="rounded-full bg-[#E0E8F5] px-2 py-0.5 text-[10px] font-semibold text-[#7E8EC4]">Гусль</span>}
-                      {e.fasting === "fasted" && <span className="rounded-full bg-mira-lavender-light px-2 py-0.5 text-[10px] font-semibold text-mira-primary">Пост</span>}
-                      {e.fasting === "missed" && <span className="rounded-full bg-[#F5E0EA] px-2 py-0.5 text-[10px] font-semibold text-[#C47E9B]">Пропуск</span>}
-                      {e.fasting === "makeup" && <span className="rounded-full bg-[#E0F5E8] px-2 py-0.5 text-[10px] font-semibold text-mira-success">Каза</span>}
+          {/* Quick add today's makeup */}
+          {qadaStats.remaining > 0 && (
+            <motion.div variants={fadeUp}>
+              <Button className="w-full" onClick={markQadaMadeUp}>
+                <Check className="h-4 w-4" /> Сегодня возместила 1 день
+              </Button>
+            </motion.div>
+          )}
+
+          {/* By year */}
+          {qadaStats.byYear.length > 0 && (
+            <motion.div variants={fadeUp}>
+              <Card className="p-5">
+                <p className="text-sm font-bold text-mira-text mb-3">По годам</p>
+                <div className="space-y-2">
+                  {qadaStats.byYear.map(y => (
+                    <div key={y.year} className="flex items-center justify-between rounded-xl bg-mira-bg p-3">
+                      <span className="text-sm font-semibold text-mira-text">{y.year}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-mira-muted">Пропуск: {y.missed}</span>
+                        <span className="text-xs text-mira-success">Каза: {y.madeUp}</span>
+                        {y.remaining > 0 && (
+                          <Badge className="bg-[#F5E0EA] text-[#C47E9B] text-[10px]">Осталось: {y.remaining}</Badge>
+                        )}
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Add missed days from past */}
+          <motion.div variants={fadeUp}>
+            <Card className="p-5">
+              <p className="text-sm font-bold text-mira-text mb-1">Добавить пропущенные дни</p>
+              <p className="text-xs text-mira-muted mb-3">Если помнишь примерное количество за прошлые годы</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 rounded-xl border border-mira-lavender/20 bg-mira-bg p-2">
+                  <label className="text-[10px] text-mira-muted">Год</label>
+                  <input type="number" value={addQadaYear} onChange={e => setAddQadaYear(+e.target.value)}
+                    className="w-full bg-transparent text-sm font-semibold text-mira-text focus:outline-none" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setAddQadaDays(Math.max(0, addQadaDays - 1))}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-mira-lavender/30 text-mira-muted">
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-8 text-center text-lg font-bold text-mira-text">{addQadaDays}</span>
+                  <button onClick={() => setAddQadaDays(addQadaDays + 1)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-mira-primary text-white">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              {addQadaDays > 0 && (
+                <Button variant="secondary" className="w-full" onClick={addQadaMissed}>
+                  Добавить {addQadaDays} дн. за {addQadaYear}
+                </Button>
+              )}
+            </Card>
+          </motion.div>
+
+          {/* Ramadan info */}
+          <motion.div variants={fadeUp}>
+            <Card className="border-mira-primary/10 bg-mira-lavender-light/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Moon className="h-4 w-4 text-mira-primary" />
+                <p className="text-sm font-semibold text-mira-text">Рамадан {new Date().getFullYear()}</p>
+              </div>
+              <p className="text-xs text-mira-muted">
+                Пропущено в этом году: {ramadanInfo.missedThisRamadan} дн.
+              </p>
+              <p className="text-xs text-mira-primary font-semibold mt-1">{ramadanInfo.planAfterRamadan}</p>
+            </Card>
+          </motion.div>
+        </div>
+      )}
+
+      {/* ══════ TAB: Знание ══════ */}
+      {activeTab === 2 && (
+        <div className="space-y-4">
+          {/* Madhab info */}
+          <motion.div variants={fadeUp}>
+            <Card className="p-5">
+              <p className="text-sm font-bold text-mira-text mb-2">Твой мазхаб: {rules.name}</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="rounded-xl bg-mira-bg p-3">
+                  <p className="text-[10px] text-mira-muted">Хайд</p>
+                  <p className="text-sm font-bold text-mira-text">{rules.haydMin}–{rules.haydMax} дн.</p>
+                </div>
+                <div className="rounded-xl bg-mira-bg p-3">
+                  <p className="text-[10px] text-mira-muted">Мин. чистота</p>
+                  <p className="text-sm font-bold text-mira-text">{rules.tuhrMin} дн.</p>
+                </div>
+                <div className="rounded-xl bg-mira-bg p-3">
+                  <p className="text-[10px] text-mira-muted">Нифас макс.</p>
+                  <p className="text-sm font-bold text-mira-text">{rules.nifasMax} дн.</p>
+                </div>
+              </div>
+              <p className="text-xs text-mira-muted">{rules.notes}</p>
+            </Card>
+          </motion.div>
+
+          {/* Education cards */}
+          {educationCards.map((card, i) => (
+            <motion.div key={i} variants={fadeUp}>
+              <Card className="p-5">
+                <p className="text-sm font-bold text-mira-text mb-2">{card.title}</p>
+                <p className="text-xs text-mira-muted leading-relaxed">{card.body}</p>
+              </Card>
+            </motion.div>
+          ))}
+
+          {/* Duas collection */}
+          <motion.div variants={fadeUp}>
+            <Card className="p-5">
+              <p className="text-sm font-bold text-mira-text mb-3">Зикр и дуа для дней хайда</p>
+              <div className="space-y-4">
+                {haydDuas.map((dua, i) => (
+                  <div key={i} className="rounded-xl bg-mira-bg p-3">
+                    <p className="text-base font-bold text-mira-text text-right leading-loose" dir="rtl">{dua.arabic}</p>
+                    <p className="text-xs text-mira-primary font-semibold mt-1">{dua.transliteration}</p>
+                    <p className="text-[11px] text-mira-muted mt-0.5">{dua.translation}</p>
                   </div>
                 ))}
-              {(!data.islamicEntries || Object.keys(data.islamicEntries).length === 0) && (
-                <p className="text-xs text-mira-muted italic">Пока нет записей</p>
-              )}
-            </div>
-          </Card>
+              </div>
+            </Card>
+          </motion.div>
 
           {/* Disclaimer */}
-          <div className="flex items-start gap-2 rounded-2xl border border-mira-success/20 bg-[#E0F5E8]/50 p-3">
-            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-mira-success" />
-            <p className="text-xs text-mira-success">Mira не является источником фетв. В спорных вопросах лучше обратиться к знающему специалисту.</p>
-          </div>
+          <motion.div variants={fadeUp}>
+            <div className="rounded-2xl border border-mira-lavender/20 bg-white p-4">
+              <div className="flex items-start gap-2">
+                <Shield className="mt-0.5 h-4 w-4 shrink-0 text-mira-muted" />
+                <p className="text-xs text-mira-muted">
+                  Приложение не является источником фетв. В спорных вопросах обращайся к знающему учёному.
+                  Информация приведена в образовательных целях на основе классического фикха.
+                </p>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </motion.div>
   );
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }

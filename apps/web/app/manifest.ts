@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Mira — Слушай себя",
-    short_name: "Mira",
-    description: "Приватное веб-приложение для отслеживания цикла, самочувствия, питания и активности.",
+    name: "Моя Норма — Знай свою норму",
+    short_name: "Моя Норма",
+    description: "Приватный умный дневник женского здоровья: цикл, симптомы, личная норма, аналитика и отчёт врачу.",
     start_url: "/",
     display: "standalone",
     background_color: "#F8F5FE",

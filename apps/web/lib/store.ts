@@ -1,4 +1,4 @@
-import type { MiraLocalData, DailyCheckIn, WorkoutLog, UserProfile, IslamicEntry, CyclePhase } from "./types";
+import type { MiraLocalData, DailyCheckIn, WorkoutLog, UserProfile, IslamicEntry, CyclePhase, WaterEntry } from "./types";
 
 const STORAGE_KEY = "mira:data";
 const DATA_VERSION = 2;
@@ -124,8 +124,11 @@ export function getCycleDay(profile: UserProfile | undefined): number {
 
 export function getCyclePhase(day: number, periodLength = 5, cycleLength = 28): CyclePhase {
   if (day <= periodLength) return "menstruation";
-  if (day <= cycleLength - 16) return "follicular";
-  if (day <= cycleLength - 12) return "ovulation";
+  const remaining = cycleLength - periodLength;
+  const follEnd = periodLength + Math.round(remaining * 0.4);
+  const ovulEnd = follEnd + Math.round(remaining * 0.12);
+  if (day <= follEnd) return "follicular";
+  if (day <= ovulEnd) return "ovulation";
   return "luteal";
 }
 
@@ -143,4 +146,35 @@ export function getDaysUntilPeriod(profile: UserProfile | undefined): number {
   if (!profile) return 0;
   const day = getCycleDay(profile);
   return Math.max(0, profile.cycleConfig.cycleLength - day);
+}
+
+// ── Water tracking ──
+
+export function getWaterEntry(data: MiraLocalData, date?: string): WaterEntry {
+  const key = date ?? dateKey();
+  return data.waterLog?.[key] ?? { date: key, glasses: 0, goal: 8 };
+}
+
+export function addWaterGlass(data: MiraLocalData): MiraLocalData {
+  const key = dateKey();
+  const existing = getWaterEntry(data, key);
+  return {
+    ...data,
+    waterLog: {
+      ...data.waterLog,
+      [key]: { ...existing, date: key, glasses: existing.glasses + 1 },
+    },
+  };
+}
+
+export function removeWaterGlass(data: MiraLocalData): MiraLocalData {
+  const key = dateKey();
+  const existing = getWaterEntry(data, key);
+  return {
+    ...data,
+    waterLog: {
+      ...data.waterLog,
+      [key]: { ...existing, date: key, glasses: Math.max(0, existing.glasses - 1) },
+    },
+  };
 }

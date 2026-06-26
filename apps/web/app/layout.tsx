@@ -10,14 +10,14 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Mira — Слушай себя",
-  description: "Приватное веб-приложение для отслеживания цикла, самочувствия, питания и активности.",
-  applicationName: "Mira",
+  title: "Моя Норма — Знай свою норму",
+  description: "Приватный умный дневник женского здоровья: цикл, симптомы, личная норма, аналитика и отчёт врачу.",
+  applicationName: "Моя Норма",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Mira"
+    title: "Моя Норма"
   },
   icons: {
     icon: [

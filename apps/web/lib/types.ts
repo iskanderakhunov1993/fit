@@ -83,10 +83,14 @@ export type DailyCheckIn = {
   pms?: PmsEntry;
   meals?: MealEntry[];
   note?: NoteEntry;
+  discharge?: string;
+  stress?: string;
 };
 
 // Workout
-export type ActivityType = "rest" | "breathing" | "stretching" | "walk" | "yoga" | "light_strength" | "moderate_strength" | "light_cardio";
+export type ActivityType = "rest" | "breathing" | "stretching" | "walk" | "yoga" | "light_strength" | "moderate_strength" | "light_cardio" | "run" | "hiit" | "pilates" | "swim" | "dance";
+export type WorkoutLocation = "gym" | "home" | "outdoor";
+export type WorkoutEquipment = "full" | "minimal" | "none";
 export type WorkoutLog = {
   id: string;
   date: string;
@@ -94,6 +98,27 @@ export type WorkoutLog = {
   activityType: ActivityType;
   durationMinutes?: number;
   title: string;
+  exercises?: GeneratedExercise[];
+  location?: WorkoutLocation;
+};
+
+export type GeneratedExercise = {
+  name: string;
+  sets?: number;
+  reps?: string;
+  duration?: string;
+  rest?: string;
+};
+
+export type GeneratedWorkout = {
+  id: string;
+  title: string;
+  duration: string;
+  intensity: "light" | "moderate" | "intense";
+  exercises: GeneratedExercise[];
+  warmup: string;
+  cooldown: string;
+  phaseNote: string;
 };
 
 // Profile
@@ -114,6 +139,7 @@ export type UserProfile = {
   cycleConfig: CycleConfig;
   trackingPreferences: TrackingCategory[];
   additionalMode: AdditionalMode;
+  madhab?: "hanafi" | "shafii" | "maliki" | "hanbali";
   pinEnabled: boolean;
   hiddenNotifications: boolean;
   privateMarks: boolean;
@@ -136,12 +162,20 @@ export type IslamicEntry = {
   note?: string;
 };
 
+// Water tracking
+export type WaterEntry = {
+  date: string;
+  glasses: number;
+  goal: number;
+};
+
 // Full local data store
 export type MiraLocalData = {
   version: number;
   profile?: UserProfile;
   checkIns: Record<string, DailyCheckIn>; // keyed by YYYY-MM-DD
   workouts: WorkoutLog[];
+  waterLog?: Record<string, WaterEntry>; // keyed by YYYY-MM-DD
   islamicEntries?: Record<string, IslamicEntry>;
   onboardingCompleted: boolean;
 };

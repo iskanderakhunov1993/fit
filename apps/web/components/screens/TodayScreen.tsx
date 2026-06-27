@@ -14,6 +14,7 @@ import {
   Minus,
   Plus,
   Shirt,
+  X,
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ import { getDayStatus, getQadaStats, type Madhab } from "@/lib/islamic";
 import { getAgeConfig } from "@/lib/ageMode";
 import { NormaScanCard } from "./NormaScanCard";
 import type { ScreenProps } from "./types";
-import type { CyclePhase, DailyCheckIn, MiraLocalData } from "@/lib/types";
+import type { CyclePhase, DailyCheckIn, MiraLocalData, PeriodKit, PeriodKitItemId } from "@/lib/types";
 
 type PhaseInfo = {
   emoji: string;
@@ -86,6 +87,26 @@ const phaseConfig: Record<CyclePhase, PhaseInfo> = {
     fertility: { level: "Низкая", emoji: "🟢", note: "Фертильность снижается. Но ни один день не является полностью безопасным." },
   },
 };
+
+const periodKitItems: Array<{ id: PeriodKitItemId; label: string; hint: string; essential?: boolean }> = [
+  { id: "pads", label: "Прокладки", hint: "2-3 штуки в сумку", essential: true },
+  { id: "tampons", label: "Тампоны", hint: "Если пользуешься" },
+  { id: "cup", label: "Менструальная чаша", hint: "Если это твой вариант" },
+  { id: "pain_relief", label: "Обезболивающее", hint: "Только привычное и разрешённое тебе", essential: true },
+  { id: "heating_pad", label: "Грелка", hint: "Дома или мини-формат" },
+  { id: "wet_wipes", label: "Влажные салфетки", hint: "Для дороги и работы", essential: true },
+  { id: "spare_underwear", label: "Запасное бельё", hint: "На всякий случай", essential: true },
+  { id: "water", label: "Вода", hint: "Маленькая бутылка", essential: true },
+  { id: "snack", label: "Шоколад / перекус", hint: "Что-то маленькое и сытное" },
+];
+
+function normalizePeriodKit(kit?: PeriodKit): PeriodKit {
+  const checked = new Map((kit?.items ?? []).map((item) => [item.id, item.checked]));
+  return {
+    updatedAt: kit?.updatedAt,
+    items: periodKitItems.map((item) => ({ id: item.id, checked: checked.get(item.id) ?? false })),
+  };
+}
 
 // ── Apple-style Horizontal Calendar + Tracker ──
 
@@ -496,35 +517,154 @@ function getPeriodPrep(daysUntil: number, phase: CyclePhase) {
   };
 }
 
-function FirstAidCard({ daysUntil, phase }: { daysUntil: number; phase: CyclePhase }) {
+function FirstAidCard({ data, persist, daysUntil, phase }: { data: MiraLocalData; persist: (data: MiraLocalData) => void; daysUntil: number; phase: CyclePhase }) {
   const prep = getPeriodPrep(daysUntil, phase);
+  const [open, setOpen] = useState(false);
+  const kit = normalizePeriodKit(data.periodKit);
+  const readyCount = kit.items.filter((item) => item.checked).length;
+  const readyTotal = kit.items.length;
+  const essentialTotal = periodKitItems.filter((item) => item.essential).length;
+  const essentialReady = periodKitItems.filter((item) => item.essential && kit.items.find((kitItem) => kitItem.id === item.id)?.checked).length;
+  const isClose = phase === "menstruation" || daysUntil <= 3;
+
+  function toggleKitItem(id: PeriodKitItemId) {
+    const nextKit = normalizePeriodKit(data.periodKit);
+    persist({
+      ...data,
+      periodKit: {
+        updatedAt: new Date().toISOString(),
+        items: nextKit.items.map((item) => item.id === id ? { ...item, checked: !item.checked } : item),
+      },
+    });
+  }
+
+  function resetKit() {
+    persist({
+      ...data,
+      periodKit: {
+        updatedAt: new Date().toISOString(),
+        items: normalizePeriodKit(data.periodKit).items.map((item) => ({ ...item, checked: false })),
+      },
+    });
+  }
+
   return (
-    <Card className={`min-h-[154px] p-3.5 ${prep.tone}`}>
+    <>
+    <Card
+      className={`min-h-[154px] cursor-pointer p-3.5 transition active:scale-[0.99] ${prep.tone}`}
+      onClick={() => setOpen(true)}
+    >
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className={`text-[10px] font-bold uppercase tracking-widest ${prep.accent}`}>Аптечка</p>
+          <p className={`text-[10px] font-bold uppercase tracking-widest ${prep.accent}`}>Моя аптечка</p>
           <p className="mt-1 text-sm font-bold leading-snug text-mira-text">{prep.firstAidTitle}</p>
         </div>
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70">
           <BriefcaseMedical className={`h-4 w-4 ${prep.accent}`} />
         </span>
       </div>
-      <p className="min-h-[48px] text-[11px] leading-snug text-mira-muted">{prep.firstAidBody}</p>
+      <p className="min-h-[48px] text-[11px] leading-snug text-mira-muted">
+        {isClose && essentialReady < essentialTotal
+          ? "Скоро месячные. Проверь главное: прокладки, салфетки, бельё, вода и привычное средство от боли."
+          : prep.firstAidBody}
+      </p>
       <div className="mt-3">
         <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-mira-muted">
-          <span>{prep.status}</span>
-          <span>{prep.level}/4</span>
+          <span>{readyCount === readyTotal ? "Аптечка готова" : prep.status}</span>
+          <span>{readyCount}/{readyTotal}</span>
         </div>
-        <div className="grid grid-cols-4 gap-1">
-          {[1, 2, 3, 4].map((level) => (
+        <div className="grid grid-cols-9 gap-1">
+          {kit.items.map((item) => (
             <span
-              key={level}
-              className={`h-1.5 rounded-full ${level <= prep.level ? prep.fill : "bg-mira-lavender-light"}`}
+              key={item.id}
+              className={`h-1.5 rounded-full ${item.checked ? prep.fill : "bg-mira-lavender-light"}`}
             />
           ))}
         </div>
       </div>
     </Card>
+    {open && (
+      <div className="fixed inset-0 z-50">
+        <button
+          type="button"
+          aria-label="Закрыть аптечку"
+          className="absolute inset-0 bg-black/25 backdrop-blur-[2px]"
+          onClick={() => setOpen(false)}
+        />
+        <div className="absolute inset-x-4 bottom-4 max-h-[86vh] overflow-y-auto rounded-2xl bg-white p-4 shadow-soft md:left-1/2 md:top-1/2 md:bottom-auto md:w-[460px] md:-translate-x-1/2 md:-translate-y-1/2">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-mira-cycle">Аптечка месячных</p>
+              <h2 className="mt-1 text-xl font-bold text-mira-text">Моя аптечка</h2>
+              <p className="mt-1 text-sm leading-relaxed text-mira-muted">
+                Отметь, что уже есть дома или в сумке. За 1-3 дня до месячных Mira напомнит проверить запас.
+              </p>
+            </div>
+            <button type="button" onClick={() => setOpen(false)} className="rounded-lg p-2 text-mira-muted hover:bg-mira-lavender-light">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {isClose && readyCount < readyTotal && (
+            <div className="mb-3 rounded-lg border border-mira-cycle/20 bg-[#F8E8EE]/55 p-3">
+              <p className="text-sm font-bold text-mira-text">Скоро месячные. Проверь, есть ли всё в аптечке.</p>
+              <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+                Главное сейчас: средства гигиены, запасное бельё, вода и то, что обычно помогает тебе при боли.
+              </p>
+            </div>
+          )}
+
+          <div className="mb-4 rounded-lg border border-mira-lavender/20 bg-mira-bg p-3">
+            <div className="mb-2 flex items-center justify-between text-xs font-bold text-mira-text">
+              <span>Готовность</span>
+              <span>{readyCount}/{readyTotal}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white">
+              <div className="h-full rounded-full bg-mira-cycle transition-all" style={{ width: `${Math.round((readyCount / readyTotal) * 100)}%` }} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {periodKitItems.map((item) => {
+              const checked = kit.items.find((kitItem) => kitItem.id === item.id)?.checked ?? false;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => toggleKitItem(item.id)}
+                  className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition active:scale-[0.99] ${
+                    checked ? "border-mira-success/25 bg-[#E0F5E8]/45" : item.essential ? "border-mira-cycle/15 bg-[#F8E8EE]/25" : "border-mira-lavender/20 bg-white"
+                  }`}
+                >
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                    checked ? "border-mira-success bg-mira-success text-white" : "border-mira-lavender bg-white text-transparent"
+                  }`}>
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold text-mira-text">{item.label}</span>
+                    <span className="block text-xs leading-relaxed text-mira-muted">{item.hint}</span>
+                  </span>
+                  {item.essential && <span className="rounded-full bg-white/70 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-mira-cycle">важно</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <Button className="flex-1" onClick={() => setOpen(false)}>Готово</Button>
+            <button
+              type="button"
+              onClick={resetKit}
+              className="rounded-lg border border-mira-lavender/25 px-3 text-xs font-bold text-mira-muted transition hover:bg-mira-lavender-light"
+            >
+              Сбросить
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -795,7 +935,7 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState }: 
         </div>
         <NutritionRing data={data} phase={phase} onOpen={() => navigate("care")} />
         <WaterBottle data={data} onOpen={() => navigate("care")} />
-        <FirstAidCard daysUntil={daysUntil} phase={phase} />
+        <FirstAidCard data={data} persist={persist} daysUntil={daysUntil} phase={phase} />
         <ClothingCard daysUntil={daysUntil} phase={phase} />
       </motion.div>
 

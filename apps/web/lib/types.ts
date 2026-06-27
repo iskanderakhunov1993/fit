@@ -201,6 +201,27 @@ export type WalkingEntry = {
   source?: "manual" | "sync";
 };
 
+export type PeriodKitItemId =
+  | "pads"
+  | "tampons"
+  | "cup"
+  | "pain_relief"
+  | "heating_pad"
+  | "wet_wipes"
+  | "spare_underwear"
+  | "water"
+  | "snack";
+
+export type PeriodKitItem = {
+  id: PeriodKitItemId;
+  checked: boolean;
+};
+
+export type PeriodKit = {
+  items: PeriodKitItem[];
+  updatedAt?: string;
+};
+
 // Lab tests — результаты анализов (часть 2 фичи «Анализы»)
 export type LabResult = {
   id: string;
@@ -219,6 +240,7 @@ export type MiraLocalData = {
   workouts: WorkoutLog[];
   waterLog?: Record<string, WaterEntry>; // keyed by YYYY-MM-DD
   walkingLog?: Record<string, WalkingEntry>; // keyed by YYYY-MM-DD
+  periodKit?: PeriodKit;
   islamicEntries?: Record<string, IslamicEntry>;
   labs?: LabResult[]; // результаты анализов (необяз., обратная совместимость)
   onboardingCompleted: boolean;

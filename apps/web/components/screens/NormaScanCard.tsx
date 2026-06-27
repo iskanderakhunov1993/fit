@@ -33,16 +33,16 @@ export function NormaScanCard({ data, onOpenAnalytics, onOpenReport }: Props) {
         </span>
       </button>
 
-      {/* Список метрик: эмодзи + надпись + кружок-светофор */}
-      <button onClick={onOpenAnalytics} className="flex w-full flex-col gap-1">
+      {/* Метрики строкой: эмодзи + надпись + кружок-светофор */}
+      <button onClick={onOpenAnalytics} className="flex w-full items-start justify-between gap-1">
         {summary.metrics.map((m) => {
           const meta = statusMeta[m.status];
           return (
-            <div key={m.id} className="flex items-center gap-2.5 rounded-xl px-1.5 py-2">
+            <div key={m.id} className="flex flex-1 flex-col items-center gap-1">
               <span className="text-lg leading-none">{m.emoji}</span>
-              <span className="flex-1 text-left text-sm font-semibold text-mira-text">{m.label}</span>
+              <span className="text-[11px] font-semibold text-mira-text">{m.label}</span>
               <span
-                className="h-3.5 w-3.5 rounded-full border-2"
+                className="h-3 w-3 rounded-full border-2"
                 style={{ background: meta.color, borderColor: `${meta.color}55` }}
               />
             </div>

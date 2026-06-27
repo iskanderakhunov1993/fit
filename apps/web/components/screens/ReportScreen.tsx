@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getDoctorScript } from "@/lib/alerts";
+import { evaluateLab, getLabRange } from "@/lib/labs";
+import { LabsSection } from "./LabsSection";
 import type { ScreenProps } from "./types";
 
 const periods = [
@@ -19,7 +21,7 @@ const periods = [
   { label: "12 месяцев", months: 12 },
 ];
 
-export function ReportScreen({ data }: ScreenProps) {
+export function ReportScreen({ data, persist }: ScreenProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(3);
   const [includeSex, setIncludeSex] = useState(false);
   const [generated, setGenerated] = useState(true); // показываем превью сразу
@@ -104,6 +106,18 @@ export function ReportScreen({ data }: ScreenProps) {
     report += `СОН\n`;
     report += `Дней с плохим сном: ${badSleepDays.length}\n\n`;
 
+    const labs = data.labs ?? [];
+    if (labs.length > 0) {
+      report += `АНАЛИЗЫ\n`;
+      for (const lab of labs) {
+        const r = getLabRange(lab.testId);
+        const ev = evaluateLab(lab.testId, lab.value);
+        const flag = ev && ev.status !== "ok" ? ` [${ev.label}]` : "";
+        report += `— ${r?.name ?? lab.testId}: ${lab.value} ${lab.unit} (${lab.date})${flag}\n`;
+      }
+      report += "\n";
+    }
+
     if (questions.length > 0) {
       report += `ВОПРОСЫ ВРАЧУ\n`;
       questions.forEach((q, i) => { report += `${i + 1}. ${q}\n`; });
@@ -152,6 +166,11 @@ export function ReportScreen({ data }: ScreenProps) {
           </div>
         )}
       </Card>
+
+      {/* Анализы — рекомендации + ввод результатов */}
+      <div className="mb-5 print:hidden">
+        <LabsSection data={data} persist={persist} />
+      </div>
 
       {/* Generated report */}
       {generated && (

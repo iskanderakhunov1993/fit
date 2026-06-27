@@ -170,6 +170,16 @@ export type WaterEntry = {
   goal: number;
 };
 
+// Lab tests — результаты анализов (часть 2 фичи «Анализы»)
+export type LabResult = {
+  id: string;
+  testId: string; // ключ из labCatalog (lib/labs.ts)
+  value: number;
+  unit: string;
+  date: string;   // YYYY-MM-DD — дата сдачи
+  note?: string;
+};
+
 // Full local data store
 export type MiraLocalData = {
   version: number;
@@ -178,5 +188,6 @@ export type MiraLocalData = {
   workouts: WorkoutLog[];
   waterLog?: Record<string, WaterEntry>; // keyed by YYYY-MM-DD
   islamicEntries?: Record<string, IslamicEntry>;
+  labs?: LabResult[]; // результаты анализов (необяз., обратная совместимость)
   onboardingCompleted: boolean;
 };

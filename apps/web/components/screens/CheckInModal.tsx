@@ -90,6 +90,7 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
   const [intimacyHappened, setIntimacyHappened] = useState(false);
   const [intimacyProtection, setIntimacyProtection] = useState<IntimacyProtection | null>(null);
   const [intimacyFeeling, setIntimacyFeeling] = useState<IntimacyFeeling | null>(null);
+  const [intimacyBleedingAfter, setIntimacyBleedingAfter] = useState(false);
   const [intimacyShowCalendar, setIntimacyShowCalendar] = useState(false);
   const [discharge, setDischarge] = useState<string | null>(null);
   const [stressLevel, setStressLevel] = useState<string | null>(null);
@@ -114,6 +115,7 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
       setIntimacyHappened(existing.intimacy?.happened ?? false);
       setIntimacyProtection(existing.intimacy?.protection ?? null);
       setIntimacyFeeling(existing.intimacy?.feeling ?? null);
+      setIntimacyBleedingAfter(existing.intimacy?.bleedingAfter ?? false);
       setIntimacyShowCalendar(existing.intimacy?.showInCalendar ?? false);
       setDischarge(existing.discharge ?? null);
       setStressLevel(existing.stress ?? null);
@@ -142,7 +144,13 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
     if (energy) checkIn.energy = { value: energy };
     if (sleepQuality) checkIn.sleep = { quality: sleepQuality, hours: sleepHours ?? undefined };
     if (intimacyHappened || existing?.intimacy) {
-      checkIn.intimacy = { happened: intimacyHappened, protection: intimacyProtection ?? undefined, feeling: intimacyFeeling ?? undefined, showInCalendar: intimacyShowCalendar };
+      checkIn.intimacy = {
+        happened: intimacyHappened,
+        protection: intimacyProtection ?? undefined,
+        feeling: intimacyFeeling ?? undefined,
+        bleedingAfter: intimacyBleedingAfter || undefined,
+        showInCalendar: intimacyShowCalendar,
+      };
     }
     if (pmsSelected.length > 0) checkIn.pms = { symptoms: pmsSelected };
     if (noteText.trim()) checkIn.note = { text: noteText.trim() };
@@ -437,19 +445,74 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
         <>
           <h3 className="mb-1 text-lg font-bold text-mira-text">Секс</h3>
           <p className="mb-4 text-xs text-mira-muted">Данные приватны и скрыты по умолчанию</p>
-          <p className="mb-2 text-sm font-semibold text-mira-text">Был защищённый секс?</p>
-          <div className="mb-4 grid grid-cols-3 gap-2">
+          <p className="mb-2 text-sm font-semibold text-mira-text">Был секс?</p>
+          <div className="mb-4 grid grid-cols-2 gap-2">
             {[
-              { label: "Да", value: "protected" as IntimacyProtection },
-              { label: "Нет", value: "unprotected" as IntimacyProtection },
-              { label: "Не хочу указывать", value: null },
+              { label: "Да", value: true },
+              { label: "Нет", value: false },
             ].map(opt => (
-              <button key={opt.label} onClick={() => { setIntimacyHappened(true); setIntimacyProtection(opt.value); }}
-                className={`rounded-2xl border p-3 text-xs font-semibold transition ${
-                  intimacyHappened && intimacyProtection === opt.value ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              <button key={opt.label} onClick={() => {
+                setIntimacyHappened(opt.value);
+                if (!opt.value) {
+                  setIntimacyProtection(null);
+                  setIntimacyFeeling(null);
+                  setIntimacyBleedingAfter(false);
+                }
+              }}
+                className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                  intimacyHappened === opt.value ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
                 }`}>{opt.label}</button>
             ))}
           </div>
+
+          {intimacyHappened && (
+            <>
+              <p className="mb-2 text-sm font-semibold text-mira-text">Защита</p>
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                {[
+                  { label: "Защищённый", value: "protected" as IntimacyProtection },
+                  { label: "Незащищённый", value: "unprotected" as IntimacyProtection },
+                  { label: "Прерванный", value: "interrupted" as IntimacyProtection },
+                  { label: "Не хочу указывать", value: null },
+                ].map(opt => (
+                  <button key={opt.label} onClick={() => setIntimacyProtection(opt.value)}
+                    className={`rounded-2xl border p-3 text-xs font-semibold transition ${
+                      intimacyProtection === opt.value ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+                    }`}>{opt.label}</button>
+                ))}
+              </div>
+
+              <p className="mb-2 text-sm font-semibold text-mira-text">Что было по ощущениям</p>
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                {[
+                  { label: "Нормально", value: "normal" as IntimacyFeeling },
+                  { label: "Хорошо", value: "good" as IntimacyFeeling },
+                  { label: "Дискомфорт", value: "discomfort" as IntimacyFeeling },
+                  { label: "Боль", value: "pain" as IntimacyFeeling },
+                ].map(opt => (
+                  <button key={opt.label} onClick={() => setIntimacyFeeling(opt.value)}
+                    className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                      intimacyFeeling === opt.value ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+                    }`}>{opt.label}</button>
+                ))}
+              </div>
+
+              <div className="mb-4 flex items-center justify-between rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+                <span className="text-sm text-mira-text">Была кровь после секса</span>
+                <Toggle on={intimacyBleedingAfter} onToggle={() => setIntimacyBleedingAfter(!intimacyBleedingAfter)} />
+              </div>
+
+              <p className="mb-2 text-sm font-semibold text-mira-text">Либидо</p>
+              <div className="mb-4 grid grid-cols-3 gap-2">
+                {(["low", "normal", "high"] as LibidoValue[]).map(v => (
+                  <button key={v} onClick={() => setLibido(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                    libido === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+                  }`}>{libidoL(v)}</button>
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="mb-4 flex items-center justify-between rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-mira-muted" />

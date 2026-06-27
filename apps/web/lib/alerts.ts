@@ -77,6 +77,91 @@ export function getSmartReminders(data: MiraLocalData): SmartReminder[] {
   return reminders;
 }
 
+export type SexCycleInsight = {
+  tone: "neutral" | "watch" | "alert";
+  title: string;
+  body: string;
+  riskLabel: string;
+  nextStep: string;
+};
+
+function getCycleDayForCheckIn(checkIn: DailyCheckIn, profile: MiraLocalData["profile"]): number {
+  const start = new Date(profile!.cycleConfig.periodStart);
+  const date = new Date(checkIn.date);
+  const diff = Math.floor((date.getTime() - start.getTime()) / 86_400_000);
+  return ((diff % profile!.cycleConfig.cycleLength) + profile!.cycleConfig.cycleLength) % profile!.cycleConfig.cycleLength + 1;
+}
+
+function getFertileWindow(profile: NonNullable<MiraLocalData["profile"]>) {
+  const { cycleLength, periodLength } = profile.cycleConfig;
+  const ovulationDay = Math.max(periodLength + 2, Math.round(cycleLength - 14));
+  return {
+    start: Math.max(periodLength + 1, ovulationDay - 5),
+    end: Math.min(cycleLength, ovulationDay + 1),
+  };
+}
+
+export function getSexCycleInsight(data: MiraLocalData): SexCycleInsight | null {
+  const profile = data.profile;
+  if (!profile) return null;
+
+  const intimacyEntries = Object.values(data.checkIns)
+    .filter((checkIn) => checkIn.intimacy?.happened)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if (intimacyEntries.length === 0) return null;
+
+  const latest = intimacyEntries[0];
+  const intimacy = latest.intimacy!;
+  const cycleDay = getCycleDayForCheckIn(latest, profile);
+  const window = getFertileWindow(profile);
+  const inFertileWindow = cycleDay >= window.start && cycleDay <= window.end;
+  const daysSinceSex = Math.max(0, Math.floor((new Date(dateKey()).getTime() - new Date(latest.date).getTime()) / 86_400_000));
+  const delayDays = getCycleDay(profile) - profile.cycleConfig.cycleLength;
+
+  const hadUnprotectedRisk = intimacy.protection === "unprotected" || intimacy.protection === "interrupted";
+  const hasPain = intimacy.feeling === "pain" || intimacy.feeling === "discomfort";
+  const hasBleeding = intimacy.bleedingAfter === true;
+
+  if (hasBleeding || hasPain) {
+    return {
+      tone: hasBleeding ? "alert" : "watch",
+      title: hasBleeding ? "После секса была кровь" : "После секса был дискомфорт",
+      body: hasBleeding
+        ? "Если кровь после секса повторяется, сопровождается болью или её больше, чем пару следов, лучше обсудить это с врачом."
+        : "Если боль или дискомфорт повторяются, это не стоит терпеть молча — лучше обсудить это с врачом.",
+      riskLabel: hadUnprotectedRisk ? (inFertileWindow ? "Риск беременности выше" : "Риск беременности есть") : "Риск беременности ниже",
+      nextStep: hasBleeding ? "Следи, повторяется ли кровь после секса." : "Отметь, был ли дискомфорт снова в следующий раз.",
+    };
+  }
+
+  if (hadUnprotectedRisk) {
+    const riskLabel = inFertileWindow ? "Высокий риск беременности" : "Риск беременности есть";
+    const nextStep = delayDays >= 1 || daysSinceSex >= 14
+      ? "Если месячные не пришли, тест уже уместен."
+      : daysSinceSex >= 10
+        ? "Тест обычно информативнее через 10-14 дней после секса."
+        : "Поставь себе напоминание о тесте через несколько дней.";
+    return {
+      tone: inFertileWindow ? "alert" : "watch",
+      title: intimacy.protection === "interrupted" ? "Был прерванный половой акт" : "Был незащищённый секс",
+      body: inFertileWindow
+        ? "Это совпало с окном, где вероятность беременности выше. Mira не ставит диагноз, но лучше заранее понимать следующий шаг."
+        : "Беременность возможна даже вне предполагаемой овуляции, поэтому лучше ориентироваться на дату секса и задержку.",
+      riskLabel,
+      nextStep,
+    };
+  }
+
+  return {
+    tone: "neutral",
+    title: "Секс отмечен",
+    body: "Если после секса появятся боль, кровь или задержка, Mira подскажет, что отслеживать дальше.",
+    riskLabel: "Защита отмечена",
+    nextStep: "Если цикл задержится, ориентируйся на дату последнего секса и тест.",
+  };
+}
+
 // ── #2 Red Flags ──
 
 export type RedFlag = {

@@ -159,6 +159,22 @@ function checkInItems(checkIn: DailyCheckIn | undefined) {
       value: checkIn.pms.symptoms.slice(0, 2).join(", "),
     });
   }
+  if (checkIn.intimacy?.happened) {
+    const parts = [
+      checkIn.intimacy.protection === "protected" ? "защищённый" : null,
+      checkIn.intimacy.protection === "unprotected" ? "незащищённый" : null,
+      checkIn.intimacy.protection === "interrupted" ? "прерванный" : null,
+      checkIn.intimacy.feeling === "pain" ? "боль" : null,
+      checkIn.intimacy.feeling === "discomfort" ? "дискомфорт" : null,
+      checkIn.intimacy.bleedingAfter ? "кровь после" : null,
+    ].filter(Boolean);
+    items.push({
+      key: "intimacy",
+      icon: Sparkles,
+      label: "Секс",
+      value: parts.join(", ") || "отмечен",
+    });
+  }
   if (checkIn.symptomLog) {
     const values = [
       checkIn.symptomLog.appetite ? appetiteLabels[checkIn.symptomLog.appetite] : null,

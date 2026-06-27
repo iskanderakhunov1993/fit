@@ -48,6 +48,7 @@ export type IntimacyEntry = {
   happened: boolean;
   protection?: IntimacyProtection;
   feeling?: IntimacyFeeling;
+  bleedingAfter?: boolean;
   showInCalendar?: boolean;
 };
 

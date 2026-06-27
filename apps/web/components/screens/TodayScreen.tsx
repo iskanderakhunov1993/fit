@@ -26,7 +26,7 @@ import {
   getDaysUntilPeriod, getCheckIn, getWalkingEntry, getWaterEntry,
 } from "@/lib/store";
 import { getPeriodForecast } from "@/lib/cycleEngine";
-import { getSmartReminders, getRedFlags, getToughDayContent } from "@/lib/alerts";
+import { getSexCycleInsight, getSmartReminders, getRedFlags, getToughDayContent } from "@/lib/alerts";
 import { getVitaminRecommendations } from "@/lib/vitamins";
 import { getStreak } from "@/lib/gamification";
 import { getDayStatus, getQadaStats, type Madhab } from "@/lib/islamic";
@@ -753,6 +753,7 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState }: 
   const config = phaseConfig[phase];
   const toughDay = getToughDayContent(data);
   const redFlags = getRedFlags(data);
+  const sexInsight = getSexCycleInsight(data);
   const reminders = getSmartReminders(data);
   const vitaminCard = getVitaminRecommendations(data);
   const forecast = getPeriodForecast(profile);
@@ -913,6 +914,37 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState }: 
           <p className="mt-1 text-[11px] leading-snug text-mira-muted">{shorten(vitaminBody, 70)}</p>
         </Card>
       </motion.div>
+
+      {sexInsight && (
+        <motion.div variants={fadeUp} className="mb-4">
+          <Card className={`p-3.5 ${
+            sexInsight.tone === "alert"
+              ? "border-mira-cycle/20 bg-[#F8E8EE]/45"
+              : sexInsight.tone === "watch"
+                ? "border-[#C4B07E]/20 bg-[#F5F0E0]/40"
+                : "border-mira-lavender/20 bg-white"
+          }`}>
+            <div className="mb-2 flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/70 text-base">❤️</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Секс и цикл</p>
+                <p className="mt-0.5 text-sm font-bold leading-snug text-mira-text">{sexInsight.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-mira-muted">{sexInsight.body}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-white/70 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Риск</p>
+                <p className="mt-1 text-xs font-semibold text-mira-text">{sexInsight.riskLabel}</p>
+              </div>
+              <div className="rounded-lg bg-white/70 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Что дальше</p>
+                <p className="mt-1 text-xs font-semibold text-mira-text">{sexInsight.nextStep}</p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Islamic: qada (если есть) */}
       {isIslamic && qadaStats && qadaStats.remaining > 0 && (

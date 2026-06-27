@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import {
   UserRound, Calendar, Shield, Download, Trash2,
-  ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon, Award,
+  ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon, Award, Cloud,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { SyncSettings } from "@/components/sync/SyncSettings";
 import { madhabs, type Madhab } from "@/lib/islamic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,7 +28,14 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
   const profile = data.profile;
   const [section, setSection] = useState<string | null>(null);
   const [notifOn, setNotifOn] = useState(false);
+  const [syncEmail, setSyncEmail] = useState<string | null>(null);
   useEffect(() => { setNotifOn(notificationsEnabled()); }, []);
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getUser().then(({ data: u }) => setSyncEmail(u.user?.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSyncEmail(s?.user?.email ?? null));
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   async function toggleNotifications() {
     if (notifOn) {
@@ -76,12 +85,23 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
     {
       title: "Данные и приватность",
       items: [
+        { icon: Cloud, label: "Синхронизация", desc: syncEmail ? `Включена · ${syncEmail}` : "Резервная копия между устройствами", id: "sync" },
         { icon: Shield, label: "Приватность", desc: "Напоминания, отметки", id: "privacy" },
         { icon: Database, label: "Хранение данных", desc: "Что храним и где", id: "mydata" },
         { icon: Download, label: "Экспорт данных", desc: "Скачать свою копию", id: "export" },
       ],
     },
   ];
+
+  if (section === "sync") {
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">Синхронизация</h1>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
+        <SyncSettings data={data} persist={persist} />
+      </div>
+    );
+  }
 
   if (section === "islamic") {
     const currentMadhab = profile.madhab ?? "hanafi";

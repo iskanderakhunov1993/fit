@@ -1,0 +1,131 @@
+import { supabase } from "./supabase";
+import { readData, writeData } from "./store";
+import type { MiraLocalData } from "./types";
+
+/*
+ * Гибридный sync: localStorage — источник истины, Supabase — зеркало
+ * для бэкапа и синхронизации между устройствами. Стратегия — last-write-wins
+ * по серверному updated_at. Один JSONB-блоб на пользователя (таблица user_data).
+ */
+
+const LAST_PULLED_KEY = "mira:lastPulledAt"; // ISO updated_at последнего успешного pull
+
+export type SyncState =
+  | { status: "disabled" } // нет клиента Supabase или пользователь не вошёл
+  | { status: "idle"; lastSyncedAt?: string }
+  | { status: "syncing" }
+  | { status: "error"; message: string };
+
+export type CloudSnapshot = {
+  data: MiraLocalData;
+  updatedAt: string; // ISO
+};
+
+function getLastPulledAt(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(LAST_PULLED_KEY);
+}
+
+function setLastPulledAt(iso: string): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LAST_PULLED_KEY, iso);
+}
+
+/** Текущий пользователь, либо null если не вошёл / sync выключен. */
+export async function getSyncUserId(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return null;
+  return data.user.id;
+}
+
+/** Залить локальные данные в облако (upsert). Возвращает серверный updated_at. */
+export async function pushData(data: MiraLocalData): Promise<string> {
+  if (!supabase) throw new Error("Supabase не настроен");
+  const userId = await getSyncUserId();
+  if (!userId) throw new Error("Нужно войти, чтобы синхронизировать");
+
+  const { data: row, error } = await supabase
+    .from("user_data")
+    .upsert(
+      { user_id: userId, data, data_version: data.version },
+      { onConflict: "user_id" }
+    )
+    .select("updated_at")
+    .single();
+
+  if (error) throw new Error(error.message);
+  setLastPulledAt(row.updated_at);
+  return row.updated_at;
+}
+
+/** Считать облачный снимок, либо null если его ещё нет. */
+export async function pullData(): Promise<CloudSnapshot | null> {
+  if (!supabase) throw new Error("Supabase не настроен");
+  const userId = await getSyncUserId();
+  if (!userId) throw new Error("Нужно войти, чтобы синхронизировать");
+
+  const { data: row, error } = await supabase
+    .from("user_data")
+    .select("data, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!row) return null;
+  return { data: row.data as MiraLocalData, updatedAt: row.updated_at };
+}
+
+/**
+ * Синхронизация при загрузке / входе. Last-write-wins:
+ *  - облака нет        → заливаем локальные данные (первый бэкап);
+ *  - облако новее      → подтягиваем в localStorage;
+ *  - локальные новее   → заливаем (перезаписываем облако).
+ * Возвращает итоговые данные, которые теперь лежат локально.
+ */
+export async function syncOnLoad(): Promise<MiraLocalData> {
+  const local = readData();
+  if (!supabase) return local;
+
+  const userId = await getSyncUserId();
+  if (!userId) return local;
+
+  const cloud = await pullData();
+
+  // Облака ещё нет — заливаем то, что есть локально.
+  if (!cloud) {
+    await pushData(local);
+    return local;
+  }
+
+  const lastPulled = getLastPulledAt();
+  const cloudIsNewer = !lastPulled || cloud.updatedAt > lastPulled;
+
+  if (cloudIsNewer) {
+    // На другом устройстве данные изменились — забираем себе.
+    writeData(cloud.data);
+    setLastPulledAt(cloud.updatedAt);
+    return cloud.data;
+  }
+
+  // Локальные изменения новее облака — заливаем их.
+  await pushData(local);
+  return local;
+}
+
+/** Дебаунс-пуш: дёргать после каждого локального сохранения. */
+let pushTimer: ReturnType<typeof setTimeout> | null = null;
+export function schedulePush(data: MiraLocalData, delayMs = 2000): void {
+  if (!supabase) return;
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    pushTimer = null;
+    pushData(data).catch((e) => console.warn("sync push failed:", e));
+  }, delayMs);
+}
+
+/** Сбросить локальный маркер синка (например, при выходе). */
+export function resetSyncMarker(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(LAST_PULLED_KEY);
+}

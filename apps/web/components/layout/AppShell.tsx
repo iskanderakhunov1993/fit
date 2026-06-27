@@ -7,6 +7,7 @@ import { BottomNav } from "./BottomNav";
 import type { NavPage } from "./types";
 import type { MiraLocalData } from "@/lib/types";
 import { readData, writeData, createEmpty } from "@/lib/store";
+import { syncOnLoad, schedulePush } from "@/lib/sync";
 
 import { TodayScreen } from "@/components/screens/TodayScreen";
 import { AnalyticsScreen } from "@/components/screens/AnalyticsScreen";
@@ -34,11 +35,20 @@ export function AppShell() {
     if (loaded.onboardingCompleted) {
       import("@/lib/notifications").then(m => m.maybeShowDailyNotification(loaded));
     }
+    // Синк с облаком, если пользователь вошёл (иначе тихо отдаёт локальные данные).
+    syncOnLoad()
+      .then((merged) => {
+        setData(merged);
+        // На новом устройстве данные приходят из облака — показываем приложение.
+        if (merged.onboardingCompleted && merged.profile) setShowApp(true);
+      })
+      .catch((e) => console.warn("syncOnLoad failed:", e));
   }, []);
 
   const persist = useCallback((next: MiraLocalData) => {
     setData(next);
     writeData(next);
+    schedulePush(next); // дебаунс-пуш в облако (no-op, если не вошёл)
   }, []);
 
   const openCheckIn = useCallback((date?: string) => {

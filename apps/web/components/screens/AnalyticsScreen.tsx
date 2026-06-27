@@ -66,6 +66,16 @@ const painLabels: Record<string, string> = {
   back: "Спина",
   ovulatory: "Овуляторная",
 };
+const appetiteLabels: Record<string, string> = {
+  low: "Низкий аппетит",
+  normal: "Обычный аппетит",
+  high: "Высокий аппетит",
+};
+const libidoLabels: Record<string, string> = {
+  low: "Низкое либидо",
+  normal: "Обычное либидо",
+  high: "Высокое либидо",
+};
 
 const toneClass: Record<Tone, string> = {
   success: "border-mira-success/15 bg-[#E0F5E8]/30 text-mira-success",
@@ -99,6 +109,13 @@ function shortList(items: string[], empty: string) {
   if (items.length === 0) return empty;
   if (items.length <= 2) return items.join(", ");
   return `${items.slice(0, 2).join(", ")} +${items.length - 2}`;
+}
+
+function cycleDayForEntry(entry: DailyCheckIn, periodStart: string, cycleLength: number) {
+  const start = new Date(periodStart);
+  const date = new Date(entry.date);
+  const diff = Math.floor((date.getTime() - start.getTime()) / 86_400_000);
+  return ((diff % cycleLength) + cycleLength) % cycleLength + 1;
 }
 
 function renderDistribution(counts: Record<string, number>, labels: Record<string, string>, total: number, color: string) {
@@ -165,6 +182,27 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const energyEntries = checkIns.filter(c => c.energy);
   const moodEntries = checkIns.filter(c => c.mood);
   const pmsEntries = checkIns.filter(c => c.pms && c.pms.symptoms.length > 0);
+  const symptomLogEntries = checkIns.filter(c => c.symptomLog);
+  const prePeriodEntries = profile?.cycleConfig.periodStart
+    ? symptomLogEntries.filter(entry => {
+      const day = cycleDayForEntry(entry, profile.cycleConfig.periodStart, cycleLength);
+      return day > cycleLength - 7 || day <= periodLength;
+    })
+    : [];
+  const prePeriodSignals = [
+    ...prePeriodEntries.flatMap(entry => {
+      const log = entry.symptomLog;
+      if (!log) return [];
+      return [
+        log.appetite === "high" ? "растёт аппетит" : null,
+        log.sweetCraving ? "тянет к сладкому" : null,
+        log.anxiety ? "растёт тревога" : null,
+        log.libido === "low" ? "снижается либидо" : null,
+        entry.energy?.value === "low" || entry.energy?.value === "exhausted" ? "падает энергия" : null,
+      ].filter((item): item is string => Boolean(item));
+    }),
+  ];
+  const topPrePeriodSignals = Object.entries(countBy(prePeriodSignals, v => v)).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const mealDays = checkIns.filter(c => c.meals && c.meals.length > 0).length;
   const waterDays = Object.keys(data.waterLog ?? {}).length;
   const walkingEntries = Object.values(data.walkingLog ?? {}).filter(entry => entry.steps > 0);
@@ -196,6 +234,7 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
     { id: "walking", icon: Footprints, label: "Ходьба", count: walkingDays, goal: 7, unit: "дней", why: "связь с энергией и ПМС", color: "bg-mira-success" },
     { id: "pain", icon: Activity, label: "Боль", count: painEntries.length, goal: 3, unit: "раза", why: "повтор боли", color: "bg-[#C47E9B]" },
     { id: "pms", icon: Sparkles, label: "ПМС", count: pmsEntries.length, goal: 3, unit: "раза", why: "предупреждения заранее", color: "bg-[#A07EC4]" },
+    { id: "symptomLog", icon: ClipboardList, label: "Лог симптомов", count: symptomLogEntries.length, goal: 6, unit: "дней", why: "повторы перед месячными", color: "bg-[#7E9BC4]" },
   ];
 
   const readiness = Math.round(dataNeeds.reduce((sum, need) => sum + pct(need.count, need.goal), 0) / dataNeeds.length);
@@ -483,6 +522,43 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
                   </div>
                 );
               })()}
+            </div>
+          </Card>
+
+          <Card className="border-mira-primary/10 bg-mira-lavender-light/20 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Повторяется перед месячными</p>
+            {topPrePeriodSignals.length > 0 ? (
+              <>
+                <p className="mt-2 text-sm font-bold leading-relaxed text-mira-text">
+                  Чаще всего: {topPrePeriodSignals.map(([signal]) => signal).join(", ")}.
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+                  Это не диагноз, а твой повторяющийся паттерн. Его можно использовать, чтобы заранее снизить нагрузку и подготовить аптечку.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {topPrePeriodSignals.map(([signal, count]) => (
+                    <div key={signal} className="flex items-center justify-between rounded-lg bg-white px-3 py-2">
+                      <span className="text-xs font-semibold text-mira-text">{signal}</span>
+                      <Badge className="bg-mira-lavender-light text-[10px] text-mira-primary shadow-none">{count}x</Badge>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="mt-2 text-xs leading-relaxed text-mira-muted">
+                Отмечай лог симптомов несколько дней перед месячными: аппетит, сладкое, тревогу, либидо и лекарства. Через 2-3 цикла Mira покажет устойчивый повтор.
+              </p>
+            )}
+          </Card>
+
+          <Card className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Лог симптомов</p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <MiniStat label="Аппетит" value={`${symptomLogEntries.filter(c => c.symptomLog?.appetite).length}`} note={shortList(symptomLogEntries.flatMap(c => c.symptomLog?.appetite ? [appetiteLabels[c.symptomLog.appetite]] : []), "нет данных")} />
+              <MiniStat label="Сладкое" value={`${symptomLogEntries.filter(c => c.symptomLog?.sweetCraving).length}`} note="дней с тягой" />
+              <MiniStat label="Тревога" value={`${symptomLogEntries.filter(c => c.symptomLog?.anxiety).length}`} note="отдельных отметок" />
+              <MiniStat label="Либидо" value={`${symptomLogEntries.filter(c => c.symptomLog?.libido).length}`} note={shortList(symptomLogEntries.flatMap(c => c.symptomLog?.libido ? [libidoLabels[c.symptomLog.libido]] : []), "нет данных")} />
+              <MiniStat label="Лекарства" value={`${symptomLogEntries.filter(c => c.symptomLog?.medications?.length).length}`} note="дней с отметкой" />
             </div>
           </Card>
         </div>

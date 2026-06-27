@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Droplets, Activity, Brain, Flame, BedDouble, Heart,
   Sparkles, BookOpen, RotateCcw, X, Eye, CircleDot,
-  ThermometerSun, Check, AlertCircle, Lightbulb,
+  ThermometerSun, Check, AlertCircle, Lightbulb, ClipboardList,
 } from "lucide-react";
 import { getMicroInsight } from "@/lib/insights";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,12 @@ import { getStreak, getGarden } from "@/lib/gamification";
 import type {
   MiraLocalData, DailyCheckIn, PeriodIntensity, PeriodType,
   PainKind, PainLevel, MoodValue, EnergyValue, SleepQuality,
-  IntimacyProtection, IntimacyFeeling,
+  IntimacyProtection, IntimacyFeeling, AppetiteValue, LibidoValue,
 } from "@/lib/types";
 
 type Category =
   | "period" | "bleeding" | "pain" | "mood" | "energy" | "sleep"
-  | "sex" | "discharge" | "stress" | "pms" | "note";
+  | "sex" | "discharge" | "stress" | "pms" | "symptomLog" | "note";
 
 const categories: { id: Category; label: string; icon: typeof Droplets; color: string }[] = [
   { id: "period", label: "Месячные", icon: Droplets, color: "text-[#C47E9B] bg-[#F5E0EA]" },
@@ -34,6 +34,7 @@ const categories: { id: Category; label: string; icon: typeof Droplets; color: s
   { id: "discharge", label: "Выделения", icon: ThermometerSun, color: "text-[#7BAF8D] bg-[#E0F5E8]" },
   { id: "stress", label: "Стресс", icon: AlertCircle, color: "text-[#C4887E] bg-[#F5E8E0]" },
   { id: "pms", label: "ПМС", icon: Sparkles, color: "text-[#A07EC4] bg-[#EDE0F5]" },
+  { id: "symptomLog", label: "Лог симптомов", icon: ClipboardList, color: "text-[#7E9BC4] bg-[#E0ECF5]" },
   { id: "note", label: "Заметка", icon: BookOpen, color: "text-mira-muted bg-mira-lavender-light" },
 ];
 
@@ -92,6 +93,11 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
   const [intimacyShowCalendar, setIntimacyShowCalendar] = useState(false);
   const [discharge, setDischarge] = useState<string | null>(null);
   const [stressLevel, setStressLevel] = useState<string | null>(null);
+  const [appetite, setAppetite] = useState<AppetiteValue | null>(null);
+  const [sweetCraving, setSweetCraving] = useState(false);
+  const [libido, setLibido] = useState<LibidoValue | null>(null);
+  const [symptomAnxiety, setSymptomAnxiety] = useState(false);
+  const [medicationsText, setMedicationsText] = useState("");
   const [pmsSelected, setPmsSelected] = useState<string[]>([]);
   const [noteText, setNoteText] = useState("");
 
@@ -109,6 +115,13 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
       setIntimacyProtection(existing.intimacy?.protection ?? null);
       setIntimacyFeeling(existing.intimacy?.feeling ?? null);
       setIntimacyShowCalendar(existing.intimacy?.showInCalendar ?? false);
+      setDischarge(existing.discharge ?? null);
+      setStressLevel(existing.stress ?? null);
+      setAppetite(existing.symptomLog?.appetite ?? null);
+      setSweetCraving(existing.symptomLog?.sweetCraving ?? false);
+      setLibido(existing.symptomLog?.libido ?? null);
+      setSymptomAnxiety(existing.symptomLog?.anxiety ?? false);
+      setMedicationsText(existing.symptomLog?.medications?.join(", ") ?? "");
       setPmsSelected(existing.pms?.symptoms ?? []);
       setNoteText(existing.note?.text ?? "");
     }
@@ -135,6 +148,16 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
     if (noteText.trim()) checkIn.note = { text: noteText.trim() };
     if (discharge) checkIn.discharge = discharge;
     if (stressLevel) checkIn.stress = stressLevel;
+    const medications = medicationsText.split(",").map(item => item.trim()).filter(Boolean);
+    if (appetite || sweetCraving || libido || symptomAnxiety || medications.length > 0) {
+      checkIn.symptomLog = {
+        appetite: appetite ?? undefined,
+        sweetCraving: sweetCraving || undefined,
+        libido: libido ?? undefined,
+        anxiety: symptomAnxiety || undefined,
+        medications: medications.length > 0 ? medications : undefined,
+      };
+    }
 
     let newData = saveCheckIn(data, checkIn);
 
@@ -193,8 +216,10 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
       period: !!existing.period, bleeding: !!existing.period,
       pain: !!existing.pain, mood: !!existing.mood,
       energy: !!existing.energy, sleep: !!existing.sleep,
-      sex: !!existing.intimacy, discharge: false,
-      stress: false, pms: !!existing.pms, note: !!existing.note,
+      sex: !!existing.intimacy, discharge: !!existing.discharge,
+      stress: !!existing.stress, pms: !!existing.pms,
+      symptomLog: !!existing.symptomLog,
+      note: !!existing.note,
     };
     return m[cat];
   }
@@ -478,6 +503,51 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
         </>
       )}
 
+      {activeCategory === "symptomLog" && (
+        <>
+          <h3 className="mb-1 text-lg font-bold text-mira-text">Лог симптомов</h3>
+          <p className="mb-4 text-xs text-mira-muted">Короткие отметки, чтобы через несколько циклов увидеть повтор.</p>
+
+          <p className="mb-2 text-sm font-semibold text-mira-text">Аппетит</p>
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            {(["low", "normal", "high"] as AppetiteValue[]).map(v => (
+              <button key={v} onClick={() => setAppetite(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                appetite === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              }`}>{appetiteL(v)}</button>
+            ))}
+          </div>
+
+          <p className="mb-2 text-sm font-semibold text-mira-text">Либидо</p>
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            {(["low", "normal", "high"] as LibidoValue[]).map(v => (
+              <button key={v} onClick={() => setLibido(v)} className={`rounded-2xl border p-3 text-sm font-semibold transition ${
+                libido === v ? "border-mira-primary bg-mira-lavender-light text-mira-primary" : "border-mira-lavender/30 text-mira-muted"
+              }`}>{libidoL(v)}</button>
+            ))}
+          </div>
+
+          <div className="mb-3 flex items-center justify-between rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+            <span className="text-sm text-mira-text">Тяга к сладкому</span>
+            <Toggle on={sweetCraving} onToggle={() => setSweetCraving(!sweetCraving)} />
+          </div>
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+            <span className="text-sm text-mira-text">Тревога</span>
+            <Toggle on={symptomAnxiety} onToggle={() => setSymptomAnxiety(!symptomAnxiety)} />
+          </div>
+
+          <p className="mb-2 text-sm font-semibold text-mira-text">Лекарства</p>
+          <input
+            value={medicationsText}
+            onChange={e => setMedicationsText(e.target.value)}
+            placeholder="Например: ибупрофен, спазмолитик"
+            className="mb-4 w-full rounded-2xl border border-mira-lavender/30 bg-mira-bg p-3 text-sm text-mira-text placeholder:text-mira-muted focus:border-mira-primary focus:outline-none"
+          />
+          <p className="mb-4 text-[11px] leading-relaxed text-mira-muted">
+            Mira только сохраняет факт приёма. Не подсказываем дозировки и не назначаем лекарства.
+          </p>
+        </>
+      )}
+
       {activeCategory === "note" && (
         <>
           <h3 className="mb-4 text-lg font-bold text-mira-text">Заметка</h3>
@@ -526,6 +596,7 @@ export function CheckInModal({ open, onClose, data, persist, targetDate }: Props
           ...(hideSex ? [] : [{ id: "sex" as Category, emoji: "❤️", label: "Секс", bg: "bg-gradient-to-br from-[#FFB3C1] to-[#E88098]", border: "border-[#E88098]/30" }]),
           { id: "stress", emoji: "😰", label: "Стресс", bg: "bg-gradient-to-br from-[#F0C8A8] to-[#D8A880]", border: "border-[#D8A880]/30" },
           { id: "bleeding", emoji: "🔴", label: "Кровотечение", bg: "bg-gradient-to-br from-[#F0A0A0] to-[#D88080]", border: "border-[#D88080]/30" },
+          { id: "symptomLog", emoji: "📋", label: "Лог", bg: "bg-gradient-to-br from-[#B8D4F0] to-[#8EB8D8]", border: "border-[#8EB8D8]/30" },
           { id: "note", emoji: "📝", label: "Заметка", bg: "bg-gradient-to-br from-[#D4CCE6] to-[#B8B0D0]", border: "border-[#B8B0D0]/30" },
         ];
 
@@ -654,3 +725,5 @@ function painKL(v: string) { return ({ cramps: "Спазмы", lower_abdomen: "�
 function moodL(v: string) { return ({ normal: "Спокойно", joy: "Радость", sadness: "Грусть", anger: "Раздражение", anxiety: "Тревога", swings: "Перепады" } as Record<string, string>)[v] ?? v; }
 function energyL(v: string) { return ({ exhausted: "Истощение", low: "Низкая", normal: "Нормальная", high: "Высокая" } as Record<string, string>)[v] ?? v; }
 function sleepQL(v: string) { return ({ good: "Хорошо", normal: "Нормально", bad: "Плохо" } as Record<string, string>)[v] ?? v; }
+function appetiteL(v: string) { return ({ low: "Низкий", normal: "Обычный", high: "Высокий" } as Record<string, string>)[v] ?? v; }
+function libidoL(v: string) { return ({ low: "Низкое", normal: "Обычное", high: "Высокое" } as Record<string, string>)[v] ?? v; }

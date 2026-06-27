@@ -94,6 +94,16 @@ export type MealEntry = {
   estimatedKcal?: { min: number; max: number };
 };
 
+export type AppetiteValue = "low" | "normal" | "high";
+export type LibidoValue = "low" | "normal" | "high";
+export type SymptomLog = {
+  appetite?: AppetiteValue;
+  sweetCraving?: boolean;
+  libido?: LibidoValue;
+  anxiety?: boolean;
+  medications?: string[];
+};
+
 // Daily check-in — all categories for one day
 export type DailyCheckIn = {
   date: string; // YYYY-MM-DD
@@ -110,6 +120,7 @@ export type DailyCheckIn = {
   badEpisodes?: BadEpisode[];
   discharge?: string;
   stress?: string;
+  symptomLog?: SymptomLog;
 };
 
 // Workout

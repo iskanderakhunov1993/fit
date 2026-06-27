@@ -62,6 +62,18 @@ const painLabels: Record<string, string> = {
   strong: "сильная",
 };
 
+const appetiteLabels: Record<string, string> = {
+  low: "низкий аппетит",
+  normal: "обычный аппетит",
+  high: "высокий аппетит",
+};
+
+const libidoLabels: Record<string, string> = {
+  low: "низкое либидо",
+  normal: "обычное либидо",
+  high: "высокое либидо",
+};
+
 function recentDays(count = 21) {
   const today = new Date();
   return Array.from({ length: count }, (_, index) => {
@@ -145,6 +157,21 @@ function checkInItems(checkIn: DailyCheckIn | undefined) {
       icon: PencilLine,
       label: "ПМС",
       value: checkIn.pms.symptoms.slice(0, 2).join(", "),
+    });
+  }
+  if (checkIn.symptomLog) {
+    const values = [
+      checkIn.symptomLog.appetite ? appetiteLabels[checkIn.symptomLog.appetite] : null,
+      checkIn.symptomLog.sweetCraving ? "тяга к сладкому" : null,
+      checkIn.symptomLog.libido ? libidoLabels[checkIn.symptomLog.libido] : null,
+      checkIn.symptomLog.anxiety ? "тревога" : null,
+      checkIn.symptomLog.medications?.length ? `лекарства: ${checkIn.symptomLog.medications.slice(0, 2).join(", ")}` : null,
+    ].filter(Boolean);
+    items.push({
+      key: "symptomLog",
+      icon: BarChart3,
+      label: "Лог симптомов",
+      value: values.slice(0, 2).join(", ") || "отмечено",
     });
   }
   if (checkIn.meals && checkIn.meals.length > 0) {

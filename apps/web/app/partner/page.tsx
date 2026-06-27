@@ -116,7 +116,7 @@ export default function PartnerPage() {
           <motion.div variants={fadeUp} className="flex items-center justify-center gap-3 mb-6">
             <MiraLogo size={36} />
             <div>
-              <p className="text-sm font-bold text-mira-text">Моя Норма</p>
+              <p className="text-sm font-bold text-mira-text">Mira</p>
               <p className="text-[10px] text-mira-muted">Режим партнёра</p>
             </div>
           </motion.div>

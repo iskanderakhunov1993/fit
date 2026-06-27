@@ -2,66 +2,64 @@
 
 ## Product Positioning
 
-Mira is a cycle-aware body calendar and daily AI wellness coach for women. It
-turns self-reported context, training history, nutrition, recovery, and optional
-cycle signals into one calm daily decision: what kind of movement, nourishment,
-and recovery may be useful today.
+Mira is a private daily diary for women's cycle and wellbeing. It turns simple
+self-reported check-ins into a personal norm, clear pattern explanations, and a
+doctor-ready report that helps the user discuss symptoms with facts instead of
+memory.
 
 Mira is not a diagnostic product, fertility predictor, calorie-policing tool,
 or static workout program.
 
 ## Target User
 
-The MVP serves adult women who want a practical, low-friction way to adapt
-movement and daily routines to changing energy, mood, sleep, stress, symptoms,
-and training load. They value guidance that is supportive and specific without
-being prescriptive or medical.
+The MVP serves women who want a private, low-friction way to understand what is
+usual for their own body, notice recurring symptoms, and prepare for a medical
+conversation when something feels off. They value calm guidance that is specific
+without being prescriptive or diagnostic.
 
 ## Core Value Proposition
 
-Instead of asking a user to interpret many disconnected health and fitness
-signals, Mira gives an explainable, actionable plan for the day. The user can
-quickly see what to do, how hard to train, and what supportive actions to
-consider without shame or false precision.
+Instead of asking a user to remember scattered symptoms and dates, Mira creates
+a structured health diary. The user can see what repeats, what may be outside
+their personal pattern, and what is worth taking to a clinician.
 
 ## Main Jobs To Be Done
 
-- Decide whether to train, recover, or choose a lighter movement option today.
-- Adjust a workout around energy, soreness, self-reported pain, time, and equipment.
-- Notice patterns in cycle context, mood, sleep, stress, symptoms, and load without treating correlation as diagnosis.
-- Log meals with approximate, neutral feedback and correct an AI estimate.
-- Review progress through habits and self-reported signals rather than body judgment.
+- Build a habit of daily check-ins in under a minute.
+- Review a day-by-day diary of cycle, pain, mood, energy, sleep, PMS, meals, water, workouts, and notes.
+- Notice patterns in cycle context, mood, sleep, symptoms, and daily routines without treating correlation as diagnosis.
+- Prepare a concise doctor report with dates, frequencies, and questions.
+- Choose gentle care actions for food, water, and movement based on current state.
 - Know when a pattern warrants considering a conversation with a qualified clinician.
 
 ## Main Navigation
 
-The product has five primary tabs:
+The product has six primary destinations:
 
 1. **Today**: check-in and daily movement, nutrition, and recovery plan.
-2. **Calendar**: cycle context, symptoms, workouts, and events by date.
-3. **Workouts**: the current session, exercise alternatives, feedback, and completed-session history.
-4. **Nutrition**: meal log, photo-assisted estimate, corrections, and neutral daily context.
-5. **Analytics**: trends, recurring signals, load, and user-controlled insights.
+2. **Diary**: day-by-day history of check-ins, water, meals, workouts, and notes.
+3. **Analytics**: personal norm, trend summaries, and recurring signals.
+4. **Care**: nutrition, water, and movement support.
+5. **Doctor Report**: concise summary, period controls, questions, and export.
+6. **Profile**: privacy, sync, export, and preferences.
 
-Health Navigator is a contextual destination, entered from Today or Analytics,
-not a sixth primary tab.
+Islamic mode is an optional contextual destination when enabled.
 
 ## MVP Scope
 
 - Consent-first onboarding with goals, training level, available equipment, self-reported limitations, and optional cycle context.
-- A sub-minute daily check-in for energy, mood, sleep, stress, soreness, symptoms, and pain.
-- A deterministic safety policy and a daily workout plan drawn from an approved exercise library.
-- Exercise replacement and immediate load reduction when pain is reported.
-- Calendar for cycle context, symptoms, workouts, and check-ins.
-- Nutrition photo analysis with ranges, uncertainty, and mandatory user confirmation or correction.
-- Guided body-scan capture limited to neutral visual observations and capture quality, behind separate consent.
-- Analytics for trends in self-reported signals and training behavior.
-- Supabase authentication, persistence, row-level security, and secure Edge Functions for AI operations.
+- A sub-minute daily check-in for period, pain, mood, energy, sleep, PMS, intimacy, meals, and notes.
+- A day-by-day diary for recent history and backfilling missed days.
+- Personal norm and signal dashboard using only self-reported data and cycle history.
+- Doctor report with concise summary, questions, optional sensitive sections, export, and print.
+- Nutrition, water, and workout support framed as non-medical self-care.
+- Local-first storage with optional sync.
 
 ## Later Roadmap
 
-- Wearable and Apple Health integrations behind explicit consent.
-- Expo private beta with camera, notifications, and StoreKit subscriptions.
+- Stronger PDF report export and share flow.
+- Import from other cycle trackers and Apple Health behind explicit consent.
+- Optional clinician-facing view or appointment checklist.
 - Personalization from longitudinal feedback, model evaluation, and safety monitoring.
 - Data export, deletion automation, retention controls, and audit views.
 - Paid-plan entitlement service and carefully tested usage limits.

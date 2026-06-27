@@ -172,7 +172,7 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
           <Button className="w-full" onClick={() => {
             const url = `${window.location.origin}/partner`;
             if (navigator.share) {
-              navigator.share({ title: "Моя Норма — Режим партнёра", url }).catch(() => {});
+              navigator.share({ title: "Mira — Режим партнёра", url }).catch(() => {});
             } else {
               navigator.clipboard.writeText(url).catch(() => {});
               alert("Ссылка скопирована!");
@@ -389,7 +389,7 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
           </div>
           <div>
             <p className="text-lg font-bold text-mira-text">{profile.name}</p>
-            <p className="text-xs text-mira-muted">Моя Норма</p>
+            <p className="text-xs text-mira-muted">Mira</p>
           </div>
         </div>
 

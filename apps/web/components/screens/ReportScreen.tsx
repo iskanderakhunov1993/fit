@@ -56,6 +56,20 @@ export function ReportScreen({ data, persist }: ScreenProps) {
   if (badSleepDays.length > totalDays * 0.3) questions.push("Может ли плохой сон быть связан с гормональными изменениями?");
   questions.push("Какие обследования стоит обсудить?");
 
+  const summaryItems = [
+    { label: "Дней с данными", value: totalDays.toString(), note: `за ${selectedPeriod} мес.` },
+    { label: "Боль", value: painDays.length.toString(), note: strongPainDays.length > 0 ? `сильная: ${strongPainDays.length}` : "без сильной боли" },
+    { label: "Месячные", value: periodDays.length.toString(), note: `длительность ~${periodLength} дн.` },
+    { label: "Сон", value: badSleepDays.length.toString(), note: "дней с ухудшением" },
+  ];
+
+  const focusItems = [
+    strongPainDays.length >= 2 ? "Повторяющаяся сильная боль" : null,
+    periodLength > 7 ? "Длительные месячные" : null,
+    cycleLength > 35 || cycleLength < 21 ? "Нестабильная длина цикла" : null,
+    badSleepDays.length > totalDays * 0.3 ? "Частое ухудшение сна" : null,
+  ].filter(Boolean) as string[];
+
   function handleExport() {
     const reportText = generateTextReport();
     const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
@@ -74,7 +88,7 @@ export function ReportScreen({ data, persist }: ScreenProps) {
   function handleShare() {
     const reportText = generateTextReport();
     if (navigator.share) {
-      navigator.share({ title: "Отчёт — Моя Норма", text: reportText }).catch(() => {});
+      navigator.share({ title: "Отчёт — Mira", text: reportText }).catch(() => {});
     } else {
       navigator.clipboard.writeText(reportText).catch(() => {});
     }
@@ -83,9 +97,18 @@ export function ReportScreen({ data, persist }: ScreenProps) {
   function generateTextReport(): string {
     const now = new Date().toLocaleDateString("ru-RU");
     const from = cutoffDate.toLocaleDateString("ru-RU");
-    let report = `ОТЧЁТ О ЗДОРОВЬЕ — Моя Норма\n`;
+    let report = `ОТЧЁТ О ЗДОРОВЬЕ — Mira\n`;
     report += `Период: ${from} — ${now}\n`;
     report += `Дней с данными: ${totalDays}\n\n`;
+
+    report += `КРАТКО\n`;
+    report += `Боль: ${painDays.length} дней, сильная боль: ${strongPainDays.length}\n`;
+    report += `Месячные: ${periodDays.length} дней с отметкой, длительность по профилю: ${periodLength} дней\n`;
+    report += `Плохой сон: ${badSleepDays.length} дней\n`;
+    if (focusItems.length > 0) {
+      report += `Что обсудить: ${focusItems.join("; ")}\n`;
+    }
+    report += "\n";
 
     report += `ЦИКЛ\n`;
     report += `Средняя длина цикла: ${cycleLength} дней\n`;
@@ -132,7 +155,7 @@ export function ReportScreen({ data, persist }: ScreenProps) {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-mira-text">Отчёт врачу</h1>
-        <p className="mt-1 text-sm text-mira-muted">Иди к врачу с фактами, а не по памяти</p>
+        <p className="mt-1 text-sm text-mira-muted">Краткое резюме и факты за выбранный период</p>
       </div>
 
       {/* Контекстная подсказка */}
@@ -186,6 +209,34 @@ export function ReportScreen({ data, persist }: ScreenProps) {
               </div>
               <Badge>{totalDays} дней данных</Badge>
             </div>
+          </Card>
+
+          {/* Summary */}
+          <Card className="p-5">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Кратко для приёма</p>
+                <p className="mt-1 text-sm font-semibold text-mira-text">
+                  {focusItems.length > 0 ? "Есть темы, которые стоит обсудить" : "Критичных повторяющихся сигналов в отчёте нет"}
+                </p>
+              </div>
+              <Badge className="text-[10px]">1 страница</Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {summaryItems.map((item) => (
+                <div key={item.label} className="rounded-xl bg-mira-bg p-3">
+                  <p className="text-xs text-mira-muted">{item.label}</p>
+                  <p className="text-xl font-bold text-mira-text">{item.value}</p>
+                  <p className="text-[10px] text-mira-muted">{item.note}</p>
+                </div>
+              ))}
+            </div>
+            {focusItems.length > 0 && (
+              <div className="mt-3 rounded-xl border border-mira-primary/10 bg-mira-lavender-light/25 p-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Вынести в разговор</p>
+                <p className="mt-1 text-xs text-mira-text">{focusItems.join(" · ")}</p>
+              </div>
+            )}
           </Card>
 
           {/* Cycle */}

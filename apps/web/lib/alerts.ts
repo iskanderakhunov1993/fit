@@ -26,7 +26,7 @@ export function getSmartReminders(data: MiraLocalData): SmartReminder[] {
       body: "Проверь, всё ли есть дома и в сумке",
       items: [
         "Прокладки / тампоны / менструальная чаша",
-        "Обезболивающее (то, что обычно помогает)",
+        "Средство от боли, если оно тебе подходит",
         "Грелка",
         "Перекус и вода на работу/учёбу",
       ],
@@ -50,7 +50,7 @@ export function getSmartReminders(data: MiraLocalData): SmartReminder[] {
       body: "Собери на случай если начнётся вне дома",
       items: [
         "2-3 прокладки/тампона в косметичку",
-        "Обезболивающее (ибупрофен или то, что помогает)",
+        "Средство от боли, если оно тебе подходит и уже согласовано",
         "Влажные салфетки",
         "Маленькая бутылка воды",
         "Пакетик для использованных средств",
@@ -104,7 +104,7 @@ export function getRedFlags(data: MiraLocalData): RedFlag[] {
     flags.push({
       severity: "alert",
       title: `Сильная боль повторяется (${impactDays} дней)`,
-      body: "Дисменорея, которая мешает обычной жизни — повод для обследования. 46-76% женщин испытывают боль, но только 10% обращаются к врачу.",
+      body: "Боль, которая мешает обычной жизни, стоит обсудить с врачом. Отчёт поможет показать, как часто это повторяется.",
       action: "Создать отчёт для врача",
     });
   }
@@ -115,7 +115,7 @@ export function getRedFlags(data: MiraLocalData): RedFlag[] {
     flags.push({
       severity: "alert",
       title: "Очень обильные месячные повторяются",
-      body: "Это может приводить к железодефициту: усталость, выпадение волос, бледность. Обильные месячные — причина 75% всех случаев анемии у женщин.",
+      body: "При обильных месячных иногда снижаются запасы железа. Если есть усталость, бледность или выпадение волос, стоит обсудить ферритин с врачом.",
       action: "Обратить внимание на железо",
     });
   }
@@ -143,7 +143,7 @@ export function getRedFlags(data: MiraLocalData): RedFlag[] {
     flags.push({
       severity: "warning",
       title: "Цикл длиннее 35 дней",
-      body: "Нерегулярные длинные циклы могут быть связаны с СПКЯ (8-13% женщин) или другими состояниями.",
+      body: "Нерегулярные длинные циклы могут иметь разные причины. Лучше обсудить это с гинекологом.",
       action: "Обсудить с врачом",
     });
   }
@@ -155,7 +155,7 @@ export function getRedFlags(data: MiraLocalData): RedFlag[] {
     flags.push({
       severity: "warning",
       title: "Хронически плохой сон",
-      body: "Плохой сон отмечен в 40%+ дней. Прогестерон нарушает сон в лютеиновой фазе, но хронические проблемы стоит обсудить со специалистом.",
+      body: "Плохой сон отмечен в 40%+ дней. Это может быть связано с фазой цикла, стрессом или нагрузкой; хронические проблемы лучше обсудить со специалистом.",
       action: "Обсудить с врачом",
     });
   }
@@ -213,7 +213,7 @@ export function getPhaseCorrelations(data: MiraLocalData): PhaseCorrelation[] {
       phase: topAnxiety[0],
       frequency: topAnxiety[1],
       total: totalAnxiety,
-      explanation: `Тревога чаще появляется в ${topAnxiety[0].toLowerCase()} фазе (${topAnxiety[1]} из ${totalAnxiety} раз). Это связано с колебаниями эстрогена и прогестерона — не с характером.`,
+      explanation: `Тревога чаще появляется в ${topAnxiety[0].toLowerCase()} фазе (${topAnxiety[1]} из ${totalAnxiety} раз). Это может быть связано с колебаниями цикла, стрессом или сном.`,
     });
   }
 
@@ -224,7 +224,7 @@ export function getPhaseCorrelations(data: MiraLocalData): PhaseCorrelation[] {
       phase: topSadness[0],
       frequency: topSadness[1],
       total: totalSadness,
-      explanation: `Грусть чаще в ${topSadness[0].toLowerCase()} фазе (${topSadness[1]} из ${totalSadness}). Падение серотонина перед месячными — научно доказанный факт.`,
+      explanation: `Грусть чаще в ${topSadness[0].toLowerCase()} фазе (${topSadness[1]} из ${totalSadness}). Это наблюдение по твоим данным, не диагноз.`,
     });
   }
 
@@ -245,7 +245,7 @@ export function getPhaseCorrelations(data: MiraLocalData): PhaseCorrelation[] {
       phase: topPain[0],
       frequency: topPain[1],
       total: totalPain,
-      explanation: `Боль концентрируется в ${topPain[0].toLowerCase()} фазе (${topPain[1]} из ${totalPain}). ${topPain[0] === "Менструация" ? "Простагландины вызывают спазмы матки — магний и тепло помогают." : "Обрати внимание — боль вне менструации может требовать внимания врача."}`,
+      explanation: `Боль концентрируется в ${topPain[0].toLowerCase()} фазе (${topPain[1]} из ${totalPain}). ${topPain[0] === "Менструация" ? "Тепло и мягкий режим некоторым помогают пережить спазмы." : "Боль вне менструации лучше не игнорировать, особенно если она повторяется."}`,
     });
   }
 
@@ -266,7 +266,7 @@ export function getPhaseCorrelations(data: MiraLocalData): PhaseCorrelation[] {
       phase: topBadSleep[0],
       frequency: topBadSleep[1],
       total: totalBadSleep,
-      explanation: `Сон ухудшается в ${topBadSleep[0].toLowerCase()} фазе (${topBadSleep[1]} из ${totalBadSleep}). Прогестерон повышает температуру тела на 0.3-0.5°C — прохладная комната (18-20°C) помогает.`,
+      explanation: `Сон ухудшается в ${topBadSleep[0].toLowerCase()} фазе (${topBadSleep[1]} из ${totalBadSleep}). Попробуй отслеживать температуру комнаты, стресс и кофеин вечером.`,
     });
   }
 
@@ -287,7 +287,7 @@ export function getPhaseCorrelations(data: MiraLocalData): PhaseCorrelation[] {
       phase: topLowEnergy[0],
       frequency: topLowEnergy[1],
       total: totalLowEnergy,
-      explanation: `Энергия падает в ${topLowEnergy[0].toLowerCase()} фазе (${topLowEnergy[1]} из ${totalLowEnergy}). ${topLowEnergy[0] === "Менструация" ? "Потеря железа — главная причина. Гречка, шпинат, красное мясо помогут." : "Это может быть связано с гормональными изменениями."}`,
+      explanation: `Энергия падает в ${topLowEnergy[0].toLowerCase()} фазе (${topLowEnergy[1]} из ${totalLowEnergy}). ${topLowEnergy[0] === "Менструация" ? "Если это повторяется, можно обсудить железо и ферритин с врачом." : "Это может быть связано с циклом, сном или нагрузкой."}`,
     });
   }
 
@@ -315,10 +315,10 @@ export function getIronAlert(data: MiraLocalData): IronAlert {
   return {
     show: true,
     title: hasLowEnergy
-      ? "Обильные месячные + низкая энергия → возможен дефицит железа"
+      ? "Обильные месячные + низкая энергия → стоит проверить железо"
       : "Обильные месячные → следи за железом",
     body: hasLowEnergy
-      ? "Обильные менструации — причина 75% случаев анемии у женщин. Усталость, бледность, выпадение волос — признаки дефицита. Стоит проверить ферритин у врача."
+      ? "При обильных месячных запасы железа иногда снижаются. Усталость, бледность или выпадение волос — повод обсудить ферритин с врачом."
       : "При обильных месячных организм теряет больше железа. Добавь продукты с железом в рацион.",
     foods: ["Гречка", "Шпинат", "Красное мясо", "Чечевица", "Гранат", "Печень"],
   };
@@ -399,7 +399,7 @@ export function getDoctorScript(data: MiraLocalData): DoctorScript {
   const flags = getRedFlags(data);
 
   const questions: string[] = [
-    "Мои месячные — это нормально для моего возраста?",
+    "Как оценить мои месячные и цикл для моего возраста?",
   ];
   const dataPoints: string[] = [];
 
@@ -411,7 +411,7 @@ export function getDoctorScript(data: MiraLocalData): DoctorScript {
 
   const strongPain = checkIns.filter(c => c.pain?.level === "strong");
   if (strongPain.length >= 2) {
-    questions.push(`Сильная боль отмечена ${strongPain.length} раз — может ли это быть эндометриоз или другое состояние?`);
+    questions.push(`Сильная боль отмечена ${strongPain.length} раз — какие причины стоит исключить?`);
     dataPoints.push(`Сильная боль: ${strongPain.length} дней`);
   }
 
@@ -422,7 +422,7 @@ export function getDoctorScript(data: MiraLocalData): DoctorScript {
   }
 
   if (profile && profile.cycleConfig.cycleLength > 35) {
-    questions.push("Стоит ли проверить на СПКЯ?");
+    questions.push("Какие причины длинного цикла стоит проверить?");
   }
 
   const badSleep = checkIns.filter(c => c.sleep?.quality === "bad" || c.sleep?.quality === "insomnia");
@@ -435,7 +435,7 @@ export function getDoctorScript(data: MiraLocalData): DoctorScript {
 
   for (const flag of flags) {
     if (!questions.some(q => q.includes(flag.title.split(" ")[0]))) {
-      questions.push(flag.title + " — это нормально?");
+      questions.push(flag.title + " — что это может значить?");
     }
   }
 
@@ -475,7 +475,7 @@ export function getDailyPhaseCard(data: MiraLocalData): DailyPhaseCard | null {
         "Матка сокращается, чтобы обновить слизистую",
         "Простагландины вызывают спазмы — это причина боли",
         "Организм теряет 30-80 мл крови (2-5 ст. ложек)",
-        "Железо падает — усталость нормальна",
+        "Запасы железа могут снижаться — усталость стоит отслеживать",
       ],
       whatToExpect: [
         "Энергия ниже обычного",
@@ -521,15 +521,15 @@ export function getDailyPhaseCard(data: MiraLocalData): DailyPhaseCard | null {
       hormoneStatus: "Прогестерон растёт, потом резко падает перед месячными",
       bodyFacts: [
         "Прогестерон повышает температуру тела на 0.3-0.5°C",
-        "Серотонин падает → тревожность и грусть",
+        "Настроение может стать чувствительнее",
         "Задержка жидкости → вздутие и вес +1-2 кг",
-        "ПМС испытывают 40-71% женщин — это не выдумка",
+        "ПМС-сигналы важно отслеживать без самокритики",
       ],
       whatToExpect: [
         "Энергия и настроение могут снизиться",
         "Тяга к сладкому — прогестерон повышает аппетит",
         "Сон может ухудшиться",
-        "Раздражительность — это гормоны, не характер",
+        "Раздражительность может быть частью твоего паттерна",
       ],
     },
   };

@@ -1,1 +1,1 @@
-export type NavPage = "today" | "analytics" | "care" | "islamic" | "report" | "profile";
+export type NavPage = "today" | "diary" | "analytics" | "care" | "islamic" | "report" | "profile";

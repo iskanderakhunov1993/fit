@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Sun, ChartNoAxesCombined, HeartPulse, FileText, UserRound, Plus, Moon,
+  Sun, CalendarDays, ChartNoAxesCombined, FileText, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavPage } from "./types";
@@ -10,7 +10,6 @@ export function BottomNav({
   active,
   onChange,
   onCheckIn,
-  isIslamic,
 }: {
   active: NavPage;
   onChange: (p: NavPage) => void;
@@ -19,22 +18,23 @@ export function BottomNav({
 }) {
   const left: { id: NavPage; label: string; icon: typeof Sun }[] = [
     { id: "today", label: "Сегодня", icon: Sun },
-    { id: "analytics", label: "Аналитика", icon: ChartNoAxesCombined },
+    { id: "diary", label: "Дневник", icon: CalendarDays },
   ];
 
-  const right: { id: NavPage; label: string; icon: typeof Sun }[] = isIslamic
-    ? [{ id: "islamic", label: "Ибада", icon: Moon }, { id: "report", label: "Отчёт", icon: FileText }]
-    : [{ id: "care", label: "Забота", icon: HeartPulse }, { id: "report", label: "Отчёт", icon: FileText }];
+  const right: { id: NavPage; label: string; icon: typeof Sun }[] = [
+    { id: "analytics", label: "Аналитика", icon: ChartNoAxesCombined },
+    { id: "report", label: "Отчёт", icon: FileText },
+  ];
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/40 bg-white/70 backdrop-blur-2xl lg:hidden" style={{ boxShadow: "0 -4px 30px rgba(155,142,196,0.08)" }}>
-      <div className="relative flex items-end justify-around px-3 pb-[env(safe-area-inset-bottom,8px)] pt-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-mira-lavender/20 bg-white/95 backdrop-blur-xl lg:hidden" style={{ boxShadow: "0 -10px 28px rgba(45,38,64,0.08)" }}>
+      <div className="relative flex items-end justify-around px-2 pb-[env(safe-area-inset-bottom,8px)] pt-2">
         {left.map((item) => (
           <button
             key={item.id}
             onClick={() => onChange(item.id)}
             className={cn(
-              "flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all duration-200",
-              active === item.id ? "text-mira-primary bg-mira-lavender-light/50" : "text-mira-muted"
+              "flex min-w-[58px] flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition-all duration-200",
+              active === item.id ? "bg-mira-lavender-light text-mira-primary" : "text-mira-muted"
             )}
           >
             <item.icon className={cn("h-5 w-5 transition-transform duration-200", active === item.id && "scale-110")} />
@@ -45,10 +45,12 @@ export function BottomNav({
 
         {/* Center FAB */}
         <button
+          aria-label="Отметить состояние"
           onClick={onCheckIn}
-          className="sheen relative -top-4 flex h-[58px] w-[58px] items-center justify-center rounded-full bg-gradient-to-br from-[#C4B0E8] via-mira-primary to-mira-primary-deep shadow-[0_8px_28px_rgba(155,142,196,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] transition-all duration-200 active:scale-90 hover:shadow-[0_14px_44px_rgba(155,142,196,0.6)] hover:-translate-y-1 animate-pulse-glow"
+          className="relative -top-3 flex min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-xl bg-mira-primary px-3 py-2 text-white shadow-[0_10px_26px_rgba(155,142,196,0.34)] transition-all duration-200 active:scale-[0.97]"
         >
-          <Plus className="h-6 w-6 text-white drop-shadow-sm" strokeWidth={2.5} />
+          <Plus className="h-5 w-5" strokeWidth={2.5} />
+          <span className="text-[10px] font-bold leading-none">Отметить</span>
         </button>
 
         {right.map((item) => (
@@ -56,8 +58,8 @@ export function BottomNav({
             key={item.id}
             onClick={() => onChange(item.id)}
             className={cn(
-              "flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all duration-200",
-              active === item.id ? "text-mira-primary bg-mira-lavender-light/50" : "text-mira-muted"
+              "flex min-w-[58px] flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition-all duration-200",
+              active === item.id ? "bg-mira-lavender-light text-mira-primary" : "text-mira-muted"
             )}
           >
             <item.icon className={cn("h-5 w-5 transition-transform duration-200", active === item.id && "scale-110")} />

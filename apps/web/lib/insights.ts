@@ -147,7 +147,7 @@ export function getMicroInsight(data: MiraLocalData, checkIn: DailyCheckIn): Ins
         type: "connection",
         icon: "mood",
         title: "Настроение и фаза цикла",
-        body: `${moodName.charAt(0).toUpperCase() + moodName.slice(1)} в ${phaseLabel} фазе отмечена ${sameMoodInPhase.length} раз. Это не ты — это гормоны. Это нормально.`,
+        body: `${moodName.charAt(0).toUpperCase() + moodName.slice(1)} в ${phaseLabel} фазе отмечена ${sameMoodInPhase.length} раз. Это похоже на повторяющийся паттерн, за которым стоит понаблюдать.`,
       };
     }
   }
@@ -161,7 +161,7 @@ export function getMicroInsight(data: MiraLocalData, checkIn: DailyCheckIn): Ins
         type: "connection",
         icon: "energy",
         title: "Энергия и цикл",
-        body: "Низкая энергия может быть связана с потерей железа во время месячных. Гречка, шпинат и красное мясо помогут восполнить запасы.",
+        body: "Низкая энергия может быть связана с месячными, сном, стрессом или питанием. Если повторяется, стоит обсудить железо и ферритин.",
       };
     }
   }
@@ -365,7 +365,7 @@ export function getCycleSummary(data: MiraLocalData): CycleSummary | null {
   // Highlight
   let highlight = "Продолжай отслеживать — каждая отметка делает норму точнее.";
   if (deviations.length === 0 && checkIns.length >= 14) {
-    highlight = "Этот цикл в пределах твоей нормы. Всё хорошо.";
+    highlight = "Этот цикл похож на твою обычную картину по собранным данным.";
   } else if (deviations.length > 0) {
     highlight = "Есть отклонения — обрати внимание на аналитику.";
   }
@@ -412,7 +412,7 @@ export function getSmartInsights(data: MiraLocalData): Insight[] {
         type: "connection",
         icon: "pain",
         title: "Боль чаще в начале месячных",
-        body: `Боль чаще всего появляется в 1-2 день месячных (${inFirstTwo} из ${painDays.length} раз). Это типичная дисменорея.`,
+        body: `Боль чаще всего появляется в 1-2 день месячных (${inFirstTwo} из ${painDays.length} раз). Если она мешает обычной жизни, это стоит обсудить с врачом.`,
       });
     }
   }
@@ -444,7 +444,7 @@ export function getSmartInsights(data: MiraLocalData): Insight[] {
       type: "connection",
       icon: "sleep",
       title: "Сон ухудшается во второй половине цикла",
-      body: `Плохой сон в лютеиновой фазе отмечен ${badSleepLuteal.length} раз. Это связано с прогестероном — прохладная комната и магний могут помочь.`,
+      body: `Плохой сон в лютеиновой фазе отмечен ${badSleepLuteal.length} раз. Попробуй отслеживать температуру комнаты, стресс и кофеин вечером.`,
     });
   }
 
@@ -453,8 +453,8 @@ export function getSmartInsights(data: MiraLocalData): Insight[] {
     insights.push({
       type: "observation",
       icon: "positive",
-      title: "Всё в пределах твоей нормы",
-      body: "За последние циклы серьёзных отклонений не замечено. Продолжай отслеживать.",
+      title: "Паттерн выглядит стабильным",
+      body: "За последние циклы заметных отклонений по отметкам не видно. Продолжай отслеживать.",
     });
   }
 

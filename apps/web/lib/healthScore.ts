@@ -15,7 +15,7 @@ export type HealthMetric = {
   emoji: string;
   label: string;
   status: MetricStatus;
-  verdict: string;        // одно-два слова: «В норме», «Следи», «К врачу»
+  verdict: string;        // одно-два слова: «Стабильно», «Следи», «Обсудить»
   detail: string;         // одна фраза-объяснение
   value: string;          // короткое значение для показа (напр. «28 дн.»)
   spark: number[];        // данные для мини-графика (0..100), последние точки
@@ -23,15 +23,15 @@ export type HealthMetric = {
 
 export type HealthSummary = {
   overall: MetricStatus;
-  headline: string;       // «Всё в норме» / «Обрати внимание на сон»
+  headline: string;       // «Выглядит стабильно» / «Обрати внимание на сон»
   subtext: string;
   metrics: HealthMetric[];
 };
 
 export const statusMeta: Record<MetricStatus, { color: string; ring: string; bg: string; label: string }> = {
-  ok:      { color: "#5BAE7E", ring: "#7BC99A", bg: "#E8F5EC", label: "В норме" },
+  ok:      { color: "#5BAE7E", ring: "#7BC99A", bg: "#E8F5EC", label: "Стабильно" },
   watch:   { color: "#C99A3E", ring: "#E0C060", bg: "#F8F0DC", label: "Следи" },
-  concern: { color: "#C9607E", ring: "#E08AA0", bg: "#F8E0E8", label: "К врачу" },
+  concern: { color: "#C9607E", ring: "#E08AA0", bg: "#F8E0E8", label: "Обсудить" },
   nodata:  { color: "#9B95A8", ring: "#C8C2D4", bg: "#F0EDF5", label: "Нет данных" },
 };
 
@@ -92,10 +92,10 @@ export function getHealthSummary(data: MiraLocalData): HealthSummary {
     metrics.push({
       id: "pain", emoji: "🌸", label: "Боль",
       status,
-      verdict: status === "ok" ? "В норме" : status === "watch" ? "Бывает" : "Частая",
+      verdict: status === "ok" ? "Редкая" : status === "watch" ? "Бывает" : "Частая",
       detail: status === "ok" ? "Боль редкая или лёгкая"
         : status === "watch" ? `Боль в ${painDays.length} днях`
-        : `Сильная боль ${strongPain.length} раз — повод к врачу`,
+        : `Сильная боль ${strongPain.length} раз — стоит обсудить`,
       value: `${painDays.length} дн.`,
       spark: sparkFromCheckIns(data, c => c?.pain ? (c.pain.level === "strong" ? 90 : c.pain.level === "medium" ? 55 : 25) : 0),
     });
@@ -165,13 +165,13 @@ export function getHealthSummary(data: MiraLocalData): HealthSummary {
 
   let overall: MetricStatus = "nodata";
   let headline = "Начни отслеживать";
-  let subtext = "Отмечай состояние — и я покажу, всё ли в норме";
+  let subtext = "Отмечай состояние — и я покажу, что повторяется";
 
   if (worst) {
     overall = worst.status;
     if (overall === "ok") {
-      headline = "Всё в норме";
-      subtext = "Твои показатели в пределах нормы. Так держать!";
+      headline = "Выглядит стабильно";
+      subtext = "По отметкам нет явных повторяющихся сигналов. Так держать!";
     } else if (overall === "watch") {
       const watchers = real.filter(m => m.status === "watch").map(m => m.label.toLowerCase());
       headline = "Почти всё хорошо";

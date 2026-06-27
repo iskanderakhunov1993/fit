@@ -1,4 +1,4 @@
-import type { MiraLocalData, DailyCheckIn, WorkoutLog, UserProfile, IslamicEntry, CyclePhase, WaterEntry } from "./types";
+import type { MiraLocalData, DailyCheckIn, WorkoutLog, UserProfile, IslamicEntry, CyclePhase, WaterEntry, WalkingEntry } from "./types";
 import { getCycleNorm } from "./cycleEngine";
 
 const STORAGE_KEY = "mira:data";
@@ -176,4 +176,46 @@ export function removeWaterGlass(data: MiraLocalData): MiraLocalData {
       [key]: { ...existing, date: key, glasses: Math.max(0, existing.glasses - 1) },
     },
   };
+}
+
+// ── Walking tracking ──
+
+export function getWalkingEntry(data: MiraLocalData, date?: string): WalkingEntry {
+  const key = date ?? dateKey();
+  return data.walkingLog?.[key] ?? { date: key, steps: 0, goal: 7000, source: "manual" };
+}
+
+export function saveWalkingEntry(data: MiraLocalData, entry: WalkingEntry): MiraLocalData {
+  const normalized = {
+    ...entry,
+    steps: Math.max(0, Math.round(entry.steps)),
+    goal: Math.max(1000, Math.round(entry.goal)),
+    source: entry.source ?? "manual",
+  };
+
+  if (normalized.steps <= 0) {
+    const walkingLog = { ...(data.walkingLog ?? {}) };
+    delete walkingLog[entry.date];
+    return {
+      ...data,
+      walkingLog,
+    };
+  }
+
+  return {
+    ...data,
+    walkingLog: {
+      ...data.walkingLog,
+      [entry.date]: normalized,
+    },
+  };
+}
+
+export function addWalkingSteps(data: MiraLocalData, steps: number, date?: string): MiraLocalData {
+  const existing = getWalkingEntry(data, date);
+  return saveWalkingEntry(data, {
+    ...existing,
+    steps: Math.max(0, existing.steps + steps),
+    source: "manual",
+  });
 }

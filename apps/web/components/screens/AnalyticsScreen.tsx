@@ -1,31 +1,86 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  Brain,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  FileText,
+  Footprints,
+  HeartPulse,
+  Moon,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, TrendingUp, Moon, Brain, Zap, Activity, Lightbulb, Link2 } from "lucide-react";
-import { NormMap } from "./NormMap";
-import { HealthDashboard } from "./HealthDashboard";
-import { getSmartInsights } from "@/lib/insights";
-import { getPhaseCorrelations } from "@/lib/alerts";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { getRedFlags, getPhaseCorrelations } from "@/lib/alerts";
 import { getCycleNorm } from "@/lib/cycleEngine";
 import { getCorrelations } from "@/lib/correlations";
+import { getHealthSummary, statusMeta } from "@/lib/healthScore";
+import { getNormMap, getNormOverallPercent, getSmartInsights } from "@/lib/insights";
+import { dateKey } from "@/lib/store";
 import type { ScreenProps } from "./types";
+import type { DailyCheckIn } from "@/lib/types";
+
+type DetailTab = "cycle" | "symptoms" | "state" | "safety";
+type Tone = "success" | "watch" | "alert" | "neutral";
+type IconType = typeof CalendarDays;
+
+const moodLabels: Record<string, string> = {
+  normal: "Спокойно",
+  joy: "Радость",
+  sadness: "Грусть",
+  anger: "Раздражение",
+  anxiety: "Тревога",
+  swings: "Перепады",
+};
+const energyLabels: Record<string, string> = {
+  exhausted: "Истощение",
+  low: "Низкая",
+  normal: "Нормальная",
+  high: "Высокая",
+};
+const sleepLabels: Record<string, string> = {
+  good: "Хороший",
+  normal: "Нормальный",
+  bad: "Плохой",
+  little: "Мало сна",
+  insomnia: "Бессонница",
+};
+const painLabels: Record<string, string> = {
+  cramps: "Спазмы",
+  lower_abdomen: "Низ живота",
+  headache: "Голова",
+  breast: "Грудь",
+  back: "Спина",
+  ovulatory: "Овуляторная",
+};
+
+const toneClass: Record<Tone, string> = {
+  success: "border-mira-success/15 bg-[#E0F5E8]/30 text-mira-success",
+  watch: "border-[#C4B07E]/20 bg-[#F5F0E0]/45 text-[#9A7B2F]",
+  alert: "border-mira-cycle/20 bg-[#F8E8EE]/55 text-mira-cycle",
+  neutral: "border-mira-lavender/20 bg-mira-bg text-mira-muted",
+};
 
 function Progress({ value, color = "bg-mira-primary" }: { value: number; color?: string }) {
   return (
-    <div className="h-2.5 w-full rounded-full bg-mira-lavender-light">
+    <div className="h-2 w-full overflow-hidden rounded-full bg-mira-lavender-light">
       <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${Math.min(value, 100)}%` }} />
     </div>
   );
 }
-
-const tabs = ["Цикл", "Боль", "ПМС", "Сон / Энергия", "Отклонения"];
-const tabIcons = [TrendingUp, Activity, Brain, Moon, AlertCircle];
-
-const moodLabels: Record<string, string> = { normal: "Спокойно", joy: "Радость", sadness: "Грусть", anger: "Раздражение", anxiety: "Тревога", swings: "Перепады" };
-const energyLabels: Record<string, string> = { exhausted: "Истощение", low: "Низкая", normal: "Нормальная", high: "Высокая" };
-const sleepLabels: Record<string, string> = { good: "Хороший", normal: "Нормальный", bad: "Плохой", little: "Мало сна", insomnia: "Бессонница" };
 
 function countBy<T>(arr: T[], fn: (item: T) => string): Record<string, number> {
   const counts: Record<string, number> = {};
@@ -36,387 +91,505 @@ function countBy<T>(arr: T[], fn: (item: T) => string): Record<string, number> {
   return counts;
 }
 
-const metricToTab: Record<string, number> = { cycle: 0, pain: 1, mood: 2, sleep: 3, energy: 3 };
+function pct(count: number, goal: number) {
+  return Math.min(100, Math.round((count / Math.max(goal, 1)) * 100));
+}
 
-export function AnalyticsScreen({ data }: ScreenProps) {
-  const [detailTab, setDetailTab] = useState<number | null>(null);
+function shortList(items: string[], empty: string) {
+  if (items.length === 0) return empty;
+  if (items.length <= 2) return items.join(", ");
+  return `${items.slice(0, 2).join(", ")} +${items.length - 2}`;
+}
+
+function renderDistribution(counts: Record<string, number>, labels: Record<string, string>, total: number, color: string) {
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (sorted.length === 0) {
+    return <p className="text-xs italic text-mira-muted">Пока нет данных</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {sorted.map(([key, count]) => (
+        <div key={key}>
+          <div className="mb-1 flex justify-between gap-3 text-xs">
+            <span className="truncate text-mira-text">{labels[key] ?? key}</span>
+            <span className="shrink-0 text-mira-muted">{Math.round((count / Math.max(total, 1)) * 100)}%</span>
+          </div>
+          <Progress value={(count / Math.max(total, 1)) * 100} color={color} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SectionTitle({ label, title }: { label: string; title: string }) {
+  return (
+    <div className="mb-3 px-1">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">{label}</p>
+      <p className="text-sm font-bold text-mira-text">{title}</p>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="rounded-lg border border-mira-lavender/20 bg-mira-bg px-3 py-2.5">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">{label}</p>
+      <p className="mt-1 text-xl font-black leading-none text-mira-text">{value}</p>
+      <p className="mt-1 text-[10px] leading-snug text-mira-muted">{note}</p>
+    </div>
+  );
+}
+
+export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
+  const [detailTab, setDetailTab] = useState<DetailTab>("cycle");
   const profile = data.profile;
-  const norm = getCycleNorm(profile);
-  const cycleLength = norm.cycleLength; // реальная медианная длина из истории
-  const periodLength = profile?.cycleConfig.periodLength ?? 5;
+  const today = data.checkIns[dateKey()];
   const checkIns = Object.values(data.checkIns);
   const totalDays = checkIns.length;
 
+  const norm = getCycleNorm(profile);
+  const cycleLength = norm.cycleLength;
+  const periodLength = profile?.cycleConfig.periodLength ?? 5;
+  const normMap = getNormMap(data);
+  const normOverall = getNormOverallPercent(data);
+  const health = getHealthSummary(data);
+  const redFlags = getRedFlags(data);
+  const smartInsights = getSmartInsights(data);
+  const correlations = getCorrelations(data);
+  const phaseCorrelations = getPhaseCorrelations(data);
+
   const painEntries = checkIns.filter(c => c.pain && c.pain.kinds.some(k => k !== "none"));
+  const strongPainEntries = painEntries.filter(c => c.pain?.level === "strong");
   const sleepEntries = checkIns.filter(c => c.sleep);
   const energyEntries = checkIns.filter(c => c.energy);
   const moodEntries = checkIns.filter(c => c.mood);
   const pmsEntries = checkIns.filter(c => c.pms && c.pms.symptoms.length > 0);
+  const mealDays = checkIns.filter(c => c.meals && c.meals.length > 0).length;
+  const waterDays = Object.keys(data.waterLog ?? {}).length;
+  const walkingEntries = Object.values(data.walkingLog ?? {}).filter(entry => entry.steps > 0);
+  const walkingDays = walkingEntries.length;
+  const avgSteps = walkingDays > 0 ? Math.round(walkingEntries.reduce((sum, entry) => sum + entry.steps, 0) / walkingDays) : 0;
 
-  const needsMoreData = totalDays < 7;
+  const missingToday = [
+    !today?.sleep ? "сон" : null,
+    !today?.energy ? "энергию" : null,
+    !today?.mood ? "настроение" : null,
+    !today?.pms ? "ПМС" : null,
+  ].filter((item): item is string => Boolean(item));
 
-  function renderDistribution(counts: Record<string, number>, labels: Record<string, string>, total: number, color: string) {
-    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    if (sorted.length === 0) return <p className="text-xs text-mira-muted italic">Нет данных — начни отслеживать</p>;
-    return (
-      <div className="space-y-3">
-        {sorted.map(([key, count]) => (
-          <div key={key}>
-            <div className="mb-1 flex justify-between text-xs">
-              <span className="text-mira-text">{labels[key] ?? key}</span>
-              <span className="text-mira-muted">{Math.round((count / total) * 100)}%</span>
-            </div>
-            <Progress value={(count / total) * 100} color={color} />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  const dataNeeds: Array<{
+    id: string;
+    icon: IconType;
+    label: string;
+    count: number;
+    goal: number;
+    unit: string;
+    why: string;
+    color: string;
+  }> = [
+    { id: "daily", icon: ClipboardList, label: "Ежедневные отметки", count: totalDays, goal: 7, unit: "дней", why: "первые наблюдения", color: "bg-mira-primary" },
+    { id: "cycle", icon: CalendarDays, label: "Старт месячных", count: norm.observedCycles, goal: 2, unit: "цикла", why: "точность прогноза", color: "bg-mira-cycle" },
+    { id: "sleep", icon: Moon, label: "Сон", count: sleepEntries.length, goal: 7, unit: "дней", why: "связь с энергией", color: "bg-[#7E8EC4]" },
+    { id: "energy", icon: Zap, label: "Энергия", count: energyEntries.length, goal: 7, unit: "дней", why: "пики и спады", color: "bg-[#C4B07E]" },
+    { id: "mood", icon: Brain, label: "Настроение", count: moodEntries.length, goal: 7, unit: "дней", why: "связь с фазами", color: "bg-[#9B8EC4]" },
+    { id: "walking", icon: Footprints, label: "Ходьба", count: walkingDays, goal: 7, unit: "дней", why: "связь с энергией и ПМС", color: "bg-mira-success" },
+    { id: "pain", icon: Activity, label: "Боль", count: painEntries.length, goal: 3, unit: "раза", why: "повтор боли", color: "bg-[#C47E9B]" },
+    { id: "pms", icon: Sparkles, label: "ПМС", count: pmsEntries.length, goal: 3, unit: "раза", why: "предупреждения заранее", color: "bg-[#A07EC4]" },
+  ];
+
+  const readiness = Math.round(dataNeeds.reduce((sum, need) => sum + pct(need.count, need.goal), 0) / dataNeeds.length);
+  const weakestNeed = dataNeeds.slice().sort((a, b) => pct(a.count, a.goal) - pct(b.count, b.goal))[0];
+  const usefulMetrics = health.metrics.filter(metric => metric.status !== "nodata");
+  const watchMetrics = health.metrics.filter(metric => metric.status === "watch" || metric.status === "concern");
+
+  const evidenceItems = [
+    ...redFlags.map(flag => ({
+      key: `flag-${flag.title}`,
+      tone: "alert" as Tone,
+      icon: "!",
+      title: flag.title,
+      body: flag.body,
+    })),
+    ...correlations.map(item => ({
+      key: item.id,
+      tone: item.strength === "strong" ? "success" as Tone : "watch" as Tone,
+      icon: item.emoji,
+      title: item.title,
+      body: item.body,
+    })),
+    ...phaseCorrelations.slice(0, 2).map(item => ({
+      key: `phase-${item.symptom}`,
+      tone: "watch" as Tone,
+      icon: "↔",
+      title: `${item.symptom}: ${item.phase}`,
+      body: item.explanation,
+    })),
+    ...smartInsights.map((item, index) => ({
+      key: `smart-${index}`,
+      tone: item.type === "action" ? "alert" as Tone : "neutral" as Tone,
+      icon: item.icon === "positive" ? "✓" : "i",
+      title: item.title,
+      body: item.body,
+    })),
+  ].slice(0, 3);
+
+  const heroTone: Tone = redFlags.length > 0 ? "alert" : totalDays < 7 ? "watch" : evidenceItems.length > 0 ? "success" : "neutral";
+  const heroTitle = redFlags.length > 0
+    ? "Есть сигнал, который стоит обсудить"
+    : totalDays < 7
+      ? "Пока собираем базу для личной нормы"
+      : evidenceItems.length > 0
+        ? "Mira уже видит первые паттерны"
+        : "Данных становится достаточно для наблюдений";
+  const heroBody = redFlags.length > 0
+    ? "На этой странице собраны факты, которые можно превратить в отчёт для врача."
+    : totalDays < 7
+      ? `Нужно ещё ${Math.max(0, 7 - totalDays)} отметок, чтобы отличать обычное для тебя от случайного дня.`
+        : "Сравниваем цикл, сон, боль, ходьбу, энергию и настроение, чтобы подсвечивать не просто цифры, а смысл.";
+
+  const detailTabs: Array<{ id: DetailTab; label: string; icon: IconType }> = [
+    { id: "cycle", label: "Цикл", icon: TrendingUp },
+    { id: "symptoms", label: "Симптомы", icon: HeartPulse },
+    { id: "state", label: "Сон и энергия", icon: Moon },
+    { id: "safety", label: "Врач", icon: ShieldCheck },
+  ];
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="text-2xl font-bold text-mira-text">Аналитика</h1>
-        <p className="mt-1 text-sm text-mira-muted">Посмотри и сразу пойми — всё ли в норме</p>
+        <p className="mt-1 text-sm text-mira-muted">Что Mira уже понимает и какие данные нужны дальше</p>
       </div>
 
-      {/* Health Dashboard — светофор статусов (тап → детали) */}
-      <div className="mb-3">
-        <HealthDashboard data={data} onMetricClick={(id) => setDetailTab(prev => prev === metricToTab[id] ? null : metricToTab[id])} />
-      </div>
-      {detailTab === null && (
-        <p className="mb-6 text-center text-[11px] text-mira-muted">Нажми на показатель, чтобы увидеть детали</p>
-      )}
-
-      {/* Norm Map */}
-      <div className="mb-6">
-        <NormMap data={data} />
-      </div>
-
-      {/* Связи: что на тебя влияет */}
-      {(() => {
-        const correlations = getCorrelations(data);
-        if (correlations.length === 0) return null;
-        return (
-          <div className="mb-6 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted px-1">
-              ✨ Что на тебя влияет
-            </p>
-            {correlations.map(c => (
-              <Card key={c.id} className="p-4 border-mira-primary/10 bg-gradient-to-br from-mira-lavender-light/20 to-white">
-                <div className="flex items-start gap-3">
-                  <span className="text-xl shrink-0">{c.emoji}</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-mira-text">{c.title}</p>
-                      {c.strength === "emerging" && (
-                        <span className="rounded-full bg-mira-lavender-light px-2 py-0.5 text-[8px] font-semibold text-mira-muted">намечается</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-mira-muted mt-1 leading-relaxed">{c.body}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
+      <Card className={`mb-4 p-4 ${toneClass[heroTone]}`}>
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70">
+            {redFlags.length > 0 ? <AlertCircle className="h-5 w-5" /> : <Target className="h-5 w-5" />}
           </div>
-        );
-      })()}
-
-      {/* Smart insights */}
-      {(() => {
-        const smartInsights = getSmartInsights(data);
-        if (smartInsights.length === 0) return null;
-        return (
-          <div className="mb-6 space-y-3">
-            {smartInsights.map((insight, i) => (
-              <Card key={i} className="border-mira-primary/10 bg-mira-lavender-light/20 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mira-lavender-light">
-                    <Lightbulb className="h-4 w-4 text-mira-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-mira-text">{insight.title}</p>
-                    <p className="mt-1 text-xs text-mira-muted leading-relaxed">{insight.body}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest">Главное сейчас</p>
+              <Badge className="shrink-0 bg-white/80 text-[10px] shadow-none">{readiness}% данных</Badge>
+            </div>
+            <p className="text-base font-bold leading-snug text-mira-text">{heroTitle}</p>
+            <p className="mt-1 text-xs leading-relaxed text-mira-muted">{heroBody}</p>
           </div>
-        );
-      })()}
+        </div>
 
-      {/* Phase correlations (#4) */}
-      {(() => {
-        const correlations = getPhaseCorrelations(data);
-        if (correlations.length === 0) return null;
-        return (
-          <div className="mb-6 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted px-1">
-              <Link2 className="mr-1 inline h-3 w-3" />
-              Связь симптомов с фазой цикла
-            </p>
-            {correlations.map((c, i) => (
-              <Card key={i} className="p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-semibold text-mira-text">{c.symptom}</p>
-                  <Badge className="text-[10px]">{c.phase} · {c.frequency}x</Badge>
-                </div>
-                <p className="text-xs text-mira-muted leading-relaxed">{c.explanation}</p>
-              </Card>
-            ))}
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <MiniStat label="Отметки" value={`${totalDays}`} note="дней" />
+          <MiniStat label="Норма" value={`${normOverall}%`} note="карта ритма" />
+          <MiniStat label="Сигналы" value={`${watchMetrics.length}`} note="для внимания" />
+        </div>
+      </Card>
+
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        <Card className="p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-mira-primary" />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Сегодня</p>
           </div>
-        );
-      })()}
-
-      {needsMoreData && detailTab === null && (
-        <Card className="mb-6 border-[#C4B07E]/15 bg-[#F5F0E0]/30 p-4">
-          <p className="text-sm text-[#A09060]">Начни отслеживать каждый день — детали появятся после первой недели данных.</p>
+          <p className="text-sm font-bold leading-snug text-mira-text">
+            {today ? "Есть отметка" : "День пока пустой"}
+          </p>
+          <p className="mt-1 text-[11px] leading-snug text-mira-muted">
+            {today
+              ? `Не хватает: ${shortList(missingToday, "всё важное отмечено")}`
+              : "Отметка сегодня сильнее всего улучшит аналитику."}
+          </p>
+          <Button className="mt-3 w-full" size="sm" onClick={() => onCheckIn?.()}>
+            <Plus className="h-4 w-4" /> Отметить
+          </Button>
         </Card>
+
+        <Card className="p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-mira-success" />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Главный пробел</p>
+          </div>
+          <p className="text-sm font-bold leading-snug text-mira-text">{weakestNeed.label}</p>
+          <p className="mt-1 text-[11px] leading-snug text-mira-muted">
+            {weakestNeed.count}/{weakestNeed.goal} {weakestNeed.unit} · {weakestNeed.why}
+          </p>
+          <div className="mt-3">
+            <Progress value={pct(weakestNeed.count, weakestNeed.goal)} color={weakestNeed.color} />
+          </div>
+        </Card>
+      </div>
+
+      <SectionTitle label="Данные" title="Что важно собирать для точной аналитики" />
+      <Card className="mb-5 p-4">
+        <div className="space-y-3">
+          {dataNeeds.map((need) => {
+            const Icon = need.icon;
+            const value = pct(need.count, need.goal);
+            const done = value >= 100;
+            return (
+              <div key={need.id} className="grid grid-cols-[32px_1fr_auto] items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-mira-bg text-mira-primary">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="mb-1 flex items-center gap-2">
+                    <p className="truncate text-xs font-bold text-mira-text">{need.label}</p>
+                    {done && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-mira-success" />}
+                  </div>
+                  <Progress value={value} color={need.color} />
+                  <p className="mt-1 truncate text-[10px] text-mira-muted">{need.why}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-mira-text">{need.count}/{need.goal}</p>
+                  <p className="text-[10px] text-mira-muted">{need.unit}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      <SectionTitle label="Выводы" title={evidenceItems.length > 0 ? "Что уже видно по данным" : "Какие выводы появятся здесь"} />
+      <div className="mb-5 space-y-3">
+        {evidenceItems.length > 0 ? (
+          evidenceItems.map(item => (
+            <Card key={item.key} className={`p-4 ${toneClass[item.tone]}`}>
+              <div className="flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70 text-sm font-black">{item.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold leading-snug text-mira-text">{item.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-mira-muted">{item.body}</p>
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <Card className="border-mira-lavender/20 bg-mira-bg p-4">
+            <p className="text-sm font-bold text-mira-text">Пока рано делать выводы</p>
+            <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+              После нескольких отметок Mira начнёт показывать связи: когда падает энергия, в какие дни чаще боль, как сон связан с фазой цикла.
+            </p>
+          </Card>
+        )}
+      </div>
+
+      {usefulMetrics.length > 0 && (
+        <div className="mb-5">
+          <SectionTitle label="Состояние" title="Короткая сводка по показателям" />
+          <div className="grid grid-cols-2 gap-3">
+            {health.metrics.map((metric) => {
+              const meta = statusMeta[metric.status];
+              return (
+                <Card key={metric.id} className="p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-lg">{metric.emoji}</span>
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.color }} />
+                  </div>
+                  <p className="text-xs font-bold text-mira-text">{metric.label}</p>
+                  <p className="mt-1 text-[11px] font-semibold" style={{ color: meta.color }}>{metric.verdict}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-mira-muted">{metric.detail}</p>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       )}
 
-      {/* Drill-down: детали выбранного показателя */}
-      {detailTab !== null && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-bold text-mira-text flex items-center gap-1.5">
-              {(() => { const Icon = tabIcons[detailTab]; return <Icon className="h-4 w-4 text-mira-primary" />; })()}
-              {tabs[detailTab]}
-            </p>
-            <button onClick={() => setDetailTab(null)} className="text-xs text-mira-muted hover:text-mira-primary">Свернуть ✕</button>
+      <SectionTitle label="Подробности" title="Разобрать данные по разделам" />
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        {detailTabs.map(tab => {
+          const Icon = tab.icon;
+          const active = detailTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setDetailTab(tab.id)}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-bold transition ${
+                active
+                  ? "border-mira-primary bg-mira-lavender-light text-mira-primary"
+                  : "border-mira-lavender/25 bg-white text-mira-muted"
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {detailTab === "cycle" && (
+        <div className="mb-5 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <MiniStat label="Цикл" value={`${cycleLength}`} note="дней по норме" />
+            <MiniStat label="Месячные" value={`${periodLength}`} note="дней обычно" />
+            <MiniStat label="Циклов" value={`${norm.observedCycles}`} note="наблюдаем" />
+            <MiniStat label="Разброс" value={norm.observedCycles >= 2 ? `${norm.spread}` : "—"} note="дней между циклами" />
           </div>
-
-      {detailTab === 0 && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Card className="p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Длительность цикла</p>
-              <Badge className="text-[9px]">
-                {norm.confidence === "high" ? "Точная норма" : norm.confidence === "medium" ? "Уточняется" : "Оценка"}
-              </Badge>
-            </div>
-            <p className="mt-2 text-3xl font-bold text-mira-text">
-              {cycleLength} <span className="text-lg font-normal text-mira-muted">дней</span>
-              {norm.observedCycles >= 2 && norm.spread > 0 && (
-                <span className="text-sm font-normal text-mira-muted"> ({norm.minLength}–{norm.maxLength})</span>
-              )}
+          <Card className="p-4">
+            <p className="text-sm font-bold text-mira-text">Что это значит</p>
+            <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+              {norm.observedCycles === 0
+                ? "Пока длина цикла взята из онбординга. Отмечай начало месячных, чтобы Mira посчитала твою реальную норму."
+                : norm.observedCycles === 1
+                  ? `Есть 1 завершённый цикл. Нужен ещё один, чтобы сравнить длительность и понять разброс.`
+                  : norm.isRegular
+                    ? `Цикл выглядит регулярным: ${cycleLength} дней, разброс ${norm.spread} дн.`
+                    : `Цикл колеблется от ${norm.minLength} до ${norm.maxLength} дней. Если разброс большой и повторяется, это стоит обсудить.`}
             </p>
-            <div className="mt-3 rounded-xl bg-mira-bg p-3">
-              <p className="text-xs text-mira-text">
-                <span className="font-semibold">Что это значит:</span>{" "}
-                {norm.observedCycles === 0
-                  ? `Пока это оценка из онбординга. Отмечай начало месячных — и я посчитаю твою реальную норму.`
-                  : norm.observedCycles === 1
-                    ? `Зафиксирован 1 цикл (${cycleLength} дн.). Нужно ещё хотя бы один, чтобы понять твой ритм.`
-                    : norm.isRegular
-                      ? `Твой цикл регулярный: ${cycleLength} дн. (по ${norm.observedCycles} циклам). Разброс всего ${norm.spread} дн.`
-                      : `Цикл нерегулярный: от ${norm.minLength} до ${norm.maxLength} дн. (по ${norm.observedCycles} циклам). Это бывает — но если разброс большой, стоит обсудить с врачом.`}
-              </p>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Длительность месячных</p>
-            <p className="mt-2 text-3xl font-bold text-mira-text">{periodLength} <span className="text-lg font-normal text-mira-muted">дней</span></p>
-            <div className="mt-3 rounded-xl bg-mira-bg p-3">
-              <p className="text-xs text-mira-text">
-                <span className="font-semibold">Что это значит:</span> Обычно месячные длятся {periodLength} дней.
-                {periodLength > 7 ? " Это дольше среднего — стоит обсудить с врачом." : " Это в пределах нормы."}
-              </p>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Фазы цикла</p>
-            <div className="mt-4 flex items-center gap-6">
-              <div className="relative h-24 w-24 shrink-0">
-                <svg viewBox="0 0 100 100" className="h-full w-full">
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#EDE8F5" strokeWidth="12" />
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#E8A0B8" strokeWidth="12" strokeDasharray="43 196" strokeDashoffset="60" strokeLinecap="round" />
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#B8A5D8" strokeWidth="12" strokeDasharray="67 172" strokeDashoffset="17" strokeLinecap="round" opacity="0.7" />
-                </svg>
-              </div>
-              <div className="space-y-2 text-xs">
-                {[
-                  { color: "bg-[#E8A0B8]", label: "Менструация", days: `${periodLength} дн.` },
-                  { color: "bg-[#B8A5D8]", label: "Фолликулярная" },
-                  { color: "bg-[#D4A0C8]", label: "Овуляция" },
-                  { color: "bg-[#D4CCE6]", label: "Лютеиновая" },
-                ].map(p => (
-                  <div key={p.label} className="flex items-center gap-2">
-                    <span className={`h-2.5 w-2.5 rounded-full ${p.color}`} />
-                    <span className="text-mira-text">{p.label}</span>
-                    {p.days && <span className="text-mira-muted">{p.days}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Дней с данными</p>
-            <p className="mt-2 text-3xl font-bold text-mira-text">{totalDays}</p>
-            <p className="text-xs text-mira-muted">всего записей</p>
           </Card>
         </div>
       )}
 
-      {detailTab === 1 && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Боль по дням</p>
-            <div className="mt-4">
-              {painEntries.length === 0
-                ? <p className="text-xs text-mira-muted italic">Нет данных о боли</p>
-                : (
-                  <>
-                    <p className="text-2xl font-bold text-mira-text">{painEntries.length} <span className="text-sm font-normal text-mira-muted">дней с болью</span></p>
-                    <div className="mt-3 rounded-xl bg-mira-bg p-3">
-                      <p className="text-xs text-mira-text">
-                        <span className="font-semibold">Что это значит:</span>{" "}
-                        {painEntries.length > 5
-                          ? "Боль повторяется. Если она мешает обычной жизни, стоит обсудить с врачом."
-                          : "Пока мало данных. Продолжай отмечать для выявления паттернов."}
-                      </p>
-                    </div>
-                  </>
-                )}
+      {detailTab === "symptoms" && (
+        <div className="mb-5 space-y-3">
+          <Card className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Боль</p>
+            <p className="mt-2 text-2xl font-black text-mira-text">{painEntries.length} <span className="text-sm font-normal text-mira-muted">дней</span></p>
+            <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+              {strongPainEntries.length > 0
+                ? `Сильная боль отмечена ${strongPainEntries.length} раз. Если мешает обычной жизни, стоит обсудить с врачом.`
+                : painEntries.length > 0
+                  ? "Продолжай отмечать, в какие дни она появляется, чтобы увидеть фазу и повтор."
+                  : "Если боли нет, это нормально. Отмечай боль только когда она появляется."}
+            </p>
+          </Card>
+
+          <Card className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Типы боли</p>
+            <div className="mt-3">
+              {renderDistribution(
+                countBy(painEntries.flatMap(c => c.pain!.kinds.filter(k => k !== "none")), v => v),
+                painLabels,
+                painEntries.flatMap(c => c.pain!.kinds.filter(k => k !== "none")).length || 1,
+                "bg-mira-cycle",
+              )}
             </div>
           </Card>
 
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Типы боли</p>
-            <div className="mt-4">
+          <Card className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">ПМС</p>
+            <div className="mt-3">
               {(() => {
-                const kinds = painEntries.flatMap(c => c.pain!.kinds.filter(k => k !== "none"));
-                const painLabels: Record<string, string> = { cramps: "Спазмы", lower_abdomen: "Низ живота", headache: "Голова", breast: "Грудь", back: "Спина", ovulatory: "Овуляторная" };
-                return renderDistribution(countBy(kinds, v => v), painLabels, kinds.length || 1, "bg-mira-cycle");
+                const allSymptoms = pmsEntries.flatMap(c => c.pms!.symptoms);
+                const sorted = Object.entries(countBy(allSymptoms, v => v)).sort((a, b) => b[1] - a[1]);
+                if (sorted.length === 0) return <p className="text-xs italic text-mira-muted">Пока нет данных о ПМС</p>;
+                return (
+                  <div className="space-y-2">
+                    {sorted.slice(0, 5).map(([symptom, count]) => (
+                      <div key={symptom} className="flex items-center justify-between rounded-lg bg-mira-bg px-3 py-2">
+                        <span className="text-xs font-semibold text-mira-text">{symptom}</span>
+                        <Badge className="bg-white text-[10px] shadow-none">{count}x</Badge>
+                      </div>
+                    ))}
+                  </div>
+                );
               })()}
             </div>
           </Card>
         </div>
       )}
 
-      {detailTab === 2 && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">ПМС-симптомы</p>
-            <div className="mt-4">
-              {pmsEntries.length === 0
-                ? <p className="text-xs text-mira-muted italic">Нет данных о ПМС</p>
-                : (() => {
-                    const allSymptoms = pmsEntries.flatMap(c => c.pms!.symptoms);
-                    const counts = countBy(allSymptoms, v => v);
-                    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-                    return (
-                      <>
-                        <div className="space-y-2">
-                          {sorted.slice(0, 5).map(([sym, count]) => (
-                            <div key={sym} className="flex items-center justify-between">
-                              <span className="text-sm text-mira-text">{sym}</span>
-                              <Badge>{count}x</Badge>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-3 rounded-xl bg-mira-bg p-3">
-                          <p className="text-xs text-mira-text">
-                            <span className="font-semibold">Что это значит:</span>{" "}
-                            {sorted[0] ? `${sorted[0][0]} — самый частый ПМС-симптом.` : ""}{" "}
-                            Со временем мы покажем, за сколько дней до месячных он появляется.
-                          </p>
-                        </div>
-                      </>
-                    );
-                  })()
-              }
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Настроение</p>
-            <div className="mt-4">
-              {renderDistribution(
-                countBy(moodEntries.map(c => c.mood!.value), v => v),
-                moodLabels,
-                moodEntries.length || 1,
-                "bg-mira-primary"
-              )}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {detailTab === 3 && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Качество сна</p>
-            <div className="mt-4">
+      {detailTab === "state" && (
+        <div className="mb-5 space-y-3">
+          <Card className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Сон</p>
+            <div className="mt-3">
               {renderDistribution(
                 countBy(sleepEntries.map(c => c.sleep!.quality), v => v),
                 sleepLabels,
                 sleepEntries.length || 1,
-                "bg-[#7E8EC4]"
-              )}
-              {sleepEntries.length >= 7 && (
-                <div className="mt-3 rounded-xl bg-mira-bg p-3">
-                  <p className="text-xs text-mira-text">
-                    <span className="font-semibold">Что это значит:</span>{" "}
-                    {sleepEntries.filter(c => c.sleep!.quality === "bad" || c.sleep!.quality === "insomnia").length > sleepEntries.length * 0.3
-                      ? "Сон часто ухудшается. Это может быть связано с фазой цикла."
-                      : "Сон в целом в норме."}
-                  </p>
-                </div>
+                "bg-[#7E8EC4]",
               )}
             </div>
           </Card>
 
-          <Card className="p-5">
+          <Card className="p-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Энергия</p>
-            <div className="mt-4">
+            <div className="mt-3">
               {renderDistribution(
                 countBy(energyEntries.map(c => c.energy!.value), v => v),
                 energyLabels,
                 energyEntries.length || 1,
-                "bg-[#C4B07E]"
+                "bg-[#C4B07E]",
               )}
             </div>
           </Card>
 
-          <Card className="p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Средний сон</p>
-            {(() => {
-              const hours = sleepEntries.filter(c => c.sleep?.hours).map(c => c.sleep!.hours!);
-              const avg = hours.length > 0 ? (hours.reduce((a, b) => a + b, 0) / hours.length).toFixed(1) : "—";
-              return (
-                <>
-                  <p className="mt-2 text-3xl font-bold text-mira-text">{avg} <span className="text-lg font-normal text-mira-muted">ч</span></p>
-                  <p className="text-xs text-mira-muted">за {hours.length} записей</p>
-                </>
-              );
-            })()}
+          <Card className="p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Настроение</p>
+            <div className="mt-3">
+              {renderDistribution(
+                countBy(moodEntries.map(c => c.mood!.value), v => v),
+                moodLabels,
+                moodEntries.length || 1,
+                "bg-mira-primary",
+              )}
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-2 gap-3">
+            <MiniStat label="Питание" value={`${mealDays}`} note="дней с едой" />
+            <MiniStat label="Вода" value={`${waterDays}`} note="дней с водой" />
+            <MiniStat label="Ходьба" value={`${walkingDays}`} note="дней с шагами" />
+            <MiniStat label="Среднее" value={avgSteps ? `${avgSteps}` : "—"} note="шагов в день" />
+          </div>
+        </div>
+      )}
+
+      {detailTab === "safety" && (
+        <div className="mb-5 space-y-3">
+          {redFlags.length > 0 ? (
+            redFlags.map(flag => (
+              <Card key={flag.title} className="border-mira-cycle/20 bg-[#F8E8EE]/45 p-4">
+                <p className="text-sm font-bold text-mira-text">{flag.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-mira-muted">{flag.body}</p>
+              </Card>
+            ))
+          ) : (
+            <Card className="border-mira-success/15 bg-[#E0F5E8]/25 p-4">
+              <p className="text-sm font-bold text-mira-text">Срочных сигналов нет</p>
+              <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+                Это не заменяет врача, но по текущим отметкам нет повторяющихся красных флагов.
+              </p>
+            </Card>
+          )}
+
+          <Card className="p-4">
+            <p className="text-sm font-bold text-mira-text">Когда стоит обратиться к врачу</p>
+            <ul className="mt-3 space-y-2">
+              {[
+                "Сильная боль повторяется 3+ цикла подряд",
+                "Цикл стал значительно длиннее или короче",
+                "Обильное кровотечение более 7 дней",
+                "Необычные выделения или симптомы, которые беспокоят",
+              ].map(item => (
+                <li key={item} className="flex items-start gap-2 text-xs leading-relaxed text-mira-muted">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-mira-lavender" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Button className="mt-4 w-full" variant="outline" onClick={() => navigate("report")}>
+              <FileText className="h-4 w-4" /> Собрать отчёт
+            </Button>
           </Card>
         </div>
       )}
 
+      <Card className="mb-4 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-mira-text">Нужна точнее аналитика?</p>
+            <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+              Самое ценное сейчас: {weakestNeed.label.toLowerCase()} и сегодняшняя отметка.
+            </p>
+          </div>
+          <button
+            onClick={() => onCheckIn?.()}
+            className="flex shrink-0 items-center gap-1 rounded-lg bg-mira-primary px-3 py-2 text-xs font-bold text-white transition active:scale-[0.98]"
+          >
+            Добавить <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
-      )}
-
-      {/* Постоянная справка — когда к врачу */}
-      <Card className="p-5">
-        <p className="text-sm font-semibold text-mira-text mb-2">Когда стоит обратиться к врачу</p>
-        <ul className="space-y-2">
-          {[
-            "Сильная боль повторяется 3+ цикла подряд",
-            "Цикл стал значительно длиннее или короче",
-            "Обильное кровотечение более 7 дней",
-            "Необычные выделения",
-            "Любые симптомы, которые тебя беспокоят",
-          ].map(item => (
-            <li key={item} className="flex items-start gap-2 text-xs text-mira-muted">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-mira-lavender" />
-              {item}
-            </li>
-          ))}
-        </ul>
       </Card>
     </div>
   );

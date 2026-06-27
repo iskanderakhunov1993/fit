@@ -78,7 +78,7 @@ export async function maybeShowDailyNotification(data: MiraLocalData): Promise<v
     title = reminders[0].title;
     body = reminders[0].body;
   } else if (!ritual.done) {
-    title = "Моя Норма";
+    title = "Mira";
     body = "Отметься за 10 секунд — сад подрастёт 🌱";
   }
 

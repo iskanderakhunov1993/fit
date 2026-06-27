@@ -22,12 +22,7 @@ body {
   color: #2D2640;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Живой «aurora» фон — мягкий, на всех экранах */
-  background:
-    radial-gradient(ellipse 70% 50% at 80% -5%, rgba(212, 204, 230, 0.45), transparent 60%),
-    radial-gradient(ellipse 60% 45% at 10% 10%, rgba(232, 180, 200, 0.22), transparent 55%),
-    radial-gradient(ellipse 80% 60% at 50% 110%, rgba(155, 142, 196, 0.12), transparent 60%),
-    #F8F5FE;
+  background: linear-gradient(180deg, #FBFAFD 0%, #F7F3FA 48%, #F9F6F1 100%);
   background-attachment: fixed;
 }
 

@@ -113,7 +113,7 @@ const users: DemoUser[] = [
     ]),
   },
   {
-    name: "София", desc: "Обильные месячные + низкая энергия → железодефицит", emoji: "🫠", tags: ["обильные", "железо", "усталость"],
+    name: "София", desc: "Обильные месячные + низкая энергия → проверить железо", emoji: "🫠", tags: ["обильные", "железо", "усталость"],
     build: () => makeData("София", 3, 27, 6, [
       ...daysRange(55, 6, () => ({ period: { intensity: "very_heavy" as const }, pain: { kinds: ["cramps" as const], level: "strong" as const }, energy: { value: "exhausted" as const } })),
       ...daysRange(49, 10, () => ({ energy: { value: "low" as const } })),

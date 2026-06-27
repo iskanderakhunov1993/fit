@@ -10,6 +10,7 @@ import { readData, writeData, createEmpty } from "@/lib/store";
 import { syncOnLoad, schedulePush } from "@/lib/sync";
 
 import { TodayScreen } from "@/components/screens/TodayScreen";
+import { DiaryScreen } from "@/components/screens/DiaryScreen";
 import { AnalyticsScreen } from "@/components/screens/AnalyticsScreen";
 import { CareScreen } from "@/components/screens/CareScreen";
 import { IslamicScreen } from "@/components/screens/IslamicScreen";
@@ -87,6 +88,7 @@ export function AppShell() {
 
   const screens: Record<NavPage, React.ReactNode> = {
     today: <TodayScreen {...screenProps} />,
+    diary: <DiaryScreen {...screenProps} />,
     analytics: <AnalyticsScreen {...screenProps} />,
     care: <CareScreen {...screenProps} />,
     islamic: <IslamicScreen {...screenProps} />,
@@ -98,7 +100,7 @@ export function AppShell() {
     <div className="min-h-screen bg-mira-bg text-mira-text lg:flex">
       <Sidebar active={page} onChange={setPage} onCheckIn={openCheckIn} isIslamic={isIslamic} />
       <main className="flex-1 pb-24 lg:pb-0">
-        <div className="mx-auto max-w-[600px] px-4 py-6 sm:px-6">
+        <div className="mx-auto w-full max-w-[660px] px-4 py-6 sm:px-6 lg:py-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={page}

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Моя Норма — Знай свою норму",
-    short_name: "Моя Норма",
+    name: "Mira — Знай свою норму",
+    short_name: "Mira",
     description: "Приватный умный дневник женского здоровья: цикл, симптомы, личная норма, аналитика и отчёт врачу.",
     start_url: "/",
     display: "standalone",

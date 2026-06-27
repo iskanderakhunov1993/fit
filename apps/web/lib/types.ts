@@ -170,6 +170,13 @@ export type WaterEntry = {
   goal: number;
 };
 
+export type WalkingEntry = {
+  date: string;
+  steps: number;
+  goal: number;
+  source?: "manual" | "sync";
+};
+
 // Lab tests — результаты анализов (часть 2 фичи «Анализы»)
 export type LabResult = {
   id: string;
@@ -187,6 +194,7 @@ export type MiraLocalData = {
   checkIns: Record<string, DailyCheckIn>; // keyed by YYYY-MM-DD
   workouts: WorkoutLog[];
   waterLog?: Record<string, WaterEntry>; // keyed by YYYY-MM-DD
+  walkingLog?: Record<string, WalkingEntry>; // keyed by YYYY-MM-DD
   islamicEntries?: Record<string, IslamicEntry>;
   labs?: LabResult[]; // результаты анализов (необяз., обратная совместимость)
   onboardingCompleted: boolean;

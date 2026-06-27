@@ -2,13 +2,26 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import {
+  BookOpen,
+  BriefcaseMedical,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  FileText,
+  Footprints,
+  Minus,
+  Plus,
+  Shirt,
+  UserRound,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CountUp } from "@/components/ui/CountUp";
 import {
+  addWalkingSteps,
   getCycleDay, getCyclePhase,
-  getDaysUntilPeriod, getCheckIn, getWaterEntry,
+  getDaysUntilPeriod, getCheckIn, getWalkingEntry, getWaterEntry,
 } from "@/lib/store";
 import { getPeriodForecast } from "@/lib/cycleEngine";
 import { getSmartReminders, getRedFlags, getToughDayContent } from "@/lib/alerts";
@@ -37,9 +50,9 @@ type PhaseInfo = {
 const phaseConfig: Record<CyclePhase, PhaseInfo> = {
   menstruation: {
     emoji: "🌺", gradient: "from-[#F5D0D8] via-[#F0C0D0] to-[#E8B0C0]",
-    title: "Время заботы о себе", subtitle: "Энергия ниже — это нормально. Отдыхай.",
+    title: "Время заботы о себе", subtitle: "Энергия может быть ниже. Отдыхай.",
     energyLevel: 30, moodEmoji: "😌", moodLabel: "спокойствие",
-    article: { title: "Почему болит живот при месячных?", body: "Простагландины заставляют матку сокращаться. Магний и тепло расслабляют мышцы и уменьшают боль.", tag: "Биология" },
+    article: { title: "Почему болит живот при месячных?", body: "Матка сокращается, и у некоторых это ощущается как спазмы. Тепло и мягкий режим могут поддержать.", tag: "Биология" },
     clothing: "Тёмное удобное бельё, свободные штаны без давления на живот",
     recommendation: "Тёплый чай, грелка, лёгкая прогулка. Не требуй от себя многого.",
     fertility: null,
@@ -66,7 +79,7 @@ const phaseConfig: Record<CyclePhase, PhaseInfo> = {
     emoji: "🌙", gradient: "from-[#E8E0F0] via-[#E0D8E8] to-[#D8D0E0]",
     title: "Замедление", subtitle: "Тело готовится. Будь мягче к себе.",
     energyLevel: 45, moodEmoji: "😐", moodLabel: "переменчиво",
-    article: { title: "Почему тянет на сладкое перед месячными?", body: "Прогестерон повышает аппетит, падение серотонина вызывает тягу к углеводам. Финики и тёмный шоколад помогут.", tag: "Питание" },
+    article: { title: "Почему тянет на сладкое перед месячными?", body: "Во второй половине цикла аппетит у многих меняется. Финики, фрукты с орехами и тёмный шоколад могут быть мягкой заменой.", tag: "Питание" },
     clothing: "Удобная одежда, мягкие ткани. Живот может быть вздут — свободный крой",
     recommendation: "Магний перед сном, йога или прогулка. Не планируй сложных дел.",
     fertility: { level: "Низкая", emoji: "🟢", note: "Фертильность снижается. Но ни один день не является полностью безопасным." },
@@ -77,12 +90,10 @@ const phaseConfig: Record<CyclePhase, PhaseInfo> = {
 
 const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
-function CycleCalendar({ cycleDay, cycleLength, periodLength, checkIns, periodStart, onCheckIn, persist, data }: {
-  cycleDay: number; cycleLength: number; periodLength: number;
+function CycleCalendar({ cycleLength, periodLength, checkIns, periodStart, onCheckIn }: {
+  cycleLength: number; periodLength: number;
   checkIns: Record<string, DailyCheckIn>; periodStart: string;
   onCheckIn?: (date?: string) => void;
-  persist: (data: any) => void;
-  data: any;
 }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const today = new Date();
@@ -118,17 +129,30 @@ function CycleCalendar({ cycleDay, cycleLength, periodLength, checkIns, periodSt
   const activeCheckIn = checkIns[activeKey];
   const activeDate = new Date(activeKey);
   const isFutureActive = activeDate > today;
+  const activeLabel = activeKey === todayKey
+    ? "Сегодня"
+    : new Date(activeKey).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
 
   return (
     <div>
       {/* Date header */}
-      <div className="flex items-center justify-center mb-3">
-        <p className="text-sm font-semibold text-mira-text capitalize">
-          {selectedKey && selectedKey !== todayKey
-            ? new Date(selectedKey).toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "short" })
-            : `Сегодня, ${todayStr}`
-          }
-        </p>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Неделя</p>
+          <p className="text-sm font-semibold capitalize text-mira-text">
+            {selectedKey && selectedKey !== todayKey
+              ? new Date(selectedKey).toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "short" })
+              : `Сегодня, ${todayStr}`
+            }
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSelectedKey(null)}
+          className="rounded-lg border border-mira-lavender/30 bg-white px-3 py-1.5 text-xs font-semibold text-mira-muted transition hover:border-mira-primary/30 hover:text-mira-primary"
+        >
+          Сегодня
+        </button>
       </div>
 
       {/* Pills row — full width, equal spacing */}
@@ -144,7 +168,6 @@ function CycleCalendar({ cycleDay, cycleLength, periodLength, checkIns, periodSt
               key={d.key}
               onClick={() => {
                 setSelectedKey(d.key === todayKey ? null : d.key);
-                if (!isFuture && onCheckIn) onCheckIn(d.key);
               }}
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -171,6 +194,25 @@ function CycleCalendar({ cycleDay, cycleLength, periodLength, checkIns, periodSt
             </motion.button>
           );
         })}
+      </div>
+
+      <div className="flex items-center justify-between rounded-lg border border-mira-lavender/20 bg-white px-3 py-2">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-mira-text">{activeLabel}</p>
+          <p className="text-[10px] text-mira-muted">
+            {isFutureActive ? "Будущий день" : activeCheckIn ? "Есть отметка" : "День пока пустой"}
+          </p>
+        </div>
+        {!isFutureActive && (
+          <button
+            type="button"
+            onClick={() => onCheckIn?.(activeKey)}
+            className="inline-flex items-center gap-1 rounded-lg bg-mira-lavender-light px-3 py-1.5 text-xs font-bold text-mira-primary transition active:scale-[0.98]"
+          >
+            {activeCheckIn ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+            {activeCheckIn ? "Обновить" : "Заполнить"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -308,12 +350,249 @@ function WaterBottle({ data, onOpen }: { data: MiraLocalData; onOpen: () => void
   );
 }
 
-export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps) {
-  const [hintDismissed, setHintDismissed] = useState(
-    typeof window !== "undefined" && localStorage.getItem("mira:hint-today") === "done"
-  );
-  const dismissHint = () => { localStorage.setItem("mira:hint-today", "done"); setHintDismissed(true); };
+function WalkingCard({ data, persist }: { data: MiraLocalData; persist: ScreenProps["persist"] }) {
+  const [manualSteps, setManualSteps] = useState("");
+  const entry = getWalkingEntry(data);
+  const progress = Math.min(100, Math.round((entry.steps / entry.goal) * 100));
+  const km = entry.steps * 0.0007;
 
+  function addSteps(steps: number) {
+    if (steps === 0) return;
+    persist(addWalkingSteps(data, steps));
+  }
+
+  function addManualSteps() {
+    const steps = Number.parseInt(manualSteps, 10);
+    if (!Number.isFinite(steps) || steps <= 0) return;
+    addSteps(steps);
+    setManualSteps("");
+  }
+
+  return (
+    <Card className="p-3.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Ходьба</p>
+          <p className="mt-1 text-lg font-bold leading-none text-mira-text">
+            <CountUp value={entry.steps} /> <span className="text-xs font-normal text-mira-muted">шагов</span>
+          </p>
+          <p className="mt-1 text-[10px] text-mira-muted">~{km.toFixed(1)} км · цель {entry.goal}</p>
+        </div>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#E0F5E8] text-mira-success">
+          <Footprints className="h-5 w-5" />
+        </span>
+      </div>
+
+      <div className="mb-3">
+        <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-mira-muted">
+          <span>Прогресс дня</span>
+          <span>{progress}%</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-mira-lavender-light">
+          <div className="h-full rounded-full bg-mira-success transition-all duration-500" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+
+      <div className="mb-3 grid grid-cols-3 gap-1.5">
+        {[500, 1000, 3000].map((steps) => (
+          <button
+            key={steps}
+            type="button"
+            onClick={() => addSteps(steps)}
+            className="rounded-lg border border-mira-success/15 bg-[#E0F5E8]/45 px-2 py-2 text-[11px] font-bold text-mira-success transition active:scale-[0.97]"
+          >
+            +{steps}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-[1fr_auto_auto] gap-1.5">
+        <input
+          value={manualSteps}
+          onChange={(event) => setManualSteps(event.target.value.replace(/\D/g, ""))}
+          inputMode="numeric"
+          placeholder="шаги"
+          className="min-w-0 rounded-lg border border-mira-lavender/30 bg-white px-3 py-2 text-sm font-semibold text-mira-text outline-none transition placeholder:text-mira-muted focus:border-mira-success/50 focus:ring-4 focus:ring-mira-success/10"
+        />
+        <Button size="sm" onClick={addManualSteps} aria-label="Добавить шаги вручную">
+          <Plus className="h-4 w-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => addSteps(-500)} aria-label="Убрать 500 шагов">
+          <Minus className="h-4 w-4" />
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function getPeriodPrep(daysUntil: number, phase: CyclePhase) {
+  if (phase === "menstruation") {
+    return {
+      level: 4,
+      tone: "border-mira-cycle/25 bg-[#F8E8EE]/70",
+      accent: "text-mira-cycle",
+      fill: "bg-mira-cycle",
+      status: "Критические дни",
+      firstAidTitle: "Носи с собой прокладки",
+      firstAidBody: "Прокладки, влажные салфетки, запасное бельё и привычное средство от боли, если тебе его можно.",
+      clothingTitle: "Тёмная одежда",
+      clothingBody: "Сегодня лучше тёмные джинсы или чёрная одежда, мягкий пояс и удобное бельё.",
+    };
+  }
+
+  if (daysUntil <= 1) {
+    return {
+      level: 4,
+      tone: "border-mira-cycle/25 bg-[#F8E8EE]/65",
+      accent: "text-mira-cycle",
+      fill: "bg-mira-cycle",
+      status: "Очень близко",
+      firstAidTitle: "Положи прокладки в сумку",
+      firstAidBody: "Добавь прокладки, салфетки и маленький пакет. Лучше быть готовой заранее.",
+      clothingTitle: "Тёмные джинсы",
+      clothingBody: "Выбери тёмные джинсы или чёрный низ. Так спокойнее, если месячные начнутся сегодня.",
+    };
+  }
+
+  if (daysUntil <= 3) {
+    return {
+      level: 3,
+      tone: "border-[#C47E9B]/20 bg-[#F8E8EE]/45",
+      accent: "text-mira-cycle",
+      fill: "bg-mira-cycle",
+      status: `Через ${daysUntil} дн.`,
+      firstAidTitle: "Аптечку уже стоит собрать",
+      firstAidBody: "Прокладки, салфетки, вода и то, что обычно помогает тебе при спазмах.",
+      clothingTitle: "Комфортный низ",
+      clothingBody: "Лучше джинсы или брюки без сильного давления на живот, цвет — тёмный.",
+    };
+  }
+
+  if (daysUntil <= 7) {
+    return {
+      level: 2,
+      tone: "border-[#C4B07E]/20 bg-[#F5F0E0]/40",
+      accent: "text-[#9A7B2F]",
+      fill: "bg-[#C4B07E]",
+      status: `Через ${daysUntil} дн.`,
+      firstAidTitle: "Проверь запас",
+      firstAidBody: "Посмотри, есть ли прокладки дома и одна-две штуки в сумке.",
+      clothingTitle: "Джинсы свободнее",
+      clothingBody: "Сегодня подойдут джинсы без давления или мягкие брюки. Тёмный низ — спокойный запасной вариант.",
+    };
+  }
+
+  return {
+    level: 1,
+    tone: "border-mira-lavender/20 bg-white",
+    accent: "text-mira-muted",
+    fill: "bg-mira-lavender",
+    status: "Спокойный день",
+    firstAidTitle: "Базовая аптечка",
+    firstAidBody: "Держи дома запас прокладок, салфетки и то, что обычно помогает тебе в первые дни.",
+    clothingTitle: "Джинсы или мягкий низ",
+    clothingBody: "Сегодня можно надеть джинсы или комфортный низ. Если хочется перестраховаться — выбирай тёмный цвет.",
+  };
+}
+
+function FirstAidCard({ daysUntil, phase }: { daysUntil: number; phase: CyclePhase }) {
+  const prep = getPeriodPrep(daysUntil, phase);
+  return (
+    <Card className={`min-h-[154px] p-3.5 ${prep.tone}`}>
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={`text-[10px] font-bold uppercase tracking-widest ${prep.accent}`}>Аптечка</p>
+          <p className="mt-1 text-sm font-bold leading-snug text-mira-text">{prep.firstAidTitle}</p>
+        </div>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70">
+          <BriefcaseMedical className={`h-4 w-4 ${prep.accent}`} />
+        </span>
+      </div>
+      <p className="min-h-[48px] text-[11px] leading-snug text-mira-muted">{prep.firstAidBody}</p>
+      <div className="mt-3">
+        <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-mira-muted">
+          <span>{prep.status}</span>
+          <span>{prep.level}/4</span>
+        </div>
+        <div className="grid grid-cols-4 gap-1">
+          {[1, 2, 3, 4].map((level) => (
+            <span
+              key={level}
+              className={`h-1.5 rounded-full ${level <= prep.level ? prep.fill : "bg-mira-lavender-light"}`}
+            />
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ClothingCard({ daysUntil, phase }: { daysUntil: number; phase: CyclePhase }) {
+  const prep = getPeriodPrep(daysUntil, phase);
+  return (
+    <Card className={`min-h-[154px] p-3.5 ${prep.tone}`}>
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={`text-[10px] font-bold uppercase tracking-widest ${prep.accent}`}>Одежда</p>
+          <p className="mt-1 text-sm font-bold leading-snug text-mira-text">{prep.clothingTitle}</p>
+        </div>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70">
+          <Shirt className={`h-4 w-4 ${prep.accent}`} />
+        </span>
+      </div>
+      <p className="text-[11px] leading-snug text-mira-muted">{prep.clothingBody}</p>
+      <div className="mt-3 rounded-lg bg-white/60 px-2.5 py-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Сегодня</p>
+        <p className="mt-0.5 text-[11px] font-semibold text-mira-text">
+          {prep.level >= 3 ? "Тёмный низ + удобное бельё" : "Джинсы или тёмный низ"}
+        </p>
+      </div>
+    </Card>
+  );
+}
+
+function PersonalDiaryCard({
+  hasCheckIn,
+  hasNote,
+  onOpenDiary,
+  onCheckIn,
+}: {
+  hasCheckIn: boolean;
+  hasNote: boolean;
+  onOpenDiary: () => void;
+  onCheckIn?: () => void;
+}) {
+  return (
+    <Card className="p-4 border-mira-primary/10 bg-white">
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-mira-lavender-light text-mira-primary">
+          <BookOpen className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-primary">Для себя</p>
+          <p className="text-sm font-bold text-mira-text">Личный дневник и состояние дня</p>
+          <p className="mt-1 text-xs leading-snug text-mira-muted">
+            {hasNote
+              ? "Сегодня уже есть личная запись."
+              : hasCheckIn
+                ? "Состояние отмечено. Можно добавить пару слов для себя."
+                : "Можно просто отметить самочувствие или оставить личную запись без лишних вопросов."}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" onClick={onOpenDiary}>
+          <BookOpen className="h-4 w-4" /> Дневник
+        </Button>
+        <Button onClick={onCheckIn}>
+          <Plus className="h-4 w-4" /> Состояние
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps) {
   const profile = data.profile;
   const cycleDay = getCycleDay(profile);
   const cycleLength = profile?.cycleConfig.cycleLength ?? 28;
@@ -321,7 +600,7 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
   const phase = getCyclePhase(cycleDay, periodLength, cycleLength);
   const daysUntil = getDaysUntilPeriod(profile);
   const checkIn = getCheckIn(data);
-  const name = profile?.name ?? "Моя Норма";
+  const name = profile?.name ?? "Mira";
   const streak = getStreak(data);
 
   const isIslamic = profile?.additionalMode === "islam";
@@ -353,6 +632,16 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
       : important.tone === "warm" ? "border-[#C4B07E]/15 bg-[#F5F0E0]/30"
         : "border-mira-primary/10 bg-[#EDE8F5]/30";
 
+  const shorten = (text: string, max: number) =>
+    text.length > max ? `${text.slice(0, Math.max(0, max - 3)).trim()}...` : text;
+  const firstSentence = (text: string) => {
+    const sentence = text.split(".")[0]?.trim();
+    return sentence ? `${sentence}.` : text;
+  };
+  const vitaminRec = vitaminCard?.recs[0];
+  const vitaminTitle = vitaminRec ? `${vitaminRec.name} ${vitaminRec.dose}` : "Поддержка";
+  const vitaminBody = vitaminRec ? firstSentence(vitaminRec.how) : "Пока специальных подсказок нет.";
+
   const fadeUp = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 260, damping: 22 } } };
 
   return (
@@ -361,102 +650,118 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
       {/* Header — avatar / date / calendar */}
       <motion.div variants={fadeUp} className="flex items-center justify-between mb-4">
         <button onClick={() => navigate("profile")}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-mira-rose-light to-mira-lavender-light text-base font-bold text-mira-primary shadow-card transition active:scale-95">
-          {name.charAt(0).toUpperCase()}
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-mira-lavender/25 bg-white text-mira-primary shadow-card transition active:scale-[0.98]"
+          aria-label="Открыть профиль">
+          {name ? <span className="text-sm font-bold">{name.charAt(0).toUpperCase()}</span> : <UserRound className="h-5 w-5" />}
         </button>
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center text-center">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Mira</p>
           <p className="text-sm font-semibold text-mira-text">
             {new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}
           </p>
           {streak.current > 0 && (
-            <span className="text-[11px] font-semibold text-mira-primary">🔥 серия {streak.current}</span>
+            <span className="text-[11px] font-semibold text-mira-primary">серия {streak.current}</span>
           )}
         </div>
-        <button onClick={() => navigate("analytics")}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-mira-lavender/30 bg-white text-mira-muted shadow-card transition hover:border-mira-primary/30 active:scale-95">
-          <span className="text-lg">📅</span>
+        <button onClick={() => navigate("diary")}
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-mira-lavender/30 bg-white text-mira-muted shadow-card transition hover:border-mira-primary/30 hover:text-mira-primary active:scale-[0.98]"
+          aria-label="Открыть дневник">
+          <CalendarDays className="h-5 w-5" />
         </button>
-      </motion.div>
-
-      {/* Первая подсказка (один раз) */}
-      {!hintDismissed && (
-        <motion.div variants={fadeUp} className="mb-4">
-          <Card className="p-4 border-mira-primary/15 bg-mira-lavender-light/30">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">👋</span>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-mira-text">Как это работает</p>
-                <p className="text-xs text-mira-muted mt-1 leading-relaxed">
-                  Каждый день жми <span className="font-semibold text-mira-primary">«Отметить состояние»</span> — 10 секунд.
-                  Я покажу, что происходит с телом, и <span className="font-semibold text-mira-primary">светофор</span> подскажет, всё ли в норме. Сад растёт с каждым днём 🌱
-                </p>
-                <button onClick={dismissHint} className="mt-2 text-xs font-semibold text-mira-primary">Понятно ✓</button>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Calendar pills */}
-      <motion.div variants={fadeUp} className="mb-5">
-        <CycleCalendar
-          cycleDay={cycleDay} cycleLength={cycleLength} periodLength={periodLength}
-          checkIns={data.checkIns} periodStart={profile?.cycleConfig.periodStart ?? ""}
-          onCheckIn={onCheckIn} persist={persist} data={data}
-        />
       </motion.div>
 
       {/* Phase hero with wave graph */}
       <motion.div variants={fadeUp} className="mb-4">
-        <Card className={`sheen animate-gradient p-5 bg-gradient-to-br ${config.gradient} border-0 shadow-[0_8px_32px_rgba(155,142,196,0.18)]`}>
-          <div className="flex items-start justify-between mb-1">
+        <Card className={`border-0 bg-gradient-to-br ${config.gradient} p-5 shadow-[0_12px_30px_rgba(45,38,64,0.08)]`}>
+          <div className="mb-1 flex items-start justify-between gap-4">
             <div>
+              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-mira-text/55">Сегодня</p>
               <p className="text-xl font-bold text-mira-text">{config.title}</p>
               <p className="text-sm text-mira-text/70">{config.subtitle}</p>
             </div>
-            <span className="text-3xl">{config.emoji}</span>
+            <span className="rounded-lg bg-white/40 px-3 py-2 text-sm font-bold text-mira-text">День {cycleDay}</span>
           </div>
 
           <CycleWaveChart cycleDay={cycleDay} cycleLength={cycleLength} periodLength={periodLength} />
 
-          <div className="flex items-center justify-between mt-1">
-            <span className="rounded-full bg-white/35 px-3 py-1 text-xs font-bold text-mira-text">День {cycleDay}</span>
+          <div className="mt-1 flex items-center justify-between">
             {isIslamic && islamicStatus ? (
-              <span className="rounded-full bg-white/35 px-3 py-1 text-xs font-bold text-mira-text">
+              <span className="rounded-lg bg-white/35 px-3 py-1 text-xs font-bold text-mira-text">
                 {islamicStatus.status === "hayd" ? "Хайд" : islamicStatus.status === "purity" ? "Чистота" : islamicStatus.status === "istihada" ? "Истихада" : "—"}
               </span>
             ) : (
               <span className="text-xs text-mira-text/60">Месячные {forecast.text}</span>
             )}
           </div>
+
+          <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+            <Button onClick={() => onCheckIn?.()} className="bg-white text-mira-primary shadow-none hover:bg-white/90">
+              {checkIn ? <CheckCircle2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {checkIn ? "Обновить отметку" : "Отметить состояние"}
+            </Button>
+            <Button variant="outline" onClick={() => navigate("report")} className="border-white/50 bg-white/35 text-mira-text hover:bg-white/60">
+              <FileText className="h-4 w-4" />
+            </Button>
+          </div>
         </Card>
       </motion.div>
 
-      {/* Норма-скан — что уже понятно про норму */}
+      {/* Calendar pills */}
+      <motion.div variants={fadeUp} className="mb-5">
+        <CycleCalendar
+          cycleLength={cycleLength} periodLength={periodLength}
+          checkIns={data.checkIns} periodStart={profile?.cycleConfig.periodStart ?? ""}
+          onCheckIn={onCheckIn}
+        />
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-4">
+        <PersonalDiaryCard
+          hasCheckIn={!!checkIn}
+          hasNote={!!checkIn?.note?.text}
+          onOpenDiary={() => navigate("diary")}
+          onCheckIn={() => onCheckIn?.()}
+        />
+      </motion.div>
+
+      {/* Личная норма — что уже понятно про ритм */}
       <motion.div variants={fadeUp} className="mb-4">
         <NormaScanCard
           data={data}
           onOpenAnalytics={() => navigate("analytics")}
           onOpenReport={() => navigate("report")}
+          onCheckIn={() => onCheckIn?.()}
         />
       </motion.div>
 
-      {/* Сегодня важное — один блок */}
-      <motion.div variants={fadeUp} className="mb-4">
-        <Card className={`p-4 flex items-start gap-3 ${importantBg}`}>
-          <span className="text-xl shrink-0">{important.emoji}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted mb-0.5">Сегодня важное</p>
-            <p className="text-sm font-semibold text-mira-text">{important.title}</p>
-            <p className="text-xs text-mira-muted mt-0.5">{important.body}</p>
-            {/* #4 Проактивный отчёт врачу при красных флагах */}
-            {redFlags.length > 0 && !toughDay && (
-              <button onClick={() => navigate("report")}
-                className="mt-2 inline-flex items-center gap-1 rounded-full bg-mira-cycle/15 px-3 py-1.5 text-xs font-semibold text-mira-cycle transition active:scale-95">
-                📋 Собрать отчёт для врача <ChevronRight className="h-3 w-3" />
-              </button>
-            )}
+      {/* Сегодня важное + поддержка */}
+      <motion.div variants={fadeUp} className="mb-4 grid grid-cols-2 gap-3">
+        <Card className={`min-h-[128px] p-3 ${importantBg}`}>
+          <div className="mb-2 flex items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/60 text-base">
+              {important.emoji}
+            </span>
+            <p className="text-[10px] font-bold uppercase leading-tight tracking-widest text-mira-muted">Сегодня важное</p>
           </div>
+          <p className="text-[13px] font-bold leading-snug text-mira-text">{shorten(important.title, 42)}</p>
+          <p className="mt-1 text-[11px] leading-snug text-mira-muted">{shorten(important.body, 70)}</p>
+          {redFlags.length > 0 && !toughDay && (
+            <button onClick={() => navigate("report")}
+              className="mt-2 inline-flex items-center gap-1 rounded-lg bg-mira-cycle/15 px-2.5 py-1.5 text-[11px] font-semibold text-mira-cycle transition active:scale-95">
+              <FileText className="h-3 w-3" /> Отчёт
+            </button>
+          )}
+        </Card>
+
+        <Card className="min-h-[128px] cursor-pointer border-mira-success/10 bg-[#E0F5E8]/25 p-3 transition active:scale-[0.99]" onClick={() => navigate("care")}>
+          <div className="mb-2 flex items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70 text-base">
+              {vitaminRec ? vitaminRec.icon : "🌿"}
+            </span>
+            <p className="text-[10px] font-bold uppercase leading-tight tracking-widest text-mira-success">Витамины</p>
+          </div>
+          <p className="text-[13px] font-bold leading-snug text-mira-text">{shorten(vitaminTitle, 38)}</p>
+          <p className="mt-1 text-[11px] leading-snug text-mira-muted">{shorten(vitaminBody, 70)}</p>
         </Card>
       </motion.div>
 
@@ -474,30 +779,17 @@ export function TodayScreen({ data, persist, navigate, onCheckIn }: ScreenProps)
         </motion.div>
       )}
 
-      {/* Забота — в самом низу: питание + вода + витамины */}
+      {/* Забота — в самом низу: ходьба + питание + вода */}
       <motion.div variants={fadeUp} className="mb-4 grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <WalkingCard data={data} persist={persist} />
+        </div>
         <NutritionRing data={data} phase={phase} onOpen={() => navigate("care")} />
         <WaterBottle data={data} onOpen={() => navigate("care")} />
+        <FirstAidCard daysUntil={daysUntil} phase={phase} />
+        <ClothingCard daysUntil={daysUntil} phase={phase} />
       </motion.div>
 
-      {vitaminCard && vitaminCard.recs.length > 0 && (
-        <motion.div variants={fadeUp} className="mb-4">
-          <Card className="p-3.5 flex items-center gap-3 border-mira-success/10 bg-[#E0F5E8]/20">
-            <span className="text-lg">{vitaminCard.recs[0].icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-mira-text">{vitaminCard.recs[0].name} {vitaminCard.recs[0].dose}</p>
-              <p className="text-[10px] text-mira-success">{vitaminCard.recs[0].how.split(".")[0]}.</p>
-            </div>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* CTA */}
-      <motion.div variants={fadeUp}>
-        <Button className="w-full" size="lg" onClick={() => onCheckIn?.()}>
-          + Отметить состояние <ChevronRight className="h-4 w-4" />
-        </Button>
-      </motion.div>
     </motion.div>
   );
 }

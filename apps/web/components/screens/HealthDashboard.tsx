@@ -62,9 +62,9 @@ export function HealthDashboard({ data, onMetricClick }: { data: MiraLocalData; 
           </div>
           {/* Легенда цветов — чтобы сразу понять что значит */}
           <div className="mt-3 flex items-center justify-center gap-4 border-t border-white/40 pt-2.5">
-            <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#5BAE7E" }} />в норме</span>
+            <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#5BAE7E" }} />стабильно</span>
             <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#C99A3E" }} />следи</span>
-            <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#C9607E" }} />к врачу</span>
+            <span className="flex items-center gap-1 text-[10px] text-mira-muted"><span className="h-2 w-2 rounded-full" style={{ background: "#C9607E" }} />обсудить</span>
           </div>
         </Card>
       </motion.div>

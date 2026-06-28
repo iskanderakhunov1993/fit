@@ -349,6 +349,69 @@ const users: DemoUser[] = [
       makeCheckIn(0, { mood: { value: "normal" }, energy: { value: "normal" } }),
     ], { age: 15, islam: true, madhab: "maliki" }),
   },
+  {
+    name: "Елена", desc: "52 года, чекап 45+, гормоны и отчёт врачу", emoji: "🧬", tags: ["45+", "чекап", "гормоны", "врач"],
+    build: () => {
+      const d = makeData("Елена", 50, 34, 5, [
+        ...daysRange(100, 5, () => ({ period: { intensity: "heavy" as const }, energy: { value: "low" as const } })),
+        ...daysRange(95, 18, () => ({ sleep: { quality: "insomnia" as const, hours: 4 }, mood: { value: "swings" as const }, energy: { value: "low" as const } })),
+        ...daysRange(55, 5, () => ({ period: { intensity: "very_heavy" as const }, energy: { value: "exhausted" as const } })),
+        ...daysRange(50, 12, () => ({ sleep: { quality: "bad" as const, hours: 5 }, mood: { value: "anxiety" as const }, energy: { value: "low" as const } })),
+        makeCheckIn(0, { sleep: { quality: "insomnia", hours: 4 }, mood: { value: "swings" }, energy: { value: "low" } }),
+      ], { age: 52 });
+      d.labs = [
+        { id: "lab-demo-estradiol", testId: "estradiol", value: 18, unit: "пг/мл", date: dateStr(3) },
+        { id: "lab-demo-progesterone", testId: "progesterone", value: 1.1, unit: "нг/мл", date: dateStr(3) },
+        { id: "lab-demo-ferritin", testId: "ferritin", value: 12, unit: "нг/мл", date: dateStr(3) },
+      ];
+      return d;
+    },
+  },
+  {
+    name: "Полина", desc: "Приватность: PIN, скрытый режим, без облака для интимного", emoji: "🔐", tags: ["приватность", "PIN", "облако"],
+    build: () => {
+      const d = makeData("Полина", 17, 28, 5, [
+        ...daysRange(28, 5, () => ({ period: { intensity: "moderate" as const } })),
+        makeCheckIn(4, { intimacy: { happened: true, protection: "protected", feeling: "normal", showInCalendar: false }, mood: { value: "normal" } }),
+        makeCheckIn(0, { mood: { value: "normal" }, energy: { value: "normal" }, note: { text: "Хочу проверить скрытый режим и приватные отметки." } }),
+      ], { age: 29 });
+      d.profile = {
+        ...d.profile!,
+        pinEnabled: true,
+        hiddenMode: true,
+        hiddenNotifications: true,
+        deviceUnlockEnabled: true,
+        cloudSyncExclude: ["intimacy", "notes", "labs", "delayChecks"],
+      };
+      return d;
+    },
+  },
+  {
+    name: "Виктория", desc: "Незащищённый секс, напоминание о тесте и задержка", emoji: "🧪", tags: ["секс", "тест", "задержка"],
+    build: () => makeData("Виктория", 34, 28, 5, [
+      ...daysRange(60, 5, () => ({ period: { intensity: "moderate" as const } })),
+      makeCheckIn(18, { intimacy: { happened: true, protection: "unprotected", feeling: "normal", showInCalendar: true }, mood: { value: "normal" } }),
+      makeCheckIn(4, { mood: { value: "anxiety" }, energy: { value: "low" } }),
+      makeCheckIn(0, { mood: { value: "anxiety" }, energy: { value: "low" } }),
+    ], { age: 31 }),
+  },
+  {
+    name: "Инга", desc: "Работа и продуктивность: низкая энергия, нужно снизить нагрузку", emoji: "💼", tags: ["работа", "продуктивность", "паузы"],
+    build: () => makeData("Инга", 24, 28, 5, [
+      ...daysRange(28, 5, () => ({ period: { intensity: "moderate" as const } })),
+      ...daysRange(8, 6, () => ({ pms: { symptoms: ["Усталость", "Раздражительность"] }, mood: { value: "anxiety" as const }, energy: { value: "low" as const }, sleep: { quality: "bad" as const, hours: 5 } })),
+      makeCheckIn(0, { mood: { value: "anxiety" }, energy: { value: "exhausted" }, sleep: { quality: "bad", hours: 4 }, pms: { symptoms: ["Усталость", "Тревожность"] } }),
+    ], { age: 33 }),
+  },
+  {
+    name: "Юля", desc: "Врачебный отчёт: боль, лекарства, дневник, интимность скрыта", emoji: "📄", tags: ["отчёт", "лекарства", "дневник"],
+    build: () => makeData("Юля", 2, 27, 6, [
+      ...daysRange(56, 6, () => ({ period: { intensity: "heavy" as const }, pain: { kinds: ["cramps" as const, "back" as const], level: "strong" as const }, symptomLog: { medications: ["ибупрофен"] } })),
+      ...daysRange(28, 6, () => ({ period: { intensity: "heavy" as const }, pain: { kinds: ["cramps" as const], level: "strong" as const }, symptomLog: { medications: ["дротаверин"] } })),
+      makeCheckIn(1, { period: { intensity: "heavy" }, pain: { kinds: ["cramps", "lower_abdomen"], level: "strong" }, symptomLog: { medications: ["ибупрофен"] }, note: { text: "Боль мешала работать, помогло тепло." } }),
+      makeCheckIn(0, { period: { intensity: "very_heavy" }, pain: { kinds: ["cramps", "back"], level: "strong" }, energy: { value: "exhausted" }, symptomLog: { medications: ["ибупрофен"] } }),
+    ], { age: 36 }),
+  },
 ];
 
 export default function DemoPage() {

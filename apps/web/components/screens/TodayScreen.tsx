@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
+  AlertTriangle,
   BookOpen,
+  Brain,
+  BriefcaseBusiness,
   BriefcaseMedical,
   CalendarDays,
   CheckCircle2,
@@ -11,8 +14,10 @@ import {
   FileText,
   Footprints,
   HeartPulse,
+  MessageCircleHeart,
   Minus,
   Plus,
+  BellRing,
   Shirt,
   X,
   UserRound,
@@ -28,6 +33,9 @@ import {
 import { getPeriodForecast } from "@/lib/cycleEngine";
 import { getSexCycleInsight, getSmartReminders, getRedFlags, getToughDayContent } from "@/lib/alerts";
 import { getVitaminRecommendations } from "@/lib/vitamins";
+import { getWorkMode, type WorkMode } from "@/lib/workMode";
+import { getMoodPmsCard, type MoodPmsCard } from "@/lib/moodPms";
+import { getPersonalReminders, type PersonalReminder } from "@/lib/personalReminders";
 import { getStreak } from "@/lib/gamification";
 import { getDayStatus, getQadaStats, type Madhab } from "@/lib/islamic";
 import { getAgeConfig } from "@/lib/ageMode";
@@ -692,6 +700,187 @@ function ClothingCard({ daysUntil, phase }: { daysUntil: number; phase: CyclePha
   );
 }
 
+function WorkModeCard({ mode }: { mode: WorkMode }) {
+  const toneClass = {
+    green: "border-mira-success/15 bg-[#E0F5E8]/25",
+    lavender: "border-mira-primary/10 bg-mira-lavender-light/25",
+    warm: "border-[#C4B07E]/15 bg-[#F5F0E0]/35",
+    rose: "border-mira-cycle/15 bg-[#F8E8EE]/40",
+  }[mode.tone];
+
+  const iconClass = {
+    green: "text-mira-success",
+    lavender: "text-mira-primary",
+    warm: "text-[#9A7A35]",
+    rose: "text-mira-cycle",
+  }[mode.tone];
+
+  return (
+    <Card className={`p-4 ${toneClass}`}>
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70">
+          <BriefcaseBusiness className={`h-5 w-5 ${iconClass}`} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Работа</p>
+          <p className="mt-0.5 text-sm font-bold leading-snug text-mira-text">{mode.title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-mira-muted">{mode.body}</p>
+        </div>
+      </div>
+
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        {mode.bestFor.map((item) => (
+          <div key={item} className="rounded-lg bg-white/70 px-2 py-2 text-center">
+            <p className="text-[10px] font-bold leading-tight text-mira-text">{item}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl bg-white/70 px-3 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Не перегружать</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{mode.avoid}</p>
+        </div>
+        <div className="rounded-xl bg-white/70 px-3 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Паузы</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{mode.pause}</p>
+        </div>
+      </div>
+
+      <details className="mt-2 rounded-xl bg-white/70 px-3 py-2">
+        <summary className="cursor-pointer text-xs font-bold text-mira-primary">Шаблон сообщения, если плохо</summary>
+        <p className="mt-2 text-xs leading-relaxed text-mira-text">{mode.messageTemplate}</p>
+      </details>
+    </Card>
+  );
+}
+
+function MoodPmsCard({ card, onJournal }: { card: MoodPmsCard; onJournal?: () => void }) {
+  const toneClass = card.tone === "alert"
+    ? "border-mira-cycle/20 bg-[#F8E8EE]/45"
+    : card.tone === "sensitive"
+      ? "border-[#C4B07E]/15 bg-[#F5F0E0]/35"
+      : "border-mira-primary/10 bg-mira-lavender-light/20";
+
+  const iconClass = card.tone === "alert"
+    ? "text-mira-cycle"
+    : card.tone === "sensitive"
+      ? "text-[#9A7A35]"
+      : "text-mira-primary";
+
+  return (
+    <Card className={`p-4 ${toneClass}`}>
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70">
+          <Brain className={`h-5 w-5 ${iconClass}`} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Настроение и ПМС</p>
+          <p className="mt-0.5 text-sm font-bold leading-snug text-mira-text">{card.title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-mira-muted">{card.body}</p>
+        </div>
+      </div>
+
+      <div className="mb-3 rounded-xl bg-white/70 px-3 py-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">{card.label}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{card.pmsForecast}</p>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl bg-white/70 px-3 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">{card.practice.title}</p>
+          <div className="mt-1 space-y-1">
+            {card.practice.steps.map((step) => (
+              <p key={step} className="text-xs leading-snug text-mira-text">{step}</p>
+            ))}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onJournal}
+          className="rounded-xl bg-white/70 px-3 py-2 text-left transition active:scale-[0.99]"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Дневник эмоций</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{card.journalPrompt}</p>
+        </button>
+      </div>
+
+      <div className="mt-2 rounded-xl bg-white/70 px-3 py-2">
+        <div className="mb-1 flex items-center gap-1.5">
+          <MessageCircleHeart className="h-3.5 w-3.5 text-mira-primary" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Как сказать партнёру</p>
+        </div>
+        <p className="text-xs leading-relaxed text-mira-text">{card.partnerTip}</p>
+      </div>
+
+      {card.heavyWarning && (
+        <div className="mt-2 flex items-start gap-2 rounded-xl border border-mira-cycle/15 bg-white/75 px-3 py-2">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-mira-cycle" />
+          <p className="text-xs leading-relaxed text-mira-cycle">{card.heavyWarning}</p>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PersonalRemindersCard({ reminders, onCheckIn, onOpenCare, onOpenReport }: {
+  reminders: PersonalReminder[];
+  onCheckIn?: () => void;
+  onOpenCare: () => void;
+  onOpenReport: () => void;
+}) {
+  if (reminders.length === 0) return null;
+  const primary = reminders[0];
+  const tone = primary.priority === "high"
+    ? "border-mira-cycle/15 bg-[#F8E8EE]/40"
+    : primary.priority === "medium"
+      ? "border-[#C4B07E]/15 bg-[#F5F0E0]/35"
+      : "border-mira-primary/10 bg-mira-lavender-light/20";
+
+  function handleAction(reminder: PersonalReminder) {
+    if (reminder.id === "symptoms" || reminder.id === "pain") onCheckIn?.();
+    else if (reminder.id === "doctor") onOpenReport();
+    else onOpenCare();
+  }
+
+  return (
+    <Card className={`p-4 ${tone}`}>
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70 text-mira-primary">
+          <BellRing className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Напоминания</p>
+          <p className="mt-0.5 text-sm font-bold leading-snug text-mira-text">{primary.title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-mira-muted">{primary.body}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => handleAction(primary)}
+        className="mb-3 rounded-xl bg-white/75 px-3 py-2 text-xs font-bold text-mira-primary transition active:scale-[0.98]"
+      >
+        {primary.action}
+      </button>
+      {reminders.length > 1 && (
+        <div className="space-y-2">
+          {reminders.slice(1, 4).map((reminder) => (
+            <button
+              key={reminder.id}
+              type="button"
+              onClick={() => handleAction(reminder)}
+              className="flex w-full items-center justify-between gap-3 rounded-xl bg-white/65 px-3 py-2 text-left"
+            >
+              <span className="text-xs font-semibold text-mira-text">{reminder.title}</span>
+              <span className="text-[10px] font-bold text-mira-primary">{reminder.action}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function PersonalDiaryCard({
   hasCheckIn,
   hasNote,
@@ -784,6 +973,9 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, on
   const vitaminRec = vitaminCard?.recs[0];
   const vitaminTitle = vitaminRec ? `${vitaminRec.name} ${vitaminRec.dose}` : "Поддержка";
   const vitaminBody = vitaminRec ? firstSentence(vitaminRec.how) : "Пока специальных подсказок нет.";
+  const workMode = getWorkMode(phase, checkIn);
+  const moodPmsCard = getMoodPmsCard(phase, daysUntil, checkIn);
+  const personalReminders = getPersonalReminders(data);
 
   const fadeUp = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 260, damping: 22 } } };
 
@@ -934,6 +1126,23 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, on
           <p className="text-[13px] font-bold leading-snug text-mira-text">{shorten(vitaminTitle, 38)}</p>
           <p className="mt-1 text-[11px] leading-snug text-mira-muted">{shorten(vitaminBody, 70)}</p>
         </Card>
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-4">
+        <WorkModeCard mode={workMode} />
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-4">
+        <MoodPmsCard card={moodPmsCard} onJournal={() => navigate("diary")} />
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-4">
+        <PersonalRemindersCard
+          reminders={personalReminders}
+          onCheckIn={() => onCheckIn?.()}
+          onOpenCare={() => navigate("care")}
+          onOpenReport={() => navigate("report")}
+        />
       </motion.div>
 
       {sexInsight && (

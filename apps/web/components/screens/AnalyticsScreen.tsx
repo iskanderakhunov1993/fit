@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getRedFlags, getPhaseCorrelations } from "@/lib/alerts";
 import { getCycleNorm } from "@/lib/cycleEngine";
+import { getCycleAnalytics, type CycleAnalyticsPoint } from "@/lib/cycleAnalytics";
 import { getCorrelations } from "@/lib/correlations";
 import { getHealthSummary, statusMeta } from "@/lib/healthScore";
 import { getNormMap, getNormOverallPercent, getSmartInsights } from "@/lib/insights";
@@ -158,6 +159,80 @@ function MiniStat({ label, value, note }: { label: string; value: string; note: 
   );
 }
 
+function CycleBar({ cycle, maxPain, maxPms, maxEnergy }: { cycle: CycleAnalyticsPoint; maxPain: number; maxPms: number; maxEnergy: number }) {
+  return (
+    <div className="rounded-2xl border border-mira-lavender/20 bg-white p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold text-mira-text">{cycle.label}</p>
+          <p className="text-[10px] text-mira-muted">{new Date(`${cycle.start}T00:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}</p>
+        </div>
+        <Badge className="bg-mira-bg text-[10px] text-mira-muted shadow-none">{cycle.length} дн.</Badge>
+      </div>
+      <div className="space-y-2">
+        <MetricBar label="Боль" value={cycle.strongPainDays} max={maxPain} color="bg-mira-cycle" />
+        <MetricBar label="ПМС" value={cycle.pmsDays} max={maxPms} color="bg-[#A07EC4]" />
+        <MetricBar label="Энергия" value={cycle.lowEnergyDays} max={maxEnergy} color="bg-[#C4B07E]" />
+        <MetricBar label="Обильность" value={cycle.heavyFlowDays} max={Math.max(1, cycle.heavyFlowDays)} color="bg-[#C47E9B]" />
+      </div>
+    </div>
+  );
+}
+
+function MetricBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-[10px]">
+        <span className="font-semibold text-mira-muted">{label}</span>
+        <span className="text-mira-text">{value}</span>
+      </div>
+      <Progress value={(value / Math.max(max, 1)) * 100} color={color} />
+    </div>
+  );
+}
+
+function CycleAnalyticsCard({ analytics, onOpenReport }: { analytics: NonNullable<ReturnType<typeof getCycleAnalytics>>; onOpenReport: () => void }) {
+  const maxPain = Math.max(1, ...analytics.cycles.map(c => c.strongPainDays));
+  const maxPms = Math.max(1, ...analytics.cycles.map(c => c.pmsDays));
+  const maxEnergy = Math.max(1, ...analytics.cycles.map(c => c.lowEnergyDays));
+
+  return (
+    <Card className="mb-5 border-mira-primary/10 bg-mira-lavender-light/20 p-4">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70 text-mira-primary">
+          <TrendingUp className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Аналитика цикла</p>
+          <p className="mt-0.5 text-base font-bold leading-snug text-mira-text">{analytics.headline}</p>
+          <p className="mt-1 text-xs leading-relaxed text-mira-muted">{analytics.insight}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        {analytics.cycles.map(cycle => (
+          <CycleBar key={cycle.start} cycle={cycle} maxPain={maxPain} maxPms={maxPms} maxEnergy={maxEnergy} />
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {analytics.links.map(link => (
+          <MiniStat key={link.label} label={link.label} value={link.value} note={link.note} />
+        ))}
+      </div>
+
+      {analytics.doctorNote && (
+        <div className="mt-3 rounded-2xl border border-mira-cycle/15 bg-white/75 p-3">
+          <p className="text-xs font-semibold leading-relaxed text-mira-cycle">{analytics.doctorNote}</p>
+          <Button className="mt-3 w-full" variant="outline" onClick={onOpenReport}>
+            <FileText className="h-4 w-4" /> В отчёт врачу
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const [detailTab, setDetailTab] = useState<DetailTab>("cycle");
   const profile = data.profile;
@@ -175,6 +250,7 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const smartInsights = getSmartInsights(data);
   const correlations = getCorrelations(data);
   const phaseCorrelations = getPhaseCorrelations(data);
+  const cycleAnalytics = getCycleAnalytics(data);
 
   const painEntries = checkIns.filter(c => c.pain && c.pain.kinds.some(k => k !== "none"));
   const strongPainEntries = painEntries.filter(c => c.pain?.level === "strong");
@@ -322,6 +398,10 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
           <MiniStat label="Сигналы" value={`${watchMetrics.length}`} note="для внимания" />
         </div>
       </Card>
+
+      {cycleAnalytics && (
+        <CycleAnalyticsCard analytics={cycleAnalytics} onOpenReport={() => navigate("report")} />
+      )}
 
       <div className="mb-5 grid grid-cols-2 gap-3">
         <Card className="p-3">

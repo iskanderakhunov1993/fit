@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { readData, writeData } from "./store";
+import { sanitizeForCloud } from "./privacy";
 import type { MiraLocalData } from "./types";
 
 /*
@@ -44,11 +45,12 @@ export async function pushData(data: MiraLocalData): Promise<string> {
   if (!supabase) throw new Error("Supabase не настроен");
   const userId = await getSyncUserId();
   if (!userId) throw new Error("Нужно войти, чтобы синхронизировать");
+  const cloudData = sanitizeForCloud(data);
 
   const { data: row, error } = await supabase
     .from("user_data")
     .upsert(
-      { user_id: userId, data, data_version: data.version },
+      { user_id: userId, data: cloudData, data_version: data.version },
       { onConflict: "user_id" }
     )
     .select("updated_at")

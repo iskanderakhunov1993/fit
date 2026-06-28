@@ -204,9 +204,36 @@ export type UserProfile = {
   pinEnabled: boolean;
   hiddenNotifications: boolean;
   privateMarks: boolean;
+  hiddenMode?: boolean;
+  deviceUnlockEnabled?: boolean;
+  cloudSyncExclude?: CloudSyncCategory[];
+  partnerShare?: PartnerShareSettings;
+  reminders?: PersonalReminderSettings;
 };
 
 export type TrackingCategory = "cycle" | "pain" | "mood" | "energy" | "sleep" | "nutrition" | "workout" | "intimacy";
+export type CloudSyncCategory = "intimacy" | "notes" | "badEpisodes" | "delayChecks" | "islamic" | "labs";
+
+export type PartnerShareSettings = {
+  phase: boolean;
+  moodEnergy: boolean;
+  tips: boolean;
+};
+
+export type PersonalReminderId =
+  | "periodSoon"
+  | "symptoms"
+  | "water"
+  | "periodKit"
+  | "pregnancyTest"
+  | "pain"
+  | "doctor";
+
+export type PersonalReminderSettings = {
+  enabled: boolean;
+  quietText: boolean;
+  items: Record<PersonalReminderId, boolean>;
+};
 
 // Additional mode (religious)
 export type AdditionalMode = "none" | "islam";

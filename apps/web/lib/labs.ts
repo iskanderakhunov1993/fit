@@ -37,6 +37,12 @@ export const labCatalog: LabRange[] = [
     aboutHigh: "Высокий ТТГ — повод обсудить функцию щитовидной железы." },
   { id: "prolactin", name: "Пролактин", unit: "нг/мл", low: 4.8, high: 23.3, group: "Гормоны",
     aboutHigh: "Повышенный пролактин иногда влияет на регулярность цикла." },
+  { id: "estradiol", name: "Эстрадиол", unit: "пг/мл", low: 20, high: 350, group: "Гормоны 45+",
+    aboutLow: "Эстрадиол сильно зависит от дня цикла и возраста; один результат не подтверждает менопаузу.",
+    aboutHigh: "Эстрадиол сильно колеблется по циклу; значение стоит обсуждать вместе с симптомами и днём цикла." },
+  { id: "progesterone", name: "Прогестерон", unit: "нг/мл", low: 1.8, high: 24, group: "Гормоны 45+",
+    aboutLow: "Прогестерон информативнее примерно за 7 дней до ожидаемых месячных; день сдачи важен.",
+    aboutHigh: "Прогестерон оценивают с учётом дня цикла, овуляции, лекарств и беременности." },
   { id: "vitaminD", name: "Витамин D (25-OH)", unit: "нг/мл", low: 30, high: 100, group: "Витамины",
     aboutLow: "Низкий витамин D очень распространён; обсудите коррекцию с врачом." },
   { id: "b12", name: "Витамин B12", unit: "пг/мл", low: 200, high: 900, group: "Витамины",
@@ -90,6 +96,40 @@ export type LabRecommendation = {
   testIds: string[];   // какие показатели обсудить (пусто = не лаб., а консультация)
   action?: string;     // если не анализ, а действие («консультация гинеколога»)
 };
+
+export function getHormoneCheckup45(data: MiraLocalData): {
+  show: boolean;
+  progesteroneDay: number;
+  title: string;
+  body: string;
+  doctorQuestions: string[];
+} {
+  const profile = data.profile;
+  const age = profile?.age;
+  const cycleLength = profile?.cycleConfig.cycleLength ?? 28;
+  const progesteroneDay = Math.max(1, cycleLength - 7);
+  const checkIns = Object.values(data.checkIns);
+  const hasPeriSignals = checkIns.some((checkIn) =>
+    checkIn.sleep?.quality === "insomnia" ||
+    checkIn.mood?.value === "swings" ||
+    checkIn.energy?.value === "exhausted" ||
+    checkIn.period?.intensity === "very_heavy"
+  );
+  const show = Boolean(age && age >= 45) || hasPeriSignals;
+
+  return {
+    show,
+    progesteroneDay,
+    title: "Чекап 45+ / перименопауза",
+    body: "После 45 цикл может меняться: задержки, обильность, приливы, потливость, бессонница и перепады настроения. Mira не назначает анализы, но помогает подготовить вопросы врачу.",
+    doctorQuestions: [
+      "Нужны ли мне гормональные анализы или достаточно оценки симптомов?",
+      `Если врач назначит прогестерон, подойдёт ли примерно ${progesteroneDay}-й день моего цикла?`,
+      "Есть ли смысл проверить эстрадиол, ТТГ, ферритин, гемоглобин и витамин D?",
+      "Какие симптомы после 45 нельзя списывать только на перименопаузу?",
+    ],
+  };
+}
 
 /*
  * Часть 1 — какие анализы/обследования стоит ОБСУДИТЬ с врачом,
@@ -148,6 +188,16 @@ export function getLabRecommendations(data: MiraLocalData): LabRecommendation[] 
       why: `Сильная боль отмечена ${strongPain} раз. Регулярную сильную боль стоит обсудить с врачом.`,
       testIds: [],
       action: "Консультация гинеколога (возможно УЗИ)",
+    });
+  }
+
+  const checkup45 = getHormoneCheckup45(data);
+  if (checkup45.show) {
+    recs.push({
+      id: "hormone-checkup-45",
+      title: "Чекап 45+: обсудить гормоны и дефициты",
+      why: `Если врач назначит прогестерон, для цикла ${profile?.cycleConfig.cycleLength ?? 28} дн. ориентир — около ${checkup45.progesteroneDay}-го дня, а не строго 21-й для всех.`,
+      testIds: ["estradiol", "progesterone", "tsh", "ferritin", "hemoglobin", "vitaminD"],
     });
   }
 

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { dateKey } from "@/lib/store";
 import {
   labCatalog, getLabRange, evaluateLab, labStatusMeta,
-  getLabRecommendations, addLabResult, removeLabResult,
+  getLabRecommendations, getHormoneCheckup45, addLabResult, removeLabResult,
 } from "@/lib/labs";
 import type { MiraLocalData } from "@/lib/types";
 
@@ -18,6 +18,7 @@ type Props = {
 
 export function LabsSection({ data, persist }: Props) {
   const recs = getLabRecommendations(data);
+  const hormoneCheckup = getHormoneCheckup45(data);
   const labs = data.labs ?? [];
 
   const [adding, setAdding] = useState(false);
@@ -41,6 +42,27 @@ export function LabsSection({ data, persist }: Props) {
         <FlaskConical className="h-4 w-4 text-mira-primary" />
         <p className="text-sm font-semibold text-mira-text">Анализы</p>
       </div>
+
+      {hormoneCheckup.show && (
+        <div className="mb-5 rounded-2xl border border-mira-primary/15 bg-mira-lavender-light/25 p-3.5">
+          <div className="mb-2 flex items-center gap-2">
+            <Stethoscope className="h-4 w-4 text-mira-primary" />
+            <p className="text-sm font-bold text-mira-text">{hormoneCheckup.title}</p>
+          </div>
+          <p className="text-xs leading-relaxed text-mira-muted">{hormoneCheckup.body}</p>
+          <div className="mt-3 rounded-xl bg-white/75 px-3 py-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Прогестерон</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-mira-text">
+              Для твоей длины цикла ориентир — примерно {hormoneCheckup.progesteroneDay}-й день, то есть за 7 дней до ожидаемых месячных. При нерегулярном цикле день лучше согласовать с врачом.
+            </p>
+          </div>
+          <div className="mt-3 space-y-1.5">
+            {hormoneCheckup.doctorQuestions.slice(0, 3).map((question) => (
+              <p key={question} className="text-[11px] leading-relaxed text-mira-text">• {question}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Часть 1: какие анализы обсудить ── */}
       <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-mira-muted">

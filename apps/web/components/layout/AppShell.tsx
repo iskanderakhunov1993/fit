@@ -21,6 +21,7 @@ import { CheckInModal } from "@/components/screens/CheckInModal";
 import { BadStateModal } from "@/components/screens/BadStateModal";
 import { DelayCheckModal } from "@/components/screens/DelayCheckModal";
 import { getCycleDay } from "@/lib/store";
+import { hasPin, verifyPin } from "@/lib/privacy";
 
 export function AppShell() {
   const [page, setPage] = useState<NavPage>("today");
@@ -31,6 +32,7 @@ export function AppShell() {
   const [checkInDate, setCheckInDate] = useState<string | undefined>(undefined);
   const [badStateOpen, setBadStateOpen] = useState(false);
   const [delayCheckOpen, setDelayCheckOpen] = useState(false);
+  const [privacyUnlocked, setPrivacyUnlocked] = useState(false);
 
   useEffect(() => {
     const loaded = readData();
@@ -86,6 +88,10 @@ export function AppShell() {
         }}
       />
     );
+  }
+
+  if (data.profile?.pinEnabled && hasPin() && !privacyUnlocked) {
+    return <PrivacyLockScreen onUnlock={() => setPrivacyUnlocked(true)} />;
   }
 
   const screenProps = {
@@ -156,6 +162,56 @@ export function AppShell() {
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function PrivacyLockScreen({ onUnlock }: { onUnlock: () => void }) {
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+
+  async function submit() {
+    const ok = await verifyPin(pin);
+    if (ok) {
+      setError("");
+      onUnlock();
+      return;
+    }
+    setPin("");
+    setError("Неверный PIN");
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-mira-bg px-4">
+      <div className="w-full max-w-sm rounded-3xl border border-mira-lavender/20 bg-white p-6 shadow-soft">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-mira-lavender-light text-mira-primary">
+          <span className="text-xl font-bold">M</span>
+        </div>
+        <h1 className="text-center text-xl font-bold text-mira-text">Mira защищена</h1>
+        <p className="mt-1 text-center text-sm text-mira-muted">Введи PIN, чтобы открыть дневник.</p>
+        <input
+          value={pin}
+          onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
+          onKeyDown={(event) => { if (event.key === "Enter") void submit(); }}
+          inputMode="numeric"
+          type="password"
+          autoFocus
+          className="mt-5 w-full rounded-2xl border border-mira-lavender/25 bg-mira-bg px-4 py-3 text-center text-lg font-bold tracking-[0.35em] text-mira-text outline-none focus:border-mira-primary"
+          placeholder="••••"
+        />
+        {error && <p className="mt-2 text-center text-xs font-semibold text-mira-cycle">{error}</p>}
+        <button
+          type="button"
+          onClick={() => void submit()}
+          disabled={pin.length < 4}
+          className="mt-4 w-full rounded-2xl bg-mira-primary px-4 py-3 text-sm font-bold text-white transition disabled:opacity-40"
+        >
+          Открыть
+        </button>
+        <p className="mt-4 text-center text-[11px] leading-relaxed text-mira-muted">
+          PIN хранится только на этом устройстве и не отправляется в облако.
+        </p>
+      </div>
     </div>
   );
 }

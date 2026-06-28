@@ -2,6 +2,7 @@ import type { MiraLocalData } from "./types";
 import { dateKey } from "./store";
 import { getSmartReminders } from "./alerts";
 import { getDailyRitual } from "./gamification";
+import { getNotificationCopy, getPersonalReminders, getReminderSettings } from "./personalReminders";
 
 /* ──────────────────────────────────────────────
    Локальные уведомления (без сервера).
@@ -69,12 +70,18 @@ export async function maybeShowDailyNotification(data: MiraLocalData): Promise<v
   if (localStorage.getItem(LAST_SHOWN_KEY) === today) return;
 
   const reminders = getSmartReminders(data);
+  const personalReminders = getPersonalReminders(data);
+  const reminderSettings = getReminderSettings(data);
   const ritual = getDailyRitual(data);
 
   let title: string | null = null;
   let body = "";
 
-  if (reminders.length > 0) {
+  if (personalReminders.length > 0) {
+    const copy = getNotificationCopy(personalReminders[0], reminderSettings.quietText || !!data.profile?.hiddenNotifications);
+    title = copy.title;
+    body = copy.body;
+  } else if (reminders.length > 0) {
     title = reminders[0].title;
     body = reminders[0].body;
   } else if (!ritual.done) {

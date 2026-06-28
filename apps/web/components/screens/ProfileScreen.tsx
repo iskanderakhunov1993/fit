@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   UserRound, Calendar, Shield, Download, Trash2,
-  ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon, Award, Cloud,
+  ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon, Award, Cloud, ScanFace, EyeOff, BellRing,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { SyncSettings } from "@/components/sync/SyncSettings";
@@ -11,7 +11,9 @@ import { madhabs, type Madhab } from "@/lib/islamic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { saveProfile, clearData } from "@/lib/store";
+import { clearPin, cloudSyncCategories, defaultPartnerShare, hasPin, savePin } from "@/lib/privacy";
 import { notificationsSupported, notificationsEnabled, requestNotifications, setNotificationsPref } from "@/lib/notifications";
+import { getPersonalReminders, getReminderSettings, personalReminderCatalog } from "@/lib/personalReminders";
 import { getUnlockedCount } from "@/lib/gamification";
 import { AchievementsCard } from "./AchievementsCard";
 import type { ScreenProps } from "./types";
@@ -24,12 +26,43 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   );
 }
 
+function PrivacyRow({
+  icon: Icon,
+  label,
+  desc,
+  on,
+  onToggle,
+  disabled,
+}: {
+  icon: typeof UserRound;
+  label: string;
+  desc: string;
+  on: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-3 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4 ${disabled ? "opacity-55" : ""}`}>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mira-lavender-light text-mira-primary">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-semibold text-mira-text">{label}</p>
+        <p className="text-xs text-mira-muted">{desc}</p>
+      </div>
+      <Toggle on={on} onToggle={() => { if (!disabled) onToggle(); }} />
+    </div>
+  );
+}
+
 export function ProfileScreen({ data, persist }: ScreenProps) {
   const profile = data.profile;
   const [section, setSection] = useState<string | null>(null);
   const [notifOn, setNotifOn] = useState(false);
   const [syncEmail, setSyncEmail] = useState<string | null>(null);
+  const [pinReady, setPinReady] = useState(false);
   useEffect(() => { setNotifOn(notificationsEnabled()); }, []);
+  useEffect(() => { setPinReady(hasPin()); }, []);
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getUser().then(({ data: u }) => setSyncEmail(u.user?.email ?? null));
@@ -46,6 +79,26 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
       setNotifOn(granted);
       if (!granted) alert("Разреши уведомления в настройках браузера, чтобы получать напоминания.");
     }
+  }
+
+  async function togglePin() {
+    if (!profile) return;
+    if (profile?.pinEnabled) {
+      if (!confirm("Отключить PIN-защиту на этом устройстве?")) return;
+      clearPin();
+      setPinReady(false);
+      persist(saveProfile(data, { ...profile, pinEnabled: false, deviceUnlockEnabled: false }));
+      return;
+    }
+
+    const pin = prompt("Придумай PIN от 4 до 6 цифр. Он хранится только на этом устройстве.");
+    if (!pin || !/^\d{4,6}$/.test(pin)) {
+      alert("PIN должен состоять из 4–6 цифр.");
+      return;
+    }
+    await savePin(pin);
+    setPinReady(true);
+    persist(saveProfile(data, { ...profile, pinEnabled: true }));
   }
 
   if (!profile) {
@@ -86,6 +139,7 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
       title: "Данные и приватность",
       items: [
         { icon: Cloud, label: "Синхронизация", desc: syncEmail ? `Включена · ${syncEmail}` : "Резервная копия между устройствами", id: "sync" },
+        { icon: BellRing, label: "Напоминания", desc: "Вода, симптомы, аптечка, врач", id: "reminders" },
         { icon: Shield, label: "Приватность", desc: "Напоминания, отметки", id: "privacy" },
         { icon: Database, label: "Хранение данных", desc: "Что храним и где", id: "mydata" },
         { icon: Download, label: "Экспорт данных", desc: "Скачать свою копию", id: "export" },
@@ -332,46 +386,240 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
     );
   }
 
+  if (section === "reminders") {
+    const settings = getReminderSettings(data);
+    const activeReminders = getPersonalReminders(data);
+
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">Напоминания</h1>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
+        <Card className="max-w-lg p-6">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-mira-primary/10 bg-mira-lavender-light/25 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <BellRing className="h-4 w-4 text-mira-primary" />
+                <p className="text-sm font-bold text-mira-text">Мягко, без давления</p>
+              </div>
+              <p className="text-xs leading-relaxed text-mira-muted">
+                Mira напоминает только о том, что помогает: отметить состояние, выпить воды, подготовиться к месячным или не забыть важное для врача.
+              </p>
+            </div>
+
+            {notificationsSupported() && (
+              <PrivacyRow
+                icon={Bell}
+                label="Системные уведомления"
+                desc={notifOn ? "Включены" : "Нужно разрешение браузера"}
+                on={notifOn}
+                onToggle={toggleNotifications}
+              />
+            )}
+
+            <PrivacyRow
+              icon={BellRing}
+              label="Персональные напоминания"
+              desc="Включить или выключить все подсказки Mira"
+              on={settings.enabled}
+              onToggle={() => persist(saveProfile(data, { ...profile, reminders: { ...settings, enabled: !settings.enabled } }))}
+            />
+
+            <PrivacyRow
+              icon={EyeOff}
+              label="Тихий текст"
+              desc="На экране блокировки без слов про месячные, секс и здоровье"
+              on={settings.quietText}
+              onToggle={() => persist(saveProfile(data, { ...profile, reminders: { ...settings, quietText: !settings.quietText } }))}
+            />
+
+            <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4">
+              <p className="mb-3 text-sm font-bold text-mira-text">Что напоминать</p>
+              <div className="space-y-2">
+                {personalReminderCatalog.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2">
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-mira-text">{item.label}</p>
+                      <p className="text-[11px] text-mira-muted">{item.desc}</p>
+                    </div>
+                    <Toggle on={settings.items[item.id]} onToggle={() => {
+                      persist(saveProfile(data, {
+                        ...profile,
+                        reminders: {
+                          ...settings,
+                          items: { ...settings.items, [item.id]: !settings.items[item.id] },
+                        },
+                      }));
+                    }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-mira-success/15 bg-[#E0F5E8]/30 p-4">
+              <p className="text-sm font-bold text-mira-success">Активно сегодня</p>
+              {activeReminders.length > 0 ? (
+                <div className="mt-2 space-y-2">
+                  {activeReminders.slice(0, 4).map((reminder) => (
+                    <div key={reminder.id} className="rounded-xl bg-white/70 px-3 py-2">
+                      <p className="text-xs font-semibold text-mira-text">{reminder.title}</p>
+                      <p className="text-[11px] leading-relaxed text-mira-muted">{reminder.body}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-mira-muted">На сегодня нет важных напоминаний.</p>
+              )}
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (section === "privacy") {
+    const cloudExcluded = new Set(profile.cloudSyncExclude ?? []);
+    const partnerShare = profile.partnerShare ?? defaultPartnerShare;
+
     return (
       <div>
         <h1 className="mb-6 text-2xl font-bold text-mira-text">Приватность</h1>
         <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
         <Card className="max-w-lg p-6">
           <div className="space-y-4">
-            {/* Напоминания (Notification API) */}
+            <div className="rounded-2xl border border-mira-success/20 bg-[#E0F5E8]/35 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <Shield className="h-4 w-4 text-mira-success" />
+                <p className="text-sm font-bold text-mira-success">Ты управляешь данными</p>
+              </div>
+              <p className="text-xs leading-relaxed text-mira-muted">
+                Mira хранит дневник локально на устройстве. Облако включается только после входа, а чувствительные категории можно исключить из синхронизации.
+              </p>
+            </div>
+
+            <PrivacyRow
+              icon={Lock}
+              label="PIN-код"
+              desc={pinReady ? "Включён на этом устройстве" : "Защита приложения при открытии"}
+              on={!!profile.pinEnabled && pinReady}
+              onToggle={() => void togglePin()}
+            />
+
+            <PrivacyRow
+              icon={ScanFace}
+              label="Face ID / разблокировка устройством"
+              desc="Будет использоваться там, где браузер PWA это поддержит"
+              on={!!profile.deviceUnlockEnabled}
+              disabled={!profile.pinEnabled}
+              onToggle={() => persist(saveProfile(data, { ...profile, deviceUnlockEnabled: !profile.deviceUnlockEnabled }))}
+            />
+
+            <PrivacyRow
+              icon={EyeOff}
+              label="Скрытый режим"
+              desc="Скрывает чувствительные формулировки в интерфейсе"
+              on={!!profile.hiddenMode}
+              onToggle={() => persist(saveProfile(data, { ...profile, hiddenMode: !profile.hiddenMode }))}
+            />
+
             {notificationsSupported() && (
-              <div className="flex items-center gap-3 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mira-lavender-light text-mira-primary">
-                  <Bell className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-mira-text">Напоминания</p>
-                  <p className="text-xs text-mira-muted">Отметиться, подготовиться к месячным</p>
-                </div>
-                <Toggle on={notifOn} onToggle={toggleNotifications} />
-              </div>
+              <PrivacyRow
+                icon={Bell}
+                label="Напоминания"
+                desc="Отметиться, подготовиться к месячным"
+                on={notifOn}
+                onToggle={toggleNotifications}
+              />
             )}
-            {[
-              { icon: Bell, label: "Скрытые уведомления", desc: "Без деталей на экране блокировки", key: "hiddenNotifications" as const },
-              { icon: Heart, label: "Приватные отметки", desc: "Интимность скрыта по умолчанию", key: "privateMarks" as const },
-            ].map(item => (
-              <div key={item.key} className="flex items-center gap-3 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mira-lavender-light text-mira-primary">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-mira-text">{item.label}</p>
-                  <p className="text-xs text-mira-muted">{item.desc}</p>
-                </div>
-                <Toggle on={!!profile[item.key]} onToggle={() => {
-                  persist(saveProfile(data, { ...profile, [item.key]: !profile[item.key] }));
-                }} />
+
+            <PrivacyRow
+              icon={Bell}
+              label="Скрытые уведомления"
+              desc="Без деталей на экране блокировки"
+              on={!!profile.hiddenNotifications}
+              onToggle={() => persist(saveProfile(data, { ...profile, hiddenNotifications: !profile.hiddenNotifications }))}
+            />
+
+            <PrivacyRow
+              icon={Heart}
+              label="Приватные отметки"
+              desc="Интимность скрыта по умолчанию"
+              on={!!profile.privateMarks}
+              onToggle={() => persist(saveProfile(data, { ...profile, privateMarks: !profile.privateMarks }))}
+            />
+
+            <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Cloud className="h-4 w-4 text-mira-primary" />
+                <p className="text-sm font-bold text-mira-text">Не хранить в облаке</p>
               </div>
-            ))}
-          </div>
-          <div className="mt-4 rounded-2xl border border-mira-success/15 bg-[#E0F5E8]/30 p-3">
-            <p className="text-xs text-mira-success">Все данные хранятся только на твоём устройстве.</p>
+              <p className="mb-3 text-xs leading-relaxed text-mira-muted">
+                Эти данные останутся только на устройстве. Локальный дневник не удаляется.
+              </p>
+              <div className="space-y-2">
+                {cloudSyncCategories.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2">
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-mira-text">{item.label}</p>
+                      <p className="text-[11px] text-mira-muted">{item.desc}</p>
+                    </div>
+                    <Toggle on={cloudExcluded.has(item.id)} onToggle={() => {
+                      const next = new Set(cloudExcluded);
+                      if (next.has(item.id)) next.delete(item.id);
+                      else next.add(item.id);
+                      persist(saveProfile(data, { ...profile, cloudSyncExclude: Array.from(next) }));
+                    }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Users className="h-4 w-4 text-mira-primary" />
+                <p className="text-sm font-bold text-mira-text">Что видит партнёр</p>
+              </div>
+              {[
+                { key: "phase" as const, label: "Фаза цикла", desc: "день и общее состояние фазы" },
+                { key: "moodEnergy" as const, label: "Настроение и энергия", desc: "без личных записей и симптомов" },
+                { key: "tips" as const, label: "Советы поддержки", desc: "что лучше делать / не делать" },
+              ].map((item) => (
+                <div key={item.key} className="mt-2 flex items-center gap-3 rounded-xl bg-white px-3 py-2">
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-mira-text">{item.label}</p>
+                    <p className="text-[11px] text-mira-muted">{item.desc}</p>
+                  </div>
+                  <Toggle on={partnerShare[item.key]} onToggle={() => {
+                    persist(saveProfile(data, { ...profile, partnerShare: { ...partnerShare, [item.key]: !partnerShare[item.key] } }));
+                  }} />
+                </div>
+              ))}
+              <p className="mt-3 text-[11px] leading-relaxed text-mira-muted">
+                Партнёр не видит секс, беременность, заметки, лекарства, анализы, задержки и дневник.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-mira-lavender/20 bg-white p-4">
+              <p className="text-sm font-bold text-mira-text">Политика приватности простыми словами</p>
+              <div className="mt-2 space-y-1 text-xs leading-relaxed text-mira-muted">
+                <p>1. Локальные данные хранятся в браузере этого устройства.</p>
+                <p>2. Облако используется только для резервной копии после входа.</p>
+                <p>3. Чувствительные категории можно исключить из облака.</p>
+                <p>4. Партнёрский режим показывает только выбранные общие подсказки.</p>
+                <p>5. Удаление данных очищает локальный дневник без восстановления.</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => { if (confirm("Безвозвратно удалить все локальные данные Mira?")) { clearPin(); clearData(); window.location.reload(); } }}
+              className="flex w-full items-center gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-left transition hover:bg-red-100"
+            >
+              <Trash2 className="h-5 w-5 text-red-500" />
+              <div>
+                <p className="text-sm font-bold text-red-500">Удалить все данные</p>
+                <p className="text-xs text-mira-muted">Профиль, дневник, симптомы и локальный PIN</p>
+              </div>
+            </button>
           </div>
         </Card>
       </div>

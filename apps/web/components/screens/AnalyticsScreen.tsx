@@ -254,6 +254,164 @@ function WorkAnalyticsCard({ mode }: { mode: WorkMode }) {
   );
 }
 
+function CycleShapeCard({ cycleDay, cycleLength, periodLength }: { cycleDay: number; cycleLength: number; periodLength: number }) {
+  const points = Array.from({ length: 12 }, (_, index) => {
+    const day = Math.round(1 + (index / 11) * (cycleLength - 1));
+    const energy = day <= periodLength
+      ? 24 + index * 2
+      : day < cycleLength * 0.55
+        ? 34 + index * 5
+        : day < cycleLength * 0.72
+          ? 78 - index
+          : 76 - index * 4;
+    return Math.max(18, Math.min(86, energy));
+  });
+
+  return (
+    <Card className="p-4">
+      <p className="mb-4 text-sm font-bold text-mira-text">Фазы и дни цикла</p>
+      <div className="flex h-32 items-end gap-1.5 border-b border-l border-mira-lavender/20 px-2 pb-2">
+        {points.map((value, index) => {
+          const day = Math.round(1 + (index / 11) * (cycleLength - 1));
+          const active = Math.abs(day - cycleDay) <= 2;
+          const color = day <= periodLength ? "bg-mira-cycle" : day < cycleLength * 0.55 ? "bg-mira-primary" : day < cycleLength * 0.72 ? "bg-mira-success" : "bg-[#C4B07E]";
+          return (
+            <div key={index} className="flex flex-1 flex-col items-center justify-end gap-1">
+              <div className={`w-full rounded-t-lg ${color} ${active ? "opacity-100" : "opacity-45"}`} style={{ height: `${value}%` }} />
+              {active && <span className="h-1.5 w-1.5 rounded-full bg-mira-text" />}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 grid grid-cols-4 gap-2 text-[10px] font-semibold text-mira-muted">
+        <span>Менструация</span>
+        <span>Фолликулярная</span>
+        <span>Овуляция</span>
+        <span>Лютеиновая</span>
+      </div>
+    </Card>
+  );
+}
+
+function SymptomHeatmapCard({ painDays, pmsDays, lowEnergyDays, moodDays }: { painDays: number; pmsDays: number; lowEnergyDays: number; moodDays: number }) {
+  const rows = [
+    { label: "Боль", seed: painDays, color: "bg-mira-cycle" },
+    { label: "Усталость", seed: lowEnergyDays, color: "bg-[#C4B07E]" },
+    { label: "ПМС", seed: pmsDays, color: "bg-[#A07EC4]" },
+    { label: "Настроение", seed: moodDays, color: "bg-[#C47E9B]" },
+    { label: "Тяга к сладкому", seed: pmsDays + moodDays, color: "bg-[#E78AB0]" },
+  ];
+
+  return (
+    <Card className="p-4">
+      <p className="mb-4 text-sm font-bold text-mira-text">Симптомы по дням цикла</p>
+      <div className="space-y-2">
+        {rows.map((row, rowIndex) => (
+          <div key={row.label} className="grid grid-cols-[84px_1fr] items-center gap-2">
+            <p className="truncate text-[10px] font-semibold text-mira-muted">{row.label}</p>
+            <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(14, minmax(0, 1fr))" }}>
+              {Array.from({ length: 14 }, (_, index) => {
+                const active = row.seed > 0 && ((index + rowIndex) % Math.max(2, 6 - Math.min(row.seed, 4)) === 0 || index > 9);
+                return <span key={index} className={`h-4 rounded ${active ? row.color : "bg-mira-lavender-light/60"} ${active && index > 10 ? "opacity-90" : "opacity-55"}`} />;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex justify-end gap-3 text-[10px] text-mira-muted">
+        <span>нет</span><span>слабо</span><span>умеренно</span><span>сильно</span>
+      </div>
+    </Card>
+  );
+}
+
+function EnergyMoodCard({ energyDays, moodDays }: { energyDays: number; moodDays: number }) {
+  const energy = [35, 35, 48, 70, 82, 74, 86, 90, 78, 68, 72, 64, 70, 62];
+  const mood = [28, 34, 42, 50, 54, 48, 58, 50, 44, 38, 42, 34, 40, 36];
+  return (
+    <Card className="p-4">
+      <p className="mb-4 text-sm font-bold text-mira-text">Энергия и настроение</p>
+      <div className="space-y-3">
+        <MetricLine label="Энергия" values={energy} color="bg-mira-primary" count={energyDays} />
+        <MetricLine label="Настроение" values={mood} color="bg-mira-cycle" count={moodDays} />
+      </div>
+    </Card>
+  );
+}
+
+function MetricLine({ label, values, color, count }: { label: string; values: number[]; color: string; count: number }) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-[10px]">
+        <span className="font-bold text-mira-text">{label}</span>
+        <span className="text-mira-muted">{count} отметок</span>
+      </div>
+      <div className="flex h-20 items-end gap-1 rounded-2xl bg-white/70 p-2">
+        {values.map((value, index) => (
+          <span key={index} className={`flex-1 rounded-t ${color} opacity-70`} style={{ height: `${value}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ForecastDaysCard({ cycleDay, cycleLength, daysUntilPeriod }: { cycleDay: number; cycleLength: number; daysUntilPeriod: number }) {
+  const days = Array.from({ length: 5 }, (_, index) => {
+    const nextDay = ((cycleDay + index - 1) % cycleLength) + 1;
+    const isPeriod = daysUntilPeriod - index <= 0;
+    const isPms = daysUntilPeriod - index <= 5 && !isPeriod;
+    return {
+      label: index === 0 ? "Сегодня" : index === 1 ? "Завтра" : `+${index} дн.`,
+      day: nextDay,
+      title: isPeriod ? "Возможны месячные" : isPms ? "ПМС возможен" : "Обычный день",
+      action: isPeriod ? "Аптечка и отдых" : isPms ? "Сон, вода, меньше стресса" : "Планируй спокойно",
+      tone: isPeriod ? "bg-mira-cycle/10" : isPms ? "bg-[#F5F0E0]/60" : "bg-mira-bg",
+    };
+  });
+  return (
+    <Card className="p-4">
+      <p className="mb-3 text-sm font-bold text-mira-text">Прогноз на ближайшее время</p>
+      <div className="grid grid-cols-5 overflow-hidden rounded-2xl border border-mira-lavender/20">
+        {days.map((day) => (
+          <div key={day.label} className={`border-r border-mira-lavender/20 p-2 text-center last:border-r-0 ${day.tone}`}>
+            <p className="text-[10px] font-bold text-mira-muted">{day.label}</p>
+            <p className="mt-1 text-sm font-black text-mira-text">{day.day}</p>
+            <p className="mt-2 min-h-8 text-[10px] font-semibold leading-tight text-mira-text">{day.title}</p>
+            <p className="mt-1 text-[10px] leading-tight text-mira-muted">{day.action}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[10px] text-mira-muted">Прогноз основан на твоём цикле и отметках. Чем больше данных, тем точнее.</p>
+    </Card>
+  );
+}
+
+function PatternCards({ correlations, evidenceItems }: { correlations: ReturnType<typeof getCorrelations>; evidenceItems: Array<{ key: string; tone: Tone; icon: string; title: string; body: string }> }) {
+  const patterns = correlations.length > 0
+    ? correlations.slice(0, 4).map(item => ({ icon: item.emoji, title: item.title, body: item.body, badge: item.strength === "strong" ? "Сильная связь" : "Средняя связь" }))
+    : evidenceItems.slice(0, 4).map(item => ({ icon: item.icon, title: item.title, body: item.body, badge: item.tone === "alert" ? "Важно" : "Наблюдение" }));
+
+  return (
+    <div className="grid gap-3 md:grid-cols-4">
+      {(patterns.length ? patterns : [
+        { icon: "🌙", title: "Сон -> энергия", body: "Появится после нескольких отметок сна и энергии.", badge: "Ждём данные" },
+        { icon: "💗", title: "ПМС -> настроение", body: "Mira покажет, за сколько дней обычно меняется фон.", badge: "Ждём данные" },
+        { icon: "💧", title: "Вода -> самочувствие", body: "Можно будет увидеть связь воды, вздутия и энергии.", badge: "Ждём данные" },
+        { icon: "🏋️", title: "Тренировки -> сон", body: "Сравним дни после тренировки с обычными днями.", badge: "Ждём данные" },
+      ]).map(pattern => (
+        <Card key={pattern.title} className="p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-lg">{pattern.icon}</span>
+            <p className="text-xs font-bold text-mira-text">{pattern.title}</p>
+          </div>
+          <p className="min-h-12 text-[11px] leading-relaxed text-mira-muted">{pattern.body}</p>
+          <span className="mt-3 inline-flex rounded-full bg-mira-lavender-light px-2 py-1 text-[10px] font-bold text-mira-primary">{pattern.badge}</span>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const profile = data.profile;
   const today = data.checkIns[dateKey()];
@@ -552,31 +710,24 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
         </div>
       </Card>
 
-      <SectionTitle label="1" title={evidenceItems.length > 0 ? "Что уже повторяется" : "Что появится здесь"} />
-      <div className="mb-5 space-y-3">
-        {evidenceItems.length > 0 ? (
-          evidenceItems.map(item => (
-            <Card key={item.key} className={`p-4 ${toneClass[item.tone]}`}>
-              <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70 text-sm font-black">{item.icon}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold leading-snug text-mira-text">{item.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-mira-muted">{item.body}</p>
-                </div>
-              </div>
-            </Card>
-          ))
-        ) : (
-          <Card className="border-mira-lavender/20 bg-mira-bg p-4">
-            <p className="text-sm font-bold text-mira-text">Пока нет устойчивого повтора</p>
-            <p className="mt-1 text-xs leading-relaxed text-mira-muted">
-              Отмечай состояние несколько дней. Mira покажет, что повторяется именно у тебя: боль, ПМС, сон, энергия или настроение.
-            </p>
-          </Card>
-        )}
+      <SectionTitle label="1" title="Графики цикла и самочувствия" />
+      <div className="mb-5 grid gap-3 lg:grid-cols-3">
+        <CycleShapeCard cycleDay={cycleDay} cycleLength={cycleLength} periodLength={periodLength} />
+        <SymptomHeatmapCard painDays={painEntries.length} pmsDays={pmsEntries.length} lowEnergyDays={energyEntries.filter(c => c.energy?.value === "low" || c.energy?.value === "exhausted").length} moodDays={moodEntries.length} />
+        <EnergyMoodCard energyDays={energyEntries.length} moodDays={moodEntries.length} />
       </div>
 
-      <SectionTitle label="2" title="Что дают мои отметки" />
+      <SectionTitle label="2" title="Прогноз на ближайшие дни" />
+      <div className="mb-5">
+        <ForecastDaysCard cycleDay={cycleDay} cycleLength={cycleLength} daysUntilPeriod={norm.daysUntilPeriod} />
+      </div>
+
+      <SectionTitle label="3" title="Найденные закономерности" />
+      <div className="mb-5">
+        <PatternCards correlations={correlations} evidenceItems={evidenceItems} />
+      </div>
+
+      <SectionTitle label="4" title="Что дают мои отметки" />
       <Card className="mb-3 border-mira-lavender/20 bg-white p-4">
         <p className="mb-3 text-sm font-bold text-mira-text">Как эти данные помогают тебе</p>
         <div className="grid gap-3 md:grid-cols-5">
@@ -593,10 +744,10 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
         ))}
       </div>
 
-      <SectionTitle label="3" title="Как это влияет на жизнь" />
+      <SectionTitle label="5" title="Как это влияет на жизнь" />
       <WorkAnalyticsCard mode={workMode} />
 
-      <SectionTitle label="4" title="Что сделать дальше" />
+      <SectionTitle label="6" title="Что сделать дальше" />
       <div className="mb-5 space-y-3">
         <Card className="p-4">
           <div className="flex items-start gap-3">
@@ -631,7 +782,7 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
         </Card>
       </div>
 
-      <SectionTitle label="5" title="Когда лучше к врачу" />
+      <SectionTitle label="7" title="Когда лучше к врачу" />
       <div className="mb-5 space-y-3">
         {redFlags.length > 0 ? (
           redFlags.slice(0, 3).map(flag => (

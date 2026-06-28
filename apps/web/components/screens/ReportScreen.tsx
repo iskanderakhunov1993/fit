@@ -120,6 +120,7 @@ function hasUnusualSymptoms(checkIn: DailyCheckIn) {
 export function ReportScreen({ data, persist }: ScreenProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(3);
   const [includeSex, setIncludeSex] = useState(false);
+  const [showFullReport, setShowFullReport] = useState(false);
 
   const report = useMemo(() => {
     const profile = data.profile;
@@ -278,12 +279,34 @@ export function ReportScreen({ data, persist }: ScreenProps) {
   }
 
   function handlePrintPdf() {
-    window.print();
+    setShowFullReport(true);
+    window.setTimeout(() => window.print(), 50);
   }
 
   const doctorScript = getDoctorScript(data);
   const labs = data.labs ?? [];
   const hormoneCheckup = getHormoneCheckup45(data);
+  const rawReadyScore = Math.min(
+    100,
+    Math.round(
+      Math.min(report.entries.length, 14) * 4 +
+      (report.periodEntries.length > 0 ? 12 : 0) +
+      (report.painEntries.length > 0 ? 10 : 0) +
+      (report.moodEntries.length > 0 ? 8 : 0) +
+      (report.tableRows.length >= 5 ? 10 : 0)
+    )
+  );
+  const readyScore = report.entries.length > 0 ? Math.max(12, rawReadyScore) : 0;
+  const readinessTitle = report.entries.length < 5
+    ? "Нужно ещё несколько отметок"
+    : report.focusItems.length > 0
+      ? "Есть что обсудить с врачом"
+      : "Отчёт уже можно показать";
+  const readinessBody = report.entries.length < 5
+    ? "Mira уже собрала первые записи, но врачу будет полезнее увидеть хотя бы 5-7 дней наблюдений."
+    : report.focusItems.length > 0
+      ? "В отчёте выделены повторяющиеся или тревожные сигналы, чтобы не объяснять всё с нуля на приёме."
+      : "Данных достаточно, чтобы показать цикл, симптомы и вопросы без лишней тревоги.";
 
   return (
     <div>
@@ -292,48 +315,98 @@ export function ReportScreen({ data, persist }: ScreenProps) {
         <p className="mt-1 text-sm text-mira-muted">Симптомы, даты и закономерности, чтобы не вспоминать всё на приёме</p>
       </div>
 
-      <Card className="mb-5 border-mira-primary/10 bg-mira-lavender-light/20 p-4 print:hidden">
-        <div className="flex items-start gap-3">
-          <FileText className="mt-0.5 h-5 w-5 shrink-0 text-mira-primary" />
-          <div>
-            <p className="text-sm font-semibold text-mira-text">PDF для врача</p>
-            <p className="mt-1 text-xs leading-relaxed text-mira-muted">
-              Mira собирает факты: когда были месячные, как менялись боль, обильность, настроение, сон, задержки, лекарства и необычные симптомы.
-            </p>
+      <Card className="mb-5 overflow-hidden border-mira-primary/15 bg-white p-5 print:hidden">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Готовность отчёта</p>
+            <h2 className="mt-1 text-xl font-bold text-mira-text">{readinessTitle}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-mira-muted">{readinessBody}</p>
           </div>
+          <div className="flex items-center gap-4">
+            <div
+              className="grid h-24 w-24 place-items-center rounded-full"
+              style={{ background: `conic-gradient(#70B68A ${readyScore}%, #EEE9F5 0)` }}
+              aria-label={`Готовность отчёта ${readyScore}%`}
+            >
+              <div className="grid h-20 w-20 place-items-center rounded-full bg-white text-center">
+                <span className="text-2xl font-bold text-mira-text">{readyScore}%</span>
+                <span className="-mt-2 text-[10px] font-bold uppercase text-mira-muted">готово</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <MiniStat label="Дней с данными" value={`${report.entries.length}`} note={`за ${selectedPeriod} мес.`} />
+          <MiniStat label="Вопросов врачу" value={`${report.questions.length}`} note={report.focusItems.length ? "по данным Mira" : "стартовый список"} />
+          <MiniStat label="Детальных записей" value={`${report.tableRows.length}`} note="для истории" />
+        </div>
+
+        <div className="mt-5 flex gap-3">
+          <Button className="flex-1" onClick={handlePrintPdf}>
+            <Printer className="h-4 w-4" /> Скачать PDF
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={handleExportText}>
+            <Download className="h-4 w-4" /> TXT
+          </Button>
         </div>
       </Card>
 
       <Card className="mb-5 p-5 print:hidden">
-        <p className="mb-3 text-sm font-semibold text-mira-text">Период отчёта</p>
-        <div className="grid grid-cols-4 gap-2">
-          {periods.map(period => (
-            <button
-              key={period.months}
-              onClick={() => setSelectedPeriod(period.months)}
-              className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
-                selectedPeriod === period.months ? "bg-mira-primary text-white shadow-glow" : "bg-mira-lavender-light text-mira-muted"
-              }`}
-            >
-              {period.label}
-            </button>
-          ))}
+        <div className="mb-4 flex items-center gap-2">
+          <ClipboardList className="h-4 w-4 text-mira-primary" />
+          <p className="text-sm font-semibold text-mira-text">Что попадёт в отчёт</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <InfoRow label="Цикл" value={`${report.periodEntries.length} дней месячных, цикл ${report.cycleLength} дн.`} />
+          <InfoRow label="Симптомы" value={`${report.painEntries.length} дней с болью, ${report.unusualEntries.length} необычных сигналов`} />
+          <InfoRow label="Состояние" value={`${report.moodEntries.length} настроений, ${report.lowEnergyEntries.length} дней низкой энергии`} />
+          <InfoRow label="Лекарства и задержки" value={`${report.medicationEntries.length} лекарств, ${report.delayChecks.length} разборов задержки`} />
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
-          <div>
-            <p className="text-sm font-medium text-mira-text">Секс и контрацепция</p>
-            <p className="text-[10px] text-mira-muted">{includeSex ? "Будет включено в отчёт" : "Скрыто по умолчанию"}</p>
+        <div className="mt-4 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-mira-text">Секс и контрацепция</p>
+              <p className="text-[10px] text-mira-muted">{includeSex ? "Включится в PDF/TXT" : "Скрыто по умолчанию"}</p>
+            </div>
+            <button
+              onClick={() => setIncludeSex(value => !value)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                includeSex ? "bg-mira-primary text-white" : "border border-mira-lavender/30 text-mira-muted"
+              }`}
+            >
+              {includeSex ? "Включено" : "Включить"}
+            </button>
           </div>
-          <button
-            onClick={() => setIncludeSex(value => !value)}
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-              includeSex ? "bg-mira-primary text-white" : "border border-mira-lavender/30 text-mira-muted"
-            }`}
-          >
-            {includeSex ? "Включено" : "Включить"}
-          </button>
+          <div className="grid grid-cols-4 gap-2">
+            {periods.map(period => (
+              <button
+                key={period.months}
+                onClick={() => setSelectedPeriod(period.months)}
+                className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
+                  selectedPeriod === period.months ? "bg-mira-primary text-white shadow-glow" : "bg-white text-mira-muted"
+                }`}
+              >
+                {period.label}
+              </button>
+            ))}
+          </div>
         </div>
+      </Card>
+
+      <Card className="mb-5 border-mira-primary/15 p-5 print:hidden">
+        <div className="mb-4 flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-mira-primary" />
+          <p className="text-sm font-semibold text-mira-text">На приёме сказать главное</p>
+        </div>
+        <p className="rounded-2xl bg-mira-lavender-light/25 p-3 text-sm italic leading-relaxed text-mira-text">"{doctorScript.intro}"</p>
+        {report.focusItems.length > 0 && (
+          <div className="mt-3 rounded-2xl border border-mira-cycle/15 bg-mira-rose-light/20 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Не забыть обсудить</p>
+            <p className="mt-1 text-sm leading-relaxed text-mira-text">{report.focusItems.join(" · ")}</p>
+          </div>
+        )}
       </Card>
 
       <div className="mb-5 print:hidden">
@@ -341,6 +414,24 @@ export function ReportScreen({ data, persist }: ScreenProps) {
       </div>
 
       <div className="space-y-5 print:space-y-3">
+        {!showFullReport && (
+          <Card className="border-mira-lavender/20 bg-white p-5 print:hidden">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-mira-text">Полный отчёт скрыт, чтобы экран не перегружал</p>
+                <p className="mt-1 text-xs leading-relaxed text-mira-muted">
+                  Открой его перед приёмом, если хочешь проверить даты, симптомы и вопросы врачу.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => setShowFullReport(true)}>
+                <FileText className="h-4 w-4" /> Посмотреть отчёт
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {showFullReport && (
+          <>
         <Card className="border-mira-primary/15 bg-white p-5 print:border-none print:shadow-none">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -363,7 +454,7 @@ export function ReportScreen({ data, persist }: ScreenProps) {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="p-5 print:hidden">
           <div className="mb-4 flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-mira-primary" />
             <p className="text-sm font-semibold text-mira-text">Краткое резюме</p>
@@ -605,10 +696,12 @@ export function ReportScreen({ data, persist }: ScreenProps) {
             </p>
           </div>
         </Card>
+          </>
+        )}
 
         <div className="flex gap-3 print:hidden">
           <Button className="flex-1" onClick={handlePrintPdf}>
-            <Printer className="h-4 w-4" /> PDF
+            <Printer className="h-4 w-4" /> Скачать PDF
           </Button>
           <Button variant="outline" className="flex-1" onClick={handleExportText}>
             <Download className="h-4 w-4" /> TXT

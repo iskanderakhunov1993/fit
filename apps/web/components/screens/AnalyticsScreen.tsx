@@ -4,6 +4,7 @@ import {
   Activity,
   AlertCircle,
   Brain,
+  BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -25,7 +26,8 @@ import { getCycleAnalytics, type CycleAnalyticsPoint } from "@/lib/cycleAnalytic
 import { getCorrelations } from "@/lib/correlations";
 import { getHealthSummary, statusMeta } from "@/lib/healthScore";
 import { getSmartInsights } from "@/lib/insights";
-import { dateKey } from "@/lib/store";
+import { dateKey, getCycleDay, getCyclePhase } from "@/lib/store";
+import { getWorkMode, type WorkMode } from "@/lib/workMode";
 import type { ScreenProps } from "./types";
 
 type Tone = "success" | "watch" | "alert" | "neutral";
@@ -71,6 +73,21 @@ function MiniStat({ label, value, note }: { label: string; value: string; note: 
       <p className="mt-1 text-xl font-black leading-none text-mira-text">{value}</p>
       <p className="mt-1 text-[10px] leading-snug text-mira-muted">{note}</p>
     </div>
+  );
+}
+
+function TrackerValueCard({ emoji, title, value, body, ready }: { emoji: string; title: string; value: string; body: string; ready: boolean }) {
+  return (
+    <Card className={`p-3 ${ready ? "border-mira-success/15 bg-[#E0F5E8]/20" : "border-mira-lavender/20 bg-white"}`}>
+      <div className="mb-2 flex items-start gap-2">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70 text-base">{emoji}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold leading-tight text-mira-text">{title}</p>
+          <p className={`mt-0.5 text-[10px] font-bold ${ready ? "text-mira-success" : "text-mira-muted"}`}>{value}</p>
+        </div>
+      </div>
+      <p className="text-[11px] leading-relaxed text-mira-muted">{body}</p>
+    </Card>
   );
 }
 
@@ -148,6 +165,73 @@ function CycleAnalyticsCard({ analytics, onOpenReport }: { analytics: NonNullabl
   );
 }
 
+function WorkAnalyticsCard({ mode }: { mode: WorkMode }) {
+  const toneClass = {
+    green: "border-mira-success/15 bg-[#E0F5E8]/25",
+    lavender: "border-mira-primary/10 bg-mira-lavender-light/25",
+    warm: "border-[#C4B07E]/15 bg-[#F5F0E0]/35",
+    rose: "border-mira-cycle/15 bg-[#F8E8EE]/40",
+  }[mode.tone];
+
+  const iconClass = {
+    green: "text-mira-success",
+    lavender: "text-mira-primary",
+    warm: "text-[#9A7A35]",
+    rose: "text-mira-cycle",
+  }[mode.tone];
+
+  const loadLabel = mode.kind === "deep" ? "Можно брать сложное" : mode.kind === "steady" ? "Лучше ровный темп" : "Нужен мягкий режим";
+  const loadScore = mode.kind === "deep" ? 82 : mode.kind === "steady" ? 62 : 38;
+  const loadColor = mode.tone === "rose" ? "bg-mira-cycle" : mode.tone === "warm" ? "bg-[#C4B07E]" : "bg-mira-success";
+
+  return (
+    <Card className={`mb-5 p-4 ${toneClass}`}>
+      <div className="mb-4 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70">
+          <BriefcaseBusiness className={`h-5 w-5 ${iconClass}`} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Работа и нагрузка</p>
+          <p className="mt-0.5 text-base font-bold leading-snug text-mira-text">{mode.title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-mira-muted">{mode.body}</p>
+        </div>
+      </div>
+
+      <div className="mb-3 rounded-2xl bg-white/70 p-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p className="text-xs font-bold text-mira-text">{loadLabel}</p>
+          <p className="text-sm font-black text-mira-text">{loadScore}%</p>
+        </div>
+        <Progress value={loadScore} color={loadColor} />
+      </div>
+
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        {mode.bestFor.map((item) => (
+          <div key={item} className="rounded-lg bg-white/70 px-2 py-2 text-center">
+            <p className="text-[10px] font-bold leading-tight text-mira-text">{item}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl bg-white/70 px-3 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Не перегружать</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{mode.avoid}</p>
+        </div>
+        <div className="rounded-xl bg-white/70 px-3 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Паузы</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{mode.pause}</p>
+        </div>
+      </div>
+
+      <details className="mt-2 rounded-xl bg-white/70 px-3 py-2">
+        <summary className="cursor-pointer text-xs font-bold text-mira-primary">Шаблон сообщения, если плохо</summary>
+        <p className="mt-2 text-xs leading-relaxed text-mira-text">{mode.messageTemplate}</p>
+      </details>
+    </Card>
+  );
+}
+
 export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const profile = data.profile;
   const today = data.checkIns[dateKey()];
@@ -157,12 +241,15 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const norm = getCycleNorm(profile);
   const cycleLength = norm.cycleLength;
   const periodLength = profile?.cycleConfig.periodLength ?? 5;
+  const cycleDay = getCycleDay(profile);
+  const phase = getCyclePhase(cycleDay, periodLength, cycleLength);
   const health = getHealthSummary(data);
   const redFlags = getRedFlags(data);
   const smartInsights = getSmartInsights(data);
   const correlations = getCorrelations(data);
   const phaseCorrelations = getPhaseCorrelations(data);
   const cycleAnalytics = getCycleAnalytics(data);
+  const workMode = getWorkMode(phase, today);
 
   const painEntries = checkIns.filter(c => c.pain && c.pain.kinds.some(k => k !== "none"));
   const strongPainEntries = painEntries.filter(c => c.pain?.level === "strong");
@@ -171,8 +258,18 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   const moodEntries = checkIns.filter(c => c.mood);
   const pmsEntries = checkIns.filter(c => c.pms && c.pms.symptoms.length > 0);
   const symptomLogEntries = checkIns.filter(c => c.symptomLog);
+  const periodEntries = checkIns.filter(c => c.period);
+  const mealEntries = checkIns.filter(c => c.meals && c.meals.length > 0);
+  const waterEntries = Object.values(data.waterLog ?? {}).filter(entry => entry.glasses > 0);
   const walkingEntries = Object.values(data.walkingLog ?? {}).filter(entry => entry.steps > 0);
   const walkingDays = walkingEntries.length;
+  const workoutEntries = data.workouts.filter(workout => workout.status !== "skipped");
+  const weightEntries = Object.values(data.weightLog ?? {});
+  const intimacyEntries = checkIns.filter(c => c.intimacy?.happened);
+  const delayChecks = checkIns.flatMap(c => c.delayChecks ?? []);
+  const badEpisodes = checkIns.flatMap(c => c.badEpisodes ?? []);
+  const labEntries = data.labs ?? [];
+  const kitReady = data.periodKit?.items.filter(item => item.checked).length ?? 0;
 
   const missingToday = [
     !today?.sleep ? "сон" : null,
@@ -204,6 +301,116 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
 
   const weakestNeed = dataNeeds.slice().sort((a, b) => pct(a.count, a.goal) - pct(b.count, b.goal))[0];
   const usefulMetrics = health.metrics.filter(metric => metric.status !== "nodata");
+  const trackerValueCards = [
+    {
+      emoji: "🔄",
+      title: "Цикл и месячные",
+      value: periodEntries.length > 0 ? `${periodEntries.length} дней` : "нет отметок",
+      ready: norm.observedCycles >= 1 || periodEntries.length > 0,
+      body: norm.observedCycles >= 1
+        ? "Помогает прогнозировать месячные, задержки и дни подготовки."
+        : "Отметь старт месячных, чтобы Mira поняла твою длину цикла.",
+    },
+    {
+      emoji: "🌸",
+      title: "Боль",
+      value: painEntries.length > 0 ? `${painEntries.length} дней` : "нет отметок",
+      ready: painEntries.length > 0,
+      body: painEntries.length > 0
+        ? `Mira видит боль и отдельно считает сильную: ${strongPainEntries.length} раз.`
+        : "Нужна, чтобы понять, повторяется ли боль в одни и те же дни.",
+    },
+    {
+      emoji: "🙂",
+      title: "Настроение и ПМС",
+      value: `${moodEntries.length + pmsEntries.length} отметок`,
+      ready: moodEntries.length > 0 || pmsEntries.length > 0,
+      body: moodEntries.length > 0 || pmsEntries.length > 0
+        ? "Помогает связать тревогу, раздражение и ПМС с фазами цикла."
+        : "Покажет, когда эмоциональные симптомы повторяются перед месячными.",
+    },
+    {
+      emoji: "😴",
+      title: "Сон и энергия",
+      value: `${sleepEntries.length}/${energyEntries.length} дней`,
+      ready: sleepEntries.length > 0 || energyEntries.length > 0,
+      body: sleepEntries.length > 0 || energyEntries.length > 0
+        ? "Используется для советов по нагрузке, восстановлению и работе."
+        : "Нужны, чтобы Mira отличала усталость от случайного дня.",
+    },
+    {
+      emoji: "🥗",
+      title: "Питание",
+      value: mealEntries.length > 0 ? `${mealEntries.length} дней` : "нет отметок",
+      ready: mealEntries.length > 0,
+      body: mealEntries.length > 0
+        ? "Ищем связь еды с энергией, тягой к сладкому и ПМС."
+        : "Поможет понять, какая еда поддерживает энергию в разные фазы.",
+    },
+    {
+      emoji: "💧",
+      title: "Вода",
+      value: waterEntries.length > 0 ? `${waterEntries.length} дней` : "нет отметок",
+      ready: waterEntries.length > 0,
+      body: waterEntries.length > 0
+        ? "Учитывается в связях с самочувствием и ПМС."
+        : "Нужна, чтобы проверить связь воды, вздутия и энергии.",
+    },
+    {
+      emoji: "🚶",
+      title: "Ходьба",
+      value: walkingDays > 0 ? `${walkingDays} дней` : "нет отметок",
+      ready: walkingDays > 0,
+      body: walkingDays > 0
+        ? "Помогает смотреть, как движение связано с энергией и настроением."
+        : "Пока Mira не может понять, помогает ли тебе прогулка.",
+    },
+    {
+      emoji: "🏋️",
+      title: "Тренировки",
+      value: workoutEntries.length > 0 ? `${workoutEntries.length} раз` : "нет отметок",
+      ready: workoutEntries.length > 0,
+      body: workoutEntries.length > 0
+        ? "Используется для связи тренировок со сном и восстановлением."
+        : "Поможет адаптировать спорт под фазу цикла и самочувствие.",
+    },
+    {
+      emoji: "⚖️",
+      title: "Вес",
+      value: weightEntries.length > 0 ? `${weightEntries.length} замеров` : "нет замеров",
+      ready: weightEntries.length >= 2,
+      body: weightEntries.length >= 2
+        ? "Можно смотреть тренд, не реагируя на один случайный скачок."
+        : "Нужно 2+ замера, чтобы показать тренд без лишней тревоги.",
+    },
+    {
+      emoji: "❤️",
+      title: "Секс и цикл",
+      value: intimacyEntries.length > 0 ? `${intimacyEntries.length} отметок` : "скрыто/нет",
+      ready: intimacyEntries.length > 0,
+      body: intimacyEntries.length > 0
+        ? "Используется для риска беременности, боли, крови после секса и отчёта врачу."
+        : "Если отмечать, Mira подскажет про риски и красные флаги.",
+    },
+    {
+      emoji: "⚠️",
+      title: "Задержки и «мне плохо»",
+      value: `${delayChecks.length + badEpisodes.length} записей`,
+      ready: delayChecks.length > 0 || badEpisodes.length > 0,
+      body: delayChecks.length > 0 || badEpisodes.length > 0
+        ? "Попадает в красные флаги и помогает собрать спокойный план действий."
+        : "Нужно только когда есть задержка или плохое самочувствие.",
+    },
+    {
+      emoji: "🧪",
+      title: "Анализы и аптечка",
+      value: `${labEntries.length} анализов · ${kitReady}/9 аптечка`,
+      ready: labEntries.length > 0 || kitReady > 0,
+      body: labEntries.length > 0 || kitReady > 0
+        ? "Помогает подготовиться к врачу и к месячным заранее."
+        : "Анализы нужны для вопросов врачу, аптечка — чтобы не забыть важное.",
+    },
+  ];
 
   const evidenceItems = [
     ...redFlags.map(flag => ({
@@ -253,8 +460,8 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-mira-text">Что повторяется</h1>
-        <p className="mt-1 text-sm text-mira-muted">Простые выводы по циклу, симптомам и самочувствию</p>
+        <h1 className="text-2xl font-bold text-mira-text">Понятно, что происходит</h1>
+        <p className="mt-1 text-sm text-mira-muted">Mira показывает закономерности, влияние на день и следующий шаг</p>
       </div>
 
       <Card className={`mb-4 p-4 ${toneClass[heroTone]}`}>
@@ -303,7 +510,17 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
         )}
       </div>
 
-      <SectionTitle label="2" title="Что делать дальше" />
+      <SectionTitle label="2" title="Что дают мои отметки" />
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        {trackerValueCards.map(card => (
+          <TrackerValueCard key={card.title} {...card} />
+        ))}
+      </div>
+
+      <SectionTitle label="3" title="Как это влияет на жизнь" />
+      <WorkAnalyticsCard mode={workMode} />
+
+      <SectionTitle label="4" title="Что сделать дальше" />
       <div className="mb-5 space-y-3">
         <Card className="p-4">
           <div className="flex items-start gap-3">
@@ -329,16 +546,16 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
               <Target className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-mira-text">Для точности не хватает: {weakestNeed.label.toLowerCase()}</p>
+              <p className="text-sm font-bold text-mira-text">Чтобы выводы стали личными: {weakestNeed.label.toLowerCase()}</p>
               <p className="mt-1 text-xs leading-relaxed text-mira-muted">
-                Сейчас собрано {weakestNeed.count}/{weakestNeed.goal} {weakestNeed.unit}. Это нужно, чтобы Mira лучше видела: {weakestNeed.why}.
+                Сейчас собрано {weakestNeed.count}/{weakestNeed.goal} {weakestNeed.unit}. Это поможет Mira увидеть: {weakestNeed.why}.
               </p>
             </div>
           </div>
         </Card>
       </div>
 
-      <SectionTitle label="3" title="Когда лучше к врачу" />
+      <SectionTitle label="5" title="Когда лучше к врачу" />
       <div className="mb-5 space-y-3">
         {redFlags.length > 0 ? (
           redFlags.slice(0, 3).map(flag => (
@@ -410,10 +627,10 @@ export function AnalyticsScreen({ data, navigate, onCheckIn }: ScreenProps) {
 
       <details className="mb-5 rounded-2xl border border-mira-lavender/20 bg-white p-4">
         <summary className="cursor-pointer text-sm font-bold text-mira-text">
-          Что собирается для точности
+          Что Mira ещё не знает обо мне
         </summary>
         <p className="mt-1 text-xs leading-relaxed text-mira-muted">
-          Эти данные нужны, чтобы Mira отличала случайный день от твоего повторяющегося паттерна.
+          Эти отметки помогают отличать случайный плохой день от твоего повторяющегося паттерна.
         </p>
         <div className="mt-4 space-y-3">
           {dataNeeds.map((need) => {

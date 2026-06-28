@@ -702,7 +702,7 @@ function ClothingCard({ daysUntil, phase }: { daysUntil: number; phase: CyclePha
   );
 }
 
-function WorkModeCard({ mode }: { mode: WorkMode }) {
+function WorkModeCard({ mode, onOpen }: { mode: WorkMode; onOpen: () => void }) {
   const toneClass = {
     green: "border-mira-success/15 bg-[#E0F5E8]/25",
     lavender: "border-mira-primary/10 bg-mira-lavender-light/25",
@@ -717,42 +717,26 @@ function WorkModeCard({ mode }: { mode: WorkMode }) {
     rose: "text-mira-cycle",
   }[mode.tone];
 
+  const focusScore = mode.kind === "deep" ? 82 : mode.kind === "steady" ? 62 : 38;
+  const focusLabel = mode.kind === "deep" ? "Фокус" : mode.kind === "steady" ? "Ровный темп" : "Беречь силы";
+
   return (
-    <Card className={`p-4 ${toneClass}`}>
-      <div className="mb-3 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70">
+    <Card className={`cursor-pointer p-3.5 transition active:scale-[0.99] ${toneClass}`} onClick={onOpen}>
+      <div className="flex items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/70">
           <BriefcaseBusiness className={`h-5 w-5 ${iconClass}`} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Работа</p>
-          <p className="mt-0.5 text-sm font-bold leading-snug text-mira-text">{mode.title}</p>
-          <p className="mt-1 text-xs leading-relaxed text-mira-muted">{mode.body}</p>
+          <p className="mt-0.5 truncate text-sm font-bold leading-snug text-mira-text">{focusLabel}: {mode.label}</p>
+          <p className="mt-0.5 truncate text-xs text-mira-muted">{mode.bestFor.slice(0, 2).join(" · ")}</p>
         </div>
-      </div>
-
-      <div className="mb-3 grid grid-cols-3 gap-2">
-        {mode.bestFor.map((item) => (
-          <div key={item} className="rounded-lg bg-white/70 px-2 py-2 text-center">
-            <p className="text-[10px] font-bold leading-tight text-mira-text">{item}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded-xl bg-white/70 px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Не перегружать</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{mode.avoid}</p>
+        <div className="shrink-0 text-right">
+          <p className="text-lg font-black leading-none text-mira-text">{focusScore}%</p>
+          <p className="mt-0.5 text-[10px] font-semibold text-mira-muted">ресурс</p>
         </div>
-        <div className="rounded-xl bg-white/70 px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Паузы</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-mira-text">{mode.pause}</p>
-        </div>
+        <ChevronRight className={`h-4 w-4 shrink-0 ${iconClass}`} />
       </div>
-
-      <details className="mt-2 rounded-xl bg-white/70 px-3 py-2">
-        <summary className="cursor-pointer text-xs font-bold text-mira-primary">Шаблон сообщения, если плохо</summary>
-        <p className="mt-2 text-xs leading-relaxed text-mira-text">{mode.messageTemplate}</p>
-      </details>
     </Card>
   );
 }
@@ -1019,7 +1003,7 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, on
       </motion.div>
 
       <motion.div variants={fadeUp} className="mb-4">
-        <WorkModeCard mode={workMode} />
+        <WorkModeCard mode={workMode} onOpen={() => navigate("analytics")} />
       </motion.div>
 
       <motion.div variants={fadeUp} className="mb-4">

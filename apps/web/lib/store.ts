@@ -1,4 +1,4 @@
-import type { MiraLocalData, DailyCheckIn, WorkoutLog, UserProfile, IslamicEntry, CyclePhase, WaterEntry, WalkingEntry } from "./types";
+import type { MiraLocalData, DailyCheckIn, WorkoutLog, UserProfile, IslamicEntry, CyclePhase, WaterEntry, WalkingEntry, WeightEntry } from "./types";
 import { getCycleNorm } from "./cycleEngine";
 
 const STORAGE_KEY = "mira:data";
@@ -218,4 +218,44 @@ export function addWalkingSteps(data: MiraLocalData, steps: number, date?: strin
     steps: Math.max(0, existing.steps + steps),
     source: "manual",
   });
+}
+
+// ── Weight tracking ──
+
+export function getWeightEntry(data: MiraLocalData, date?: string): WeightEntry | undefined {
+  const key = date ?? dateKey();
+  return data.weightLog?.[key];
+}
+
+export function getLatestWeightEntry(data: MiraLocalData): WeightEntry | undefined {
+  const entries = Object.values(data.weightLog ?? {});
+  if (entries.length === 0) {
+    const profileWeight = data.profile?.weight;
+    return typeof profileWeight === "number" ? { date: dateKey(), weight: profileWeight } : undefined;
+  }
+  return entries.sort((a, b) => b.date.localeCompare(a.date))[0];
+}
+
+export function getPreviousWeightEntry(data: MiraLocalData, beforeDate?: string): WeightEntry | undefined {
+  const latestDate = beforeDate ?? getLatestWeightEntry(data)?.date;
+  if (!latestDate) return undefined;
+  const entries = Object.values(data.weightLog ?? {})
+    .filter((entry) => entry.date < latestDate)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return entries[0];
+}
+
+export function saveWeightEntry(data: MiraLocalData, entry: WeightEntry): MiraLocalData {
+  const normalizedWeight = Math.round(entry.weight * 10) / 10;
+  if (!Number.isFinite(normalizedWeight) || normalizedWeight < 25 || normalizedWeight > 250) return data;
+
+  const profile = data.profile ? { ...data.profile, weight: normalizedWeight } : data.profile;
+  return {
+    ...data,
+    profile,
+    weightLog: {
+      ...data.weightLog,
+      [entry.date]: { ...entry, weight: normalizedWeight },
+    },
+  };
 }

@@ -18,6 +18,7 @@ import {
   Minus,
   Plus,
   BellRing,
+  Scale,
   Shirt,
   X,
   UserRound,
@@ -27,8 +28,10 @@ import { Card } from "@/components/ui/card";
 import { CountUp } from "@/components/ui/CountUp";
 import {
   addWalkingSteps,
+  dateKey,
+  getLatestWeightEntry,
   getCycleDay, getCyclePhase,
-  getDaysUntilPeriod, getCheckIn, getWalkingEntry, getWaterEntry,
+  getDaysUntilPeriod, getCheckIn, getPreviousWeightEntry, getWalkingEntry, getWaterEntry, saveWeightEntry,
 } from "@/lib/store";
 import { getPeriodForecast } from "@/lib/cycleEngine";
 import { getSexCycleInsight, getSmartReminders, getRedFlags, getToughDayContent } from "@/lib/alerts";
@@ -451,6 +454,112 @@ function WalkingCard({ data, persist }: { data: MiraLocalData; persist: ScreenPr
           <Minus className="h-4 w-4" />
         </Button>
       </div>
+    </Card>
+  );
+}
+
+function WeightCard({ data, persist, daysUntil, phase }: { data: MiraLocalData; persist: ScreenProps["persist"]; daysUntil: number; phase: CyclePhase }) {
+  const latest = getLatestWeightEntry(data);
+  const today = dateKey();
+  const todayWeight = data.weightLog?.[today]?.weight;
+  const previous = getPreviousWeightEntry(data, latest?.date);
+  const [weightInput, setWeightInput] = useState(todayWeight ? String(todayWeight) : "");
+  const entries = Object.values(data.weightLog ?? {})
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-7);
+
+  const currentWeight = todayWeight ?? latest?.weight ?? data.profile?.weight;
+  const delta = currentWeight && previous ? Math.round((currentWeight - previous.weight) * 10) / 10 : null;
+  const hasPremenstrualFluid = phase === "luteal" && daysUntil <= 7;
+  const minWeight = entries.length ? Math.min(...entries.map((entry) => entry.weight)) : currentWeight ?? 0;
+  const maxWeight = entries.length ? Math.max(...entries.map((entry) => entry.weight)) : currentWeight ?? 1;
+  const spread = Math.max(0.4, maxWeight - minWeight);
+
+  function saveWeight(value: number) {
+    if (!Number.isFinite(value)) return;
+    persist(saveWeightEntry(data, { date: today, weight: value }));
+    setWeightInput(String(Math.round(value * 10) / 10));
+  }
+
+  function saveManualWeight() {
+    const normalized = Number.parseFloat(weightInput.replace(",", "."));
+    saveWeight(normalized);
+  }
+
+  function shiftWeight(deltaKg: number) {
+    const base = currentWeight ?? Number.parseFloat(weightInput.replace(",", "."));
+    if (!Number.isFinite(base)) return;
+    saveWeight(base + deltaKg);
+  }
+
+  return (
+    <Card className="p-3.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Вес</p>
+          <p className="mt-1 text-lg font-bold leading-none text-mira-text">
+            {currentWeight ? (
+              <>
+                <CountUp value={currentWeight} decimals={1} /> <span className="text-xs font-normal text-mira-muted">кг</span>
+              </>
+            ) : (
+              <span className="text-sm">Добавь первый замер</span>
+            )}
+          </p>
+          <p className={`mt-1 text-[10px] font-semibold ${delta === null ? "text-mira-muted" : Math.abs(delta) <= 0.3 ? "text-mira-success" : "text-mira-primary"}`}>
+            {delta === null
+              ? "Mira покажет тренд после 2 замеров"
+              : delta === 0
+                ? "без изменений"
+                : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} кг к прошлому замеру`}
+          </p>
+        </div>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-mira-lavender-light text-mira-primary">
+          <Scale className="h-5 w-5" />
+        </span>
+      </div>
+
+      {entries.length >= 2 && (
+        <div className="mb-3 flex h-12 items-end gap-1 rounded-lg bg-mira-bg px-2 py-2">
+          {entries.map((entry) => {
+            const height = 22 + ((entry.weight - minWeight) / spread) * 22;
+            return (
+              <div key={entry.date} className="flex flex-1 items-end">
+                <span
+                  className={`w-full rounded-full ${entry.date === today ? "bg-mira-primary" : "bg-mira-lavender"}`}
+                  style={{ height }}
+                  title={`${entry.weight} кг`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mb-2 grid grid-cols-[auto_1fr_auto_auto] gap-1.5">
+        <Button size="sm" variant="outline" onClick={() => shiftWeight(-0.5)} aria-label="Уменьшить вес на 0.5 кг">
+          <Minus className="h-4 w-4" />
+        </Button>
+        <input
+          value={weightInput}
+          onChange={(event) => setWeightInput(event.target.value.replace(/[^\d,.]/g, ""))}
+          inputMode="decimal"
+          placeholder="кг"
+          className="min-w-0 rounded-lg border border-mira-lavender/30 bg-white px-3 py-2 text-center text-sm font-semibold text-mira-text outline-none transition placeholder:text-mira-muted focus:border-mira-primary/50 focus:ring-4 focus:ring-mira-primary/10"
+        />
+        <Button size="sm" variant="outline" onClick={() => shiftWeight(0.5)} aria-label="Увеличить вес на 0.5 кг">
+          <Plus className="h-4 w-4" />
+        </Button>
+        <Button size="sm" onClick={saveManualWeight} aria-label="Сохранить вес">
+          OK
+        </Button>
+      </div>
+
+      <p className="text-[10px] leading-snug text-mira-muted">
+        {hasPremenstrualFluid
+          ? "Перед месячными вес может временно расти из-за задержки жидкости. Смотри тренд, а не один день."
+          : "Лучше взвешиваться утром в похожих условиях, чтобы Mira видела честный тренд."}
+      </p>
     </Card>
   );
 }
@@ -922,6 +1031,71 @@ function PersonalDiaryCard({
   );
 }
 
+function TodayEducationCard({ onCheckIn, onBadState, onOpenDiary }: {
+  onCheckIn?: () => void;
+  onBadState?: () => void;
+  onOpenDiary: () => void;
+}) {
+  const steps = [
+    {
+      n: 1,
+      title: "Посмотри день цикла",
+      body: "Верхняя карточка объясняет фазу, прогноз месячных и почему сегодня может меняться энергия.",
+    },
+    {
+      n: 2,
+      title: "Отметь состояние",
+      body: "Боль, настроение, сон и симптомы сохраняются в календаре. Так Mira строит твою личную норму.",
+    },
+    {
+      n: 3,
+      title: "Если плохо — нажми кнопку",
+      body: "Mira спросит симптомы и покажет спокойный план: что сделать сейчас и когда лучше к врачу.",
+    },
+  ];
+
+  return (
+    <Card className="border-mira-primary/10 bg-mira-lavender-light/25 p-4">
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-mira-primary">
+          <BookOpen className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-primary">Обучение</p>
+          <p className="mt-0.5 text-sm font-bold text-mira-text">Как пользоваться главной</p>
+          <p className="mt-1 text-xs leading-relaxed text-mira-muted">Смотри сверху вниз: понять день, отметить себя, получить поддержку.</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {steps.map((step) => (
+          <div key={step.n} className="flex gap-3 rounded-lg bg-white/70 p-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mira-primary text-xs font-bold text-white">
+              {step.n}
+            </span>
+            <div>
+              <p className="text-xs font-bold text-mira-text">{step.title}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-mira-muted">{step.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <Button size="sm" onClick={() => onCheckIn?.()}>
+          <Plus className="h-4 w-4" /> Состояние
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => onBadState?.()} aria-label="Мне плохо">
+          <HeartPulse className="h-4 w-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={onOpenDiary} aria-label="Открыть дневник">
+          <BookOpen className="h-4 w-4" />
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, onDelayCheck }: ScreenProps) {
   const profile = data.profile;
   const cycleDay = getCycleDay(profile);
@@ -1059,6 +1233,14 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, on
       </motion.div>
 
       <motion.div variants={fadeUp} className="mb-4">
+        <TodayEducationCard
+          onCheckIn={() => onCheckIn?.()}
+          onBadState={() => onBadState?.()}
+          onOpenDiary={() => navigate("diary")}
+        />
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-4">
         <PersonalDiaryCard
           hasCheckIn={!!checkIn}
           hasNote={!!checkIn?.note?.text}
@@ -1190,10 +1372,13 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, on
         </motion.div>
       )}
 
-      {/* Забота — в самом низу: ходьба + питание + вода */}
+      {/* Забота — в самом низу: ходьба + вес + питание + вода */}
       <motion.div variants={fadeUp} className="mb-4 grid grid-cols-2 gap-3">
-        <div className="col-span-2">
+        <div>
           <WalkingCard data={data} persist={persist} />
+        </div>
+        <div>
+          <WeightCard data={data} persist={persist} daysUntil={daysUntil} phase={phase} />
         </div>
         <NutritionRing data={data} phase={phase} onOpen={() => navigate("care")} />
         <WaterBottle data={data} onOpen={() => navigate("care")} />

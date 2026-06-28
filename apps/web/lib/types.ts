@@ -264,6 +264,11 @@ export type WalkingEntry = {
   source?: "manual" | "sync";
 };
 
+export type WeightEntry = {
+  date: string;
+  weight: number; // kg
+};
+
 export type PeriodKitItemId =
   | "pads"
   | "tampons"
@@ -303,6 +308,7 @@ export type MiraLocalData = {
   workouts: WorkoutLog[];
   waterLog?: Record<string, WaterEntry>; // keyed by YYYY-MM-DD
   walkingLog?: Record<string, WalkingEntry>; // keyed by YYYY-MM-DD
+  weightLog?: Record<string, WeightEntry>; // keyed by YYYY-MM-DD
   periodKit?: PeriodKit;
   islamicEntries?: Record<string, IslamicEntry>;
   labs?: LabResult[]; // результаты анализов (необяз., обратная совместимость)

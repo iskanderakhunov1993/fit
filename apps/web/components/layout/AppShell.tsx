@@ -83,8 +83,6 @@ export function AppShell() {
         onComplete={() => {
           setData(readData());
           setShowApp(true);
-          // #2 «Первая победа» — сразу предлагаем отметить состояние
-          setTimeout(() => { setCheckInDate(undefined); setCheckInOpen(true); }, 600);
         }}
       />
     );

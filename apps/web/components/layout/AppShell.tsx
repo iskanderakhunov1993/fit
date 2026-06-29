@@ -14,6 +14,7 @@ import { DiaryScreen } from "@/components/screens/DiaryScreen";
 import { AnalyticsScreen } from "@/components/screens/AnalyticsScreen";
 import { CareScreen } from "@/components/screens/CareScreen";
 import { IslamicScreen } from "@/components/screens/IslamicScreen";
+import { LabsScreen } from "@/components/screens/LabsScreen";
 import { ReportScreen } from "@/components/screens/ReportScreen";
 import { ProfileScreen } from "@/components/screens/ProfileScreen";
 import { OnboardingScreen } from "@/components/screens/OnboardingScreen";
@@ -109,6 +110,7 @@ export function AppShell() {
     analytics: <AnalyticsScreen {...screenProps} />,
     care: <CareScreen {...screenProps} />,
     islamic: <IslamicScreen {...screenProps} />,
+    labs: <LabsScreen {...screenProps} />,
     report: <ReportScreen {...screenProps} />,
     profile: <ProfileScreen {...screenProps} />,
   };
@@ -117,7 +119,7 @@ export function AppShell() {
     <div className="min-h-screen bg-mira-bg text-mira-text lg:flex">
       <Sidebar active={page} onChange={setPage} onCheckIn={openCheckIn} isIslamic={isIslamic} />
       <main className="flex-1 pb-24 lg:pb-0">
-        <div className={`mx-auto w-full px-4 py-6 sm:px-6 lg:py-8 ${page === "analytics" ? "max-w-[1180px]" : "max-w-[660px]"}`}>
+        <div className={`mx-auto w-full px-4 py-6 sm:px-6 lg:py-8 ${page === "analytics" ? "max-w-[1180px]" : page === "labs" ? "max-w-[920px]" : "max-w-[660px]"}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={page}

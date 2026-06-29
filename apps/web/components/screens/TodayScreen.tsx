@@ -10,6 +10,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronRight,
+  ClipboardList,
   FileText,
   Footprints,
   HeartPulse,
@@ -36,6 +37,7 @@ import { getMoodPmsCard, type MoodPmsCard } from "@/lib/moodPms";
 import { getStreak } from "@/lib/gamification";
 import { getDayStatus, getQadaStats, type Madhab } from "@/lib/islamic";
 import { getAgeConfig } from "@/lib/ageMode";
+import { getAgeHealthGuidance } from "@/lib/ageHealthGuidance";
 import { NormaScanCard } from "./NormaScanCard";
 import type { ScreenProps } from "./types";
 import type { CyclePhase, DailyCheckIn, MiraLocalData, PeriodKit, PeriodKitItemId } from "@/lib/types";
@@ -887,6 +889,7 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, on
 
   const isIslamic = profile?.additionalMode === "islam";
   const ageConfig = getAgeConfig(profile?.age);
+  const ageGuidance = getAgeHealthGuidance(profile?.age);
   const islamicStatus = isIslamic ? getDayStatus(data, (profile?.madhab ?? "hanafi") as Madhab) : null;
   const qadaStats = isIslamic ? getQadaStats(data) : null;
 
@@ -1063,6 +1066,21 @@ export function TodayScreen({ data, persist, navigate, onCheckIn, onBadState, on
           </div>
           <p className="text-[13px] font-bold leading-snug text-mira-text">{shorten(vitaminTitle, 38)}</p>
           <p className="mt-1 text-[11px] leading-snug text-mira-muted">{shorten(vitaminBody, 70)}</p>
+        </Card>
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-4">
+        <Card className="cursor-pointer border-mira-primary/10 bg-white p-3.5 transition active:scale-[0.99]" onClick={() => navigate("report")}>
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-mira-lavender-light text-mira-primary">
+              <ClipboardList className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Возрастной чек-лист</p>
+              <p className="mt-0.5 text-sm font-bold leading-snug text-mira-text">{ageGuidance.shortTitle}</p>
+              <p className="mt-1 text-xs leading-relaxed text-mira-muted">{ageGuidance.todayTip}</p>
+            </div>
+          </div>
         </Card>
       </motion.div>
 

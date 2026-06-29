@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Sun, CalendarDays, ChartNoAxesCombined, FileText, Plus,
+  Sun, CalendarDays, ChartNoAxesCombined, FileText, Plus, FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavPage } from "./types";
@@ -23,6 +23,7 @@ export function BottomNav({
 
   const right: { id: NavPage; label: string; icon: typeof Sun }[] = [
     { id: "analytics", label: "Аналитика", icon: ChartNoAxesCombined },
+    { id: "labs", label: "Анализы", icon: FlaskConical },
     { id: "report", label: "Отчёт", icon: FileText },
   ];
   return (
@@ -33,7 +34,7 @@ export function BottomNav({
             key={item.id}
             onClick={() => onChange(item.id)}
             className={cn(
-              "flex min-w-[58px] flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition-all duration-200",
+              "flex min-w-[52px] flex-col items-center gap-1 rounded-lg px-1.5 py-1.5 transition-all duration-200",
               active === item.id ? "bg-mira-lavender-light text-mira-primary" : "text-mira-muted"
             )}
           >
@@ -58,7 +59,7 @@ export function BottomNav({
             key={item.id}
             onClick={() => onChange(item.id)}
             className={cn(
-              "flex min-w-[58px] flex-col items-center gap-1 rounded-lg px-2 py-1.5 transition-all duration-200",
+              "flex min-w-[52px] flex-col items-center gap-1 rounded-lg px-1.5 py-1.5 transition-all duration-200",
               active === item.id ? "bg-mira-lavender-light text-mira-primary" : "text-mira-muted"
             )}
           >

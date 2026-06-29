@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   UserRound, Calendar, Shield, Download, Trash2,
   ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon, Award, Cloud, ScanFace, EyeOff, BellRing, BookOpen, HeartPulse, Plus,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { SyncSettings } from "@/components/sync/SyncSettings";
@@ -15,6 +16,7 @@ import { clearPin, cloudSyncCategories, defaultPartnerShare, hasPin, savePin } f
 import { notificationsSupported, notificationsEnabled, requestNotifications, setNotificationsPref } from "@/lib/notifications";
 import { getPersonalReminders, getReminderSettings, personalReminderCatalog } from "@/lib/personalReminders";
 import { getUnlockedCount } from "@/lib/gamification";
+import { getAgeHealthGuidance } from "@/lib/ageHealthGuidance";
 import { AchievementsCard } from "./AchievementsCard";
 import type { ScreenProps } from "./types";
 
@@ -113,6 +115,7 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
   }
 
   const unlockedCount = getUnlockedCount(data);
+  const ageGuidance = getAgeHealthGuidance(profile.age);
 
   const menuGroups: { title: string; items: { icon: typeof UserRound; label: string; desc: string; id: string }[] }[] = [
     {
@@ -120,6 +123,7 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
       items: [
         { icon: UserRound, label: "О себе", desc: profile.age ? `${profile.name}, ${profile.age} лет` : profile.name, id: "data" },
         { icon: Calendar, label: "Настройки цикла", desc: `${profile.cycleConfig.cycleLength} дн., период ${profile.cycleConfig.periodLength} дн.`, id: "cycle" },
+        { icon: ClipboardList, label: "Возрастной чек-лист", desc: ageGuidance.shortTitle, id: "age-health" },
       ],
     },
     {
@@ -402,10 +406,54 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
           </div>
           <div className="rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3">
             <label className="text-xs text-mira-muted">Возраст</label>
-            <input type="number" min={10} max={60} value={profile.age ?? ""} placeholder="не указан"
+            <input type="number" min={10} max={90} value={profile.age ?? ""} placeholder="не указан"
               onChange={e => persist(saveProfile(data, { ...profile, age: e.target.value ? +e.target.value : undefined }))}
               className="mt-1 w-full bg-transparent text-sm font-semibold text-mira-text focus:outline-none" />
             <p className="mt-1 text-[10px] text-mira-muted">Влияет на режим: подросток, молодая, зрелая, перименопауза</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (section === "age-health") {
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold text-mira-text">Возрастной чек-лист</h1>
+        <button onClick={() => setSection(null)} className="mb-4 text-sm text-mira-muted hover:text-mira-primary transition">← Назад</button>
+        <Card className="max-w-lg p-6">
+          <div className="mb-5 rounded-2xl border border-mira-primary/10 bg-mira-lavender-light/30 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-mira-primary" />
+              <p className="text-sm font-bold text-mira-text">{ageGuidance.title}</p>
+            </div>
+            <p className="text-xs leading-relaxed text-mira-muted">{ageGuidance.todayTip}</p>
+          </div>
+
+          <div className="mb-5">
+            <p className="mb-3 text-sm font-bold text-mira-text">Что держать в поле зрения</p>
+            <div className="space-y-2">
+              {ageGuidance.checklist.map((item) => (
+                <div key={item} className="rounded-2xl bg-mira-bg px-3 py-2.5 text-xs leading-relaxed text-mira-text">{item}</div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <p className="mb-3 text-sm font-bold text-mira-text">Вопросы врачу</p>
+            <div className="space-y-2">
+              {ageGuidance.doctorQuestions.map((question, index) => (
+                <div key={question} className="flex items-start gap-2 rounded-2xl border border-mira-lavender/20 bg-white px-3 py-2.5">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mira-lavender-light text-[10px] font-bold text-mira-primary">{index + 1}</span>
+                  <p className="text-xs leading-relaxed text-mira-text">{question}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-mira-cycle/15 bg-[#F8E8EE]/35 p-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-mira-cycle">Не терпеть</p>
+            <p className="text-xs leading-relaxed text-mira-muted">{ageGuidance.redFlags.join(" · ")}</p>
           </div>
         </Card>
       </div>

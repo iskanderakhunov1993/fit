@@ -9,6 +9,7 @@ import {
   Download,
   Droplets,
   FileText,
+  FlaskConical,
   Footprints,
   HeartHandshake,
   MessageSquare,
@@ -25,8 +26,8 @@ import { Badge } from "@/components/ui/badge";
 import { getDoctorScript, getPhaseCorrelations } from "@/lib/alerts";
 import { getCycleAnalytics } from "@/lib/cycleAnalytics";
 import { getCorrelations } from "@/lib/correlations";
+import { getAgeHealthGuidance } from "@/lib/ageHealthGuidance";
 import { evaluateLab, getHormoneCheckup45, getLabRange } from "@/lib/labs";
-import { LabsSection } from "./LabsSection";
 import type { DailyCheckIn, MiraLocalData } from "@/lib/types";
 import type { ScreenProps } from "./types";
 
@@ -151,7 +152,7 @@ function summarizeCareData(data: MiraLocalData, cutoffStr: string) {
   };
 }
 
-export function ReportScreen({ data, persist }: ScreenProps) {
+export function ReportScreen({ data, navigate }: ScreenProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(3);
   const [includeSex, setIncludeSex] = useState(false);
   const [showFullReport, setShowFullReport] = useState(false);
@@ -278,6 +279,7 @@ export function ReportScreen({ data, persist }: ScreenProps) {
   function generateTextReport(): string {
     const now = new Date().toLocaleDateString("ru-RU");
     const from = report.cutoffDate.toLocaleDateString("ru-RU");
+    const ageGuidance = getAgeHealthGuidance(data.profile?.age);
     const lines = [
       "ОТЧЁТ ДЛЯ ВРАЧА — Mira",
       `Период: ${from} — ${now}`,
@@ -305,6 +307,13 @@ export function ReportScreen({ data, persist }: ScreenProps) {
       `— Ходьба: ${report.care.walkingEntries.length} дней, достаточно шагов: ${report.care.walkingGoodDays} дней`,
       `— Тренировки: ${report.care.workouts.length} записей, выполнено: ${report.care.completedWorkouts}`,
       `— Вес: ${report.care.weightEntries.length} замеров${report.care.latestWeight ? `, последний ${report.care.latestWeight.weight.toFixed(1)} кг` : ""}`,
+      "",
+      "ВОЗРАСТНОЙ ЧЕК-ЛИСТ",
+      `— ${ageGuidance.title}`,
+      ...ageGuidance.checklist.map(item => `— ${item}`),
+      "",
+      "ВОПРОСЫ ПО ВОЗРАСТУ",
+      ...ageGuidance.doctorQuestions.map((question, index) => `${index + 1}. ${question}`),
       "",
       "ЧТО ОБСУДИТЬ",
       ...(report.focusItems.length ? report.focusItems.map(item => `— ${item}`) : ["— Явных повторяющихся сигналов в выбранном периоде мало"]),
@@ -364,7 +373,12 @@ export function ReportScreen({ data, persist }: ScreenProps) {
 
   const doctorScript = getDoctorScript(data);
   const labs = data.labs ?? [];
+  const abnormalLabs = labs.filter((lab) => {
+    const result = evaluateLab(lab.testId, lab.value);
+    return result && result.status !== "ok";
+  });
   const hormoneCheckup = getHormoneCheckup45(data);
+  const ageGuidance = getAgeHealthGuidance(data.profile?.age);
   const rawReadyScore = Math.min(
     100,
     Math.round(
@@ -454,6 +468,7 @@ export function ReportScreen({ data, persist }: ScreenProps) {
           <InfoRow label="Состояние" value={`${report.moodEntries.length} настроений, ${report.lowEnergyEntries.length} дней низкой энергии`} />
           <InfoRow label="Лекарства и задержки" value={`${report.medicationEntries.length} лекарств, ${report.delayChecks.length} разборов задержки`} />
           <InfoRow label="Забота" value={`${report.care.waterEntries.length} воды, ${report.care.walkingEntries.length} ходьбы, ${report.care.weightEntries.length} веса`} />
+          <InfoRow label="Анализы" value={`${labs.length} результатов, вне референса: ${abnormalLabs.length}`} />
           <InfoRow label="Закономерности" value={`${report.analyticsFindings.length} выводов из аналитики`} />
         </div>
 
@@ -531,9 +546,42 @@ export function ReportScreen({ data, persist }: ScreenProps) {
         </p>
       </Card>
 
-      <div className="mb-5 print:hidden">
-        <LabsSection data={data} persist={persist} />
-      </div>
+      <Card className="mb-5 p-5 print:hidden">
+        <div className="mb-4 flex items-center gap-2">
+          <ClipboardList className="h-4 w-4 text-mira-primary" />
+          <p className="text-sm font-semibold text-mira-text">{ageGuidance.reportTitle}</p>
+        </div>
+        <p className="mb-3 text-xs leading-relaxed text-mira-muted">{ageGuidance.todayTip}</p>
+        <div className="space-y-2">
+          {ageGuidance.checklist.slice(0, 4).map(item => (
+            <InfoRow key={item} label="Пункт" value={item} />
+          ))}
+        </div>
+        <div className="mt-3 rounded-2xl border border-mira-cycle/15 bg-[#F8E8EE]/35 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mira-cycle">Сигналы внимания</p>
+          <p className="mt-1 text-xs leading-relaxed text-mira-muted">{ageGuidance.redFlags.join(" · ")}</p>
+        </div>
+      </Card>
+
+      <Card className="mb-5 p-5 print:hidden">
+        <div className="mb-4 flex items-center gap-2">
+          <FlaskConical className="h-4 w-4 text-mira-primary" />
+          <p className="text-sm font-semibold text-mira-text">Анализы в отчёте</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <MiniStat label="Сохранено" value={`${labs.length}`} note="результатов" />
+          <MiniStat label="Вне референса" value={`${abnormalLabs.length}`} note="обсудить с врачом" />
+          <MiniStat label="45+ чекап" value={hormoneCheckup.show ? "есть" : "нет"} note="по возрасту/сигналам" />
+        </div>
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-mira-lavender/20 bg-mira-bg p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs leading-relaxed text-mira-muted">
+            Добавлять и смотреть все результаты удобнее на отдельной странице. Врач увидит их в полном отчёте.
+          </p>
+          <Button variant="outline" onClick={() => navigate("labs")}>
+            <FlaskConical className="h-4 w-4" /> Открыть анализы
+          </Button>
+        </div>
+      </Card>
 
       <div className="space-y-5 print:space-y-3">
         {!showFullReport && (
@@ -633,6 +681,30 @@ export function ReportScreen({ data, persist }: ScreenProps) {
             </div>
           </Card>
         </div>
+
+        <Card className="p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-mira-primary" />
+            <p className="text-sm font-semibold text-mira-text">{ageGuidance.reportTitle}</p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="space-y-2">
+              {ageGuidance.checklist.map(item => (
+                <InfoRow key={item} label="Чек-лист" value={item} />
+              ))}
+            </div>
+            <div className="rounded-2xl bg-mira-bg p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Вопросы врачу</p>
+              <div className="mt-3 space-y-2">
+                {ageGuidance.doctorQuestions.map((question, index) => (
+                  <p key={question} className="text-xs leading-relaxed text-mira-text">
+                    <span className="font-bold text-mira-primary">{index + 1}.</span> {question}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5">

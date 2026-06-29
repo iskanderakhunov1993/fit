@@ -7,6 +7,7 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle2,
+  ClipboardList,
   CloudSun,
   Download,
   Droplets,
@@ -28,6 +29,7 @@ import { getRedFlags, getPhaseCorrelations } from "@/lib/alerts";
 import { getCycleNorm } from "@/lib/cycleEngine";
 import { getCycleAnalytics } from "@/lib/cycleAnalytics";
 import { getCorrelations } from "@/lib/correlations";
+import { getAgeHealthGuidance } from "@/lib/ageHealthGuidance";
 import { dateKey, getCyclePhase } from "@/lib/store";
 import type { DailyCheckIn } from "@/lib/types";
 import type { ScreenProps } from "./types";
@@ -362,6 +364,7 @@ export function AnalyticsScreen({ data, navigate }: ScreenProps) {
   const redFlags = getRedFlags(data);
   const correlations = getCorrelations(data);
   const phaseCorrelations = getPhaseCorrelations(data);
+  const ageGuidance = getAgeHealthGuidance(profile?.age);
 
   const periodEntries = checkIns.filter(c => c.period);
   const painEntries = checkIns.filter(c => c.pain?.kinds.some(kind => kind !== "none"));
@@ -519,6 +522,24 @@ export function AnalyticsScreen({ data, navigate }: ScreenProps) {
           <HelpItem icon={<Zap className="h-4 w-4" />} title="Планировать нагрузку" body="Выбирай лучшие дни для спорта и работы." />
           <HelpItem icon={<Droplets className="h-4 w-4" />} title="Находить триггеры" body="Сон, вода, еда и стресс влияют на состояние." />
           <HelpItem icon={<ShieldCheck className="h-4 w-4" />} title="К врачу с фактами" body="Все важные данные готовы к показу." />
+        </div>
+      </Card>
+
+      <Card className="border-mira-primary/10 bg-mira-lavender-light/20 p-5">
+        <div className="mb-4 flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-mira-primary">
+            <ClipboardList className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mira-muted">Возрастной контекст</p>
+            <p className="mt-1 text-sm font-bold text-mira-text">{ageGuidance.title}</p>
+            <p className="mt-1 text-xs leading-relaxed text-mira-muted">{ageGuidance.analyticsContext}</p>
+          </div>
+        </div>
+        <div className="grid gap-2 md:grid-cols-3">
+          {ageGuidance.redFlags.slice(0, 3).map(item => (
+            <div key={item} className="rounded-2xl bg-white px-3 py-2 text-xs font-semibold text-mira-text">{item}</div>
+          ))}
         </div>
       </Card>
 

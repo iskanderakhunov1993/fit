@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Sun, CalendarDays, ChartNoAxesCombined, HeartPulse, FileText, UserRound, Plus, Moon,
+  Sun, CalendarDays, ChartNoAxesCombined, HeartPulse, FileText, UserRound, Plus, Moon, FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MiraLogo } from "@/components/ui/MiraLogo";
@@ -12,6 +12,7 @@ const baseItems: { id: NavPage; label: string; icon: typeof Sun }[] = [
   { id: "diary", label: "Дневник", icon: CalendarDays },
   { id: "analytics", label: "Аналитика", icon: ChartNoAxesCombined },
   { id: "care", label: "Забота", icon: HeartPulse },
+  { id: "labs", label: "Анализы", icon: FlaskConical },
   { id: "report", label: "Отчёт врачу", icon: FileText },
   { id: "profile", label: "Профиль", icon: UserRound },
 ];

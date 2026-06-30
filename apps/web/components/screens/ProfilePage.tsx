@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useState } from "react";
+import { Footprints, Droplets, Scale, BedDouble } from "lucide-react";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,12 @@ type ProfileData = {
     current: number;
     change: string;
     period: string;
+  };
+  metrics: {
+    steps: { value: number; lastUpdate: string };
+    sleep: { hours: number; lastUpdate: string };
+    water: { glasses: number; goal: number; lastUpdate: string };
+    weight: { value: number; lastUpdate: string };
   };
   tests: Array<{ name: string; value: string; status: LabStatus; date: string }>;
   notes: Array<{ date: string; text: string }>;
@@ -59,6 +66,12 @@ const mockProfileData: ProfileData = {
     current: 65.9,
     change: "+1.1",
     period: "3 месяца",
+  },
+  metrics: {
+    steps: { value: 7235, lastUpdate: "3 ч назад" },
+    sleep: { hours: 7.5, lastUpdate: "сегодня" },
+    water: { glasses: 6, goal: 8, lastUpdate: "1 ч назад" },
+    weight: { value: 65.9, lastUpdate: "вчера" },
   },
   tests: [
     { name: "Ферритин", value: "12 нг/мл", status: "below", date: "25.06" },
@@ -114,7 +127,7 @@ const articleGroups = [
 function SectionCard({ title, children, delay = 0 }: { title?: string; children: React.ReactNode; delay?: number }) {
   return (
     <Card
-      className="rounded-2xl border-0 bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.07)]"
+      className="mira-card rounded-[30px] border-0 p-5 transition hover:-translate-y-0.5 hover:shadow-[0_26px_70px_rgba(76,66,126,0.14)]"
       style={{ animation: `miraProfileIn 420ms ease ${delay}ms both` }}
     >
       {title && <h2 className="mb-4 text-lg font-black text-[#1A1A1A]">{title}</h2>}
@@ -199,7 +212,7 @@ function ProfilePageComponent({ data = mockProfileData }: ProfilePageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] px-5 py-6 text-[#1A1A1A]">
+    <main className="mira-screen px-5 py-6 text-[#202033]">
       <style jsx global>{`
         @keyframes miraProfileIn {
           from { opacity: 0; transform: translateY(10px); }
@@ -212,19 +225,49 @@ function ProfilePageComponent({ data = mockProfileData }: ProfilePageProps) {
           <h1 className="text-3xl font-black tracking-tight text-[#1A1A1A]">⚙️ Профиль</h1>
         </header>
 
-        <SectionCard delay={30}>
+        <Card
+          className="mira-gradient-health mt-5 overflow-hidden rounded-[34px] border-0 p-6 text-white shadow-[0_28px_72px_rgba(122,101,242,0.24)]"
+          style={{ animation: "miraProfileIn 420ms ease 30ms both" }}
+        >
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#FFF0F5] text-xl font-black text-[#E872A0]">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/22 text-xl font-black text-white backdrop-blur">
               {data.user.avatar}
             </div>
             <div>
-              <h2 className="text-2xl font-black text-[#1A1A1A]">{data.user.name}, {data.user.age} года</h2>
-              <p className="mt-1 text-sm font-semibold text-[#8E8E93]">
+              <h2 className="text-2xl font-black text-white">{data.user.name}, {data.user.age} года</h2>
+              <p className="mt-1 text-sm font-semibold text-white/75">
                 Трекинг: {data.user.trackingMonths} месяца | {data.user.totalCycles} циклов записано
               </p>
             </div>
           </div>
-        </SectionCard>
+
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-[22px] bg-white/16 p-3.5 backdrop-blur">
+              <Footprints className="h-4 w-4 text-white" />
+              <p className="mt-2 text-lg font-black leading-none text-white">{data.metrics.steps.value.toLocaleString("ru-RU")}</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/65">Шаги</p>
+              <p className="mt-1.5 text-[10px] text-white/55">{data.metrics.steps.lastUpdate}</p>
+            </div>
+            <div className="rounded-[22px] bg-white/16 p-3.5 backdrop-blur">
+              <BedDouble className="h-4 w-4 text-white" />
+              <p className="mt-2 text-lg font-black leading-none text-white">{data.metrics.sleep.hours} ч</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/65">Сон</p>
+              <p className="mt-1.5 text-[10px] text-white/55">{data.metrics.sleep.lastUpdate}</p>
+            </div>
+            <div className="rounded-[22px] bg-white/16 p-3.5 backdrop-blur">
+              <Droplets className="h-4 w-4 text-white" />
+              <p className="mt-2 text-lg font-black leading-none text-white">{data.metrics.water.glasses}/{data.metrics.water.goal}</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/65">Вода</p>
+              <p className="mt-1.5 text-[10px] text-white/55">{data.metrics.water.lastUpdate}</p>
+            </div>
+            <div className="rounded-[22px] bg-white/16 p-3.5 backdrop-blur">
+              <Scale className="h-4 w-4 text-white" />
+              <p className="mt-2 text-lg font-black leading-none text-white">{data.metrics.weight.value} кг</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/65">Вес</p>
+              <p className="mt-1.5 text-[10px] text-white/55">{data.metrics.weight.lastUpdate}</p>
+            </div>
+          </div>
+        </Card>
 
         <div className="mt-6 space-y-6">
           <section>

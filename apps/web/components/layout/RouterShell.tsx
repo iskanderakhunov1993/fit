@@ -31,13 +31,13 @@ export function RouterShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] pb-24">
+    <div className="min-h-screen bg-transparent pb-24">
       {children}
 
       <button
         type="button"
         aria-label="Мне больно"
-        className="fixed bottom-[90px] right-5 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF6B6B] text-[28px] shadow-[0_4px_12px_rgba(255,107,107,0.4)] transition active:scale-95"
+        className="fixed bottom-[96px] right-5 z-40 flex h-16 w-16 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#FF7CA8] to-[#8A6EF6] text-[28px] shadow-[0_18px_36px_rgba(138,110,246,0.28)] transition active:scale-95"
         style={{ animation: "miraPainPulse 1.8s ease-in-out infinite" }}
         onClick={painModal.open}
       >

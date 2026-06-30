@@ -1,7 +1,7 @@
 "use client";
 
 import React, { memo, useMemo, useState } from "react";
-import { Check, Droplets, Save } from "lucide-react";
+import { Check, Droplets, Minus, Plus, Play, Save, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -115,24 +115,120 @@ const mockCareData: CareData = {
   weight: 65.9,
 };
 
-function ProgressBar({ value, max = 100, color = "#E872A0" }: { value: number; max?: number; color?: string }) {
-  const width = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
-  return (
-    <div className="h-3 overflow-hidden rounded-full bg-[#FFE4EC]">
-      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${width}%`, backgroundColor: color }} />
-    </div>
-  );
-}
-
 function SectionCard({ title, children, delay = 0 }: { title?: string; children: React.ReactNode; delay?: number }) {
   return (
     <Card
-      className="rounded-2xl border-0 bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.07)]"
+      className="mira-card rounded-[30px] border-0 p-5 transition hover:-translate-y-0.5 hover:shadow-[0_26px_70px_rgba(76,66,126,0.14)] sm:p-6"
       style={{ animation: `miraCareIn 420ms ease ${delay}ms both` }}
     >
       {title && <h2 className="mb-5 text-lg font-black text-[#1A1A1A]">{title}</h2>}
       {children}
     </Card>
+  );
+}
+
+function Eyebrow({ children, tone = "light" }: { children: React.ReactNode; tone?: "light" | "dark" }) {
+  return (
+    <p
+      className={`text-[11px] font-black uppercase tracking-[0.18em] ${
+        tone === "light" ? "text-white/75" : "text-[#8E8E93]"
+      }`}
+    >
+      {children}
+    </p>
+  );
+}
+
+/** Кольцевая диаграмма КБЖУ (Carb / Protein / Fat) */
+function MacroDonut({ protein, fats, carbs }: { protein: number; fats: number; carbs: number }) {
+  const size = 168;
+  const stroke = 18;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const total = protein + fats + carbs || 1;
+
+  const segments = [
+    { label: "Углеводы", value: carbs, color: "#E872A0" },
+    { label: "Белки", value: protein, color: "#FFB199" },
+    { label: "Жиры", value: fats, color: "#FFD9E6" },
+  ];
+
+  let offsetAcc = 0;
+
+  return (
+    <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-8">
+      <div className="relative h-[168px] w-[168px] shrink-0">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#FAF1F5" strokeWidth={stroke} />
+          {segments.map((segment) => {
+            const fraction = segment.value / total;
+            const dash = fraction * circumference;
+            const dashArray = `${dash} ${circumference - dash}`;
+            const dashOffset = -offsetAcc * circumference;
+            offsetAcc += fraction;
+            return (
+              <circle
+                key={segment.label}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={segment.color}
+                strokeWidth={stroke}
+                strokeDasharray={dashArray}
+                strokeDashoffset={dashOffset}
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-black text-[#1A1A1A]">{carbs}%</span>
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#8E8E93]">углеводы</span>
+        </div>
+      </div>
+      <div className="flex w-full flex-col gap-3">
+        {segments.map((segment) => (
+          <div key={segment.label} className="flex items-center justify-between gap-3 rounded-2xl bg-[#FAF8F5] px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: segment.color }} />
+              <span className="text-sm font-bold text-[#1A1A1A]">{segment.label}</span>
+            </div>
+            <span className="text-sm font-black text-[#1A1A1A]">{segment.value}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const WATER_STAGES = ["Мало", "Хорошо", "Почти", "Идеально"] as const;
+
+/** Линейный slider-прогресс для воды в духе hydration-tracker референса */
+function WaterSlider({ value, max }: { value: number; max: number }) {
+  const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
+  const stageIndex = Math.min(WATER_STAGES.length - 1, Math.floor(ratio * WATER_STAGES.length));
+
+  return (
+    <div>
+      <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/25">
+        <div
+          className="h-full rounded-full bg-white transition-all duration-300"
+          style={{ width: `${ratio * 100}%` }}
+        />
+        <div
+          className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-4 border-[#E872A0] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] transition-all duration-300"
+          style={{ left: `calc(${ratio * 100}% - 12px)` }}
+        />
+      </div>
+      <div className="mt-3 flex justify-between text-[11px] font-bold uppercase tracking-wide text-white/70">
+        {WATER_STAGES.map((stage, index) => (
+          <span key={stage} className={index === stageIndex ? "text-white" : ""}>
+            {stage}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -231,7 +327,7 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] px-5 py-6 text-[#1A1A1A]">
+    <main className="mira-screen px-5 py-6 text-[#202033]">
       <style jsx global>{`
         @keyframes miraCareIn {
           from { opacity: 0; transform: translateY(10px); }
@@ -248,47 +344,49 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
               Достаточно заполнить 2 из 8 пунктов. Отметь только то, что легко вспомнить.
             </p>
           </div>
-          <div className="rounded-2xl bg-white px-4 py-3 text-right text-sm font-black text-[#1A1A1A] shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <div className="mira-card rounded-2xl px-4 py-3 text-right text-sm font-black text-[#202033]">
             📅 {data.date}<br />
             <span className="text-[#8E8E93]">День {data.cycleDay}</span>
           </div>
         </header>
 
         {completedCount === 0 && (
-          <div className="mt-6 rounded-2xl bg-white p-5 text-sm font-bold text-[#1A1A1A] shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <div className="mira-card mt-6 rounded-[24px] p-5 text-sm font-bold text-[#202033]">
             Сегодня ещё ничего не отмечено. Начни с воды!
           </div>
         )}
 
         <div className="mt-6 space-y-6">
           {/* Цели */}
-          <SectionCard title="🎯 Твои цели на сегодня" delay={30}>
-            <div className="space-y-4">
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-sm font-black text-[#1A1A1A]">Калории: {data.calories.target.toLocaleString("ru-RU")} ккал</p>
-                  <p className="text-xs font-bold text-[#8E8E93]">
-                    {data.calories.current.toLocaleString("ru-RU")} / {data.calories.target.toLocaleString("ru-RU")} ккал
+          <SectionCard delay={30}>
+            <Eyebrow>Daily intake</Eyebrow>
+            <h2 className="mt-1 mb-5 text-xl font-black leading-snug text-[#1A1A1A]">
+              Твои цели на сегодня 🎯
+            </h2>
+            <div className="space-y-6">
+              <div className="mira-gradient-health rounded-[28px] p-5 text-white shadow-[0_18px_44px_rgba(122,101,242,0.22)]">
+                <Eyebrow>Калории</Eyebrow>
+                <div className="mt-1 flex items-end justify-between gap-3">
+                  <p className="text-3xl font-black">
+                    {data.calories.current.toLocaleString("ru-RU")}
+                    <span className="ml-1 text-base font-bold text-white/70">
+                      / {data.calories.target.toLocaleString("ru-RU")} ккал
+                    </span>
                   </p>
                 </div>
-                <ProgressBar value={data.calories.current} max={data.calories.target} />
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/25">
+                  <div
+                    className="h-full rounded-full bg-white transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, Math.max(0, (data.calories.current / data.calories.target) * 100))}%`,
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
-                <p className="mb-3 text-sm font-black text-[#1A1A1A]">🍽️ Баланс нутриентов</p>
-                {[
-                  ["Белки", data.nutrients.protein],
-                  ["Жиры", data.nutrients.fats],
-                  ["Углеводы", data.nutrients.carbs],
-                ].map(([label, value]) => (
-                  <div key={label as string} className="mb-3">
-                    <div className="mb-1 flex justify-between text-sm font-bold">
-                      <span>{label}</span>
-                      <span className="text-[#8E8E93]">{value}%</span>
-                    </div>
-                    <ProgressBar value={value as number} />
-                  </div>
-                ))}
+                <p className="mb-3 text-sm font-black text-[#1A1A1A]">🍽️ Баланс нутриентов (Б/Ж/У)</p>
+                <MacroDonut protein={data.nutrients.protein} fats={data.nutrients.fats} carbs={data.nutrients.carbs} />
               </div>
             </div>
           </SectionCard>
@@ -335,35 +433,103 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Вода */}
-            <SectionCard title="💧 Вода" delay={130}>
-              <p className="text-2xl font-black text-[#1A1A1A]">{water.toFixed(1)} л <span className="text-base text-[#8E8E93]">из {data.water.target.toFixed(1)} л</span></p>
-              <div className="mt-4">
-                <ProgressBar value={water} max={3} />
-                <p className="mt-2 text-xs font-bold text-[#8E8E93]">{water.toFixed(1)} / {data.water.target.toFixed(1)} л</p>
+            <Card
+              className="mira-gradient-health overflow-hidden rounded-[32px] border-0 p-6 text-white shadow-[0_22px_56px_rgba(88,216,220,0.24)] transition hover:-translate-y-0.5"
+              style={{ animation: `miraCareIn 420ms ease 130ms both` }}
+            >
+              <div className="flex items-center justify-between">
+                <Eyebrow>Hydration</Eyebrow>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+                  <Droplets className="h-4 w-4" />
+                </span>
               </div>
-              <Button
-                type="button"
-                className="mt-5 w-full rounded-2xl bg-[#E872A0] text-white hover:bg-[#D95F8E]"
-                onClick={() => setWater((current) => Math.min(3, Math.round((current + 0.2) * 10) / 10))}
-              >
-                <Droplets className="h-4 w-4" />
-                Добавить стакан
-              </Button>
-            </SectionCard>
+              <p className="mt-2 text-xl font-black leading-snug">
+                Сегодня выпито {water.toFixed(1)} л воды
+              </p>
+              <p className="mt-1 text-sm font-bold text-white/75">
+                Цель — {data.water.target.toFixed(1)} л в день
+              </p>
+
+              <div className="mt-6">
+                <WaterSlider value={water} max={data.water.target} />
+              </div>
+
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  type="button"
+                  aria-label="Убавить воду"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 transition hover:bg-white/30"
+                  onClick={() => setWater((current) => Math.max(0, Math.round((current - 0.2) * 10) / 10))}
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <Button
+                  type="button"
+                  className="h-11 flex-1 rounded-2xl bg-white text-[#6C5CE7] hover:bg-white/90"
+                  onClick={() => setWater((current) => Math.min(3, Math.round((current + 0.2) * 10) / 10))}
+                >
+                  <Droplets className="h-4 w-4" />
+                  Add Drink
+                </Button>
+                <button
+                  type="button"
+                  aria-label="Добавить воду"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 transition hover:bg-white/30"
+                  onClick={() => setWater((current) => Math.min(3, Math.round((current + 0.2) * 10) / 10))}
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </Card>
 
             {/* Активность */}
-            <SectionCard title="🚶 Активность" delay={180}>
-              <div className="space-y-5">
-                <div>
-                  <p className="mb-3 text-sm font-black text-[#1A1A1A]">Ходьба</p>
-                  <RadioPills value={walking} options={["почти нет", "немного", "нормально", "много"]} onChange={setWalking} />
+            <div className="flex flex-col gap-6">
+              <Card
+                className="mira-gradient-night overflow-hidden rounded-[32px] border-0 p-6 text-white shadow-[0_20px_52px_rgba(34,39,63,0.26)] transition hover:-translate-y-0.5"
+                style={{ animation: `miraCareIn 420ms ease 180ms both` }}
+              >
+                <Eyebrow>Workout challenge</Eyebrow>
+                <h3 className="mt-2 text-2xl font-black">Cardio 🏃‍♀️</h3>
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-white/75">
+                  Лёгкая активность сегодня помогает снизить спазмы и поднять настроение.
+                </p>
+                <div className="mt-5 flex items-center justify-between">
+                  <div className="flex items-center -space-x-2">
+                    {["#FFB199", "#FFD9E6", "#E872A0"].map((color, index) => (
+                      <span
+                        key={color}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#2A2A2E] text-[11px] font-black text-[#1A1A1A]"
+                        style={{ backgroundColor: color }}
+                      >
+                        {index === 2 ? <Users className="h-3.5 w-3.5 text-white" /> : ""}
+                      </span>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    className="rounded-2xl bg-white text-[#1A1A1A] hover:bg-white/90"
+                  >
+                    <Play className="h-4 w-4" />
+                    Start
+                  </Button>
                 </div>
-                <div>
-                  <p className="mb-3 text-sm font-black text-[#1A1A1A]">Тренировка</p>
-                  <RadioPills value={workout} options={["нет", "лёгкая", "средняя", "тяжёлая"]} onChange={setWorkout} />
+              </Card>
+
+              <SectionCard delay={210}>
+                <Eyebrow tone="dark">Activity</Eyebrow>
+                <h2 className="mt-1 mb-4 text-lg font-black text-[#1A1A1A]">Активность 🚶</h2>
+                <div className="space-y-5">
+                  <div>
+                    <p className="mb-3 text-sm font-black text-[#1A1A1A]">Ходьба</p>
+                    <RadioPills value={walking} options={["почти нет", "немного", "нормально", "много"]} onChange={setWalking} />
+                  </div>
+                  <div>
+                    <p className="mb-3 text-sm font-black text-[#1A1A1A]">Тренировка</p>
+                    <RadioPills value={workout} options={["нет", "лёгкая", "средняя", "тяжёлая"]} onChange={setWorkout} />
+                  </div>
                 </div>
-              </div>
-            </SectionCard>
+              </SectionCard>
+            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">

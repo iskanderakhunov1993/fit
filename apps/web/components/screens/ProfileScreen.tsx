@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   UserRound, Calendar, Shield, Download, Trash2,
   ChevronRight, Lock, Bell, Heart, Users, Database, Eye, Moon, Award, Cloud, ScanFace, EyeOff, BellRing, BookOpen, HeartPulse, Plus,
+  Pencil, Footprints, Droplets, Scale, BedDouble,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { SyncSettings } from "@/components/sync/SyncSettings";
@@ -12,12 +13,50 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PagePurposeCard } from "@/components/ui/PagePurposeCard";
 import { saveProfile, clearData } from "@/lib/store";
+import { getCycleNorm } from "@/lib/cycleEngine";
 import { clearPin, cloudSyncCategories, defaultPartnerShare, hasPin, savePin } from "@/lib/privacy";
 import { notificationsSupported, notificationsEnabled, requestNotifications, setNotificationsPref } from "@/lib/notifications";
 import { getPersonalReminders, getReminderSettings, personalReminderCatalog } from "@/lib/personalReminders";
 import { getUnlockedCount } from "@/lib/gamification";
 import { AchievementsCard } from "./AchievementsCard";
 import type { ScreenProps } from "./types";
+
+function latestEntry<T extends { date: string }>(log: Record<string, T> | undefined): T | null {
+  if (!log) return null;
+  const dates = Object.keys(log).sort();
+  const last = dates[dates.length - 1];
+  return last ? log[last] : null;
+}
+
+function daysAgoLabel(date: string): string {
+  const diff = Math.round((Date.now() - new Date(date).getTime()) / 86_400_000);
+  if (diff <= 0) return "сегодня";
+  if (diff === 1) return "вчера";
+  return `${diff} дн. назад`;
+}
+
+function MetricTile({
+  icon: Icon,
+  label,
+  value,
+  caption,
+  tone,
+}: {
+  icon: typeof Footprints;
+  label: string;
+  value: string;
+  caption: string;
+  tone: string;
+}) {
+  return (
+    <div className={`rounded-2xl p-3.5 ${tone}`}>
+      <Icon className="h-4 w-4 opacity-80" />
+      <p className="mt-2 text-lg font-bold leading-none">{value}</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide opacity-75">{label}</p>
+      <p className="mt-2 text-[10px] opacity-60">{caption}</p>
+    </div>
+  );
+}
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -726,17 +765,84 @@ export function ProfileScreen({ data, persist }: ScreenProps) {
         />
       </div>
 
-      <Card className="p-6">
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-mira-rose-light to-mira-lavender-light text-2xl font-bold text-mira-primary">
-            {profile.name.charAt(0).toUpperCase()}
+      <Card className="overflow-hidden p-0 mb-5">
+        <div className="bg-gradient-to-br from-mira-primary to-mira-cycle p-6 text-white">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-bold backdrop-blur">
+                {profile.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-lg font-bold">{profile.name}</p>
+                <p className="text-xs text-white/80">
+                  {(() => {
+                    const norm = getCycleNorm(profile);
+                    return norm.cycleDay ? `День ${norm.cycleDay} цикла` : "Mira";
+                  })()}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSection("data")}
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold backdrop-blur transition hover:bg-white/30"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Изменить
+            </button>
           </div>
-          <div>
-            <p className="text-lg font-bold text-mira-text">{profile.name}</p>
-            <p className="text-xs text-mira-muted">Mira</p>
+
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-white/85">
+            {profile.weight != null && <span><b className="font-bold">{profile.weight}</b> кг</span>}
+            {profile.age != null && <span><b className="font-bold">{profile.age}</b> лет</span>}
+            {profile.height != null && <span><b className="font-bold">{profile.height}</b> см</span>}
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-2 p-4">
+          {(() => {
+            const steps = latestEntry(data.walkingLog);
+            const water = latestEntry(data.waterLog);
+            const weight = latestEntry(data.weightLog);
+            const checkInDates = Object.keys(data.checkIns ?? {}).sort();
+            const lastCheckInDate = checkInDates[checkInDates.length - 1];
+            const lastSleep = lastCheckInDate ? data.checkIns[lastCheckInDate]?.sleep : undefined;
+
+            return (
+              <>
+                <MetricTile
+                  icon={Footprints}
+                  label="Шаги"
+                  value={steps ? steps.steps.toLocaleString("ru-RU") : "—"}
+                  caption={steps ? daysAgoLabel(steps.date) : "нет данных"}
+                  tone="bg-mira-lavender-light text-mira-primary"
+                />
+                <MetricTile
+                  icon={BedDouble}
+                  label="Сон"
+                  value={lastSleep?.hours ? `${lastSleep.hours} ч` : "—"}
+                  caption={lastCheckInDate ? daysAgoLabel(lastCheckInDate) : "нет данных"}
+                  tone="bg-[#E8E4F5] text-[#5B4FA0]"
+                />
+                <MetricTile
+                  icon={Droplets}
+                  label="Вода"
+                  value={water ? `${water.glasses}/${water.goal}` : "—"}
+                  caption={water ? daysAgoLabel(water.date) : "нет данных"}
+                  tone="bg-[#E0F0F5] text-[#3A7A94]"
+                />
+                <MetricTile
+                  icon={Scale}
+                  label="Вес"
+                  value={weight ? `${weight.weight} кг` : "—"}
+                  caption={weight ? daysAgoLabel(weight.date) : "нет данных"}
+                  tone="bg-[#F8E8EE] text-mira-cycle"
+                />
+              </>
+            );
+          })()}
+        </div>
+      </Card>
+
+      <Card className="p-6">
         <div className="mb-5 rounded-3xl border border-mira-primary/10 bg-mira-lavender-light/25 p-4">
           <div className="mb-2 flex items-center gap-2">
             <Database className="h-4 w-4 text-mira-primary" />

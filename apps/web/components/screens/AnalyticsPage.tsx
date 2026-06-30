@@ -12,7 +12,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Bell, FileText, Mail, Settings, Stethoscope } from "lucide-react";
+import {
+  Bell,
+  Droplets,
+  FileText,
+  Mail,
+  Settings,
+  Sparkles,
+  Stethoscope,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -284,6 +294,40 @@ function getFlowCaption(data: AnalyticsData) {
   return `📌 Пик обильности — ${data.peakDay} (${data.peakCount} прокладок/тампонов). Это в пределах твоей нормы.`;
 }
 
+function getConfidencePercent(trackedCycles: number) {
+  return Math.min(92, 48 + trackedCycles * 10);
+}
+
+function getNotesCount(data: AnalyticsData) {
+  const symptomNotes = data.symptoms.reduce((sum, symptom) => sum + symptom.count, 0);
+  const flowNotes = data.flowData.reduce((sum, item) => sum + item.count, 0);
+  return symptomNotes + flowNotes + data.cycleLengthData.length;
+}
+
+function getMoreNotesNeeded(data: AnalyticsData) {
+  return Math.max(0, 72 - getNotesCount(data));
+}
+
+function getMainInsight(data: AnalyticsData) {
+  const topSymptoms = data.symptoms.slice(0, 2).map((item) => item.name);
+  if (topSymptoms.length >= 2) {
+    return `Похоже, перед месячными у тебя чаще повторяются ${topSymptoms[0].toLowerCase()} и ${topSymptoms[1].toLowerCase()}.`;
+  }
+  if (topSymptoms.length === 1) {
+    return `Похоже, симптом “${topSymptoms[0]}” начинает повторяться в твоём цикле.`;
+  }
+  return "Mira пока собирает первые данные и скоро покажет, что повторяется.";
+}
+
+function InsightNote({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-[20px] bg-[#FAF8F5] px-4 py-3">
+      <p className="text-xs font-black uppercase tracking-wide text-[#8E8E93]">{title}</p>
+      <p className="mt-1 text-sm font-bold leading-relaxed text-[#1A1A1A]">{body}</p>
+    </div>
+  );
+}
+
 function getSkinCaption(items: SkinCyclePoint[] = [], avgCycle = 29) {
   if (items.length < 3) return "Блок появится после 3 отметок кожи.";
   const hasDoctorPattern = items.some((item) => item.acneCount > 0 && (item.hairLossCount ?? 0) > 0);
@@ -295,10 +339,42 @@ function getSkinCaption(items: SkinCyclePoint[] = [], avgCycle = 29) {
 
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[#E8DDE3] bg-[#FAF8F5] p-6 text-center">
+    <div className="rounded-[24px] border border-dashed border-[#E8DDE3] bg-[#FAF8F5] p-6 text-center">
       <p className="text-sm font-black text-[#1A1A1A]">{title}</p>
       <p className="mt-2 text-sm leading-relaxed text-[#8E8E93]">{body}</p>
     </div>
+  );
+}
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8E8E93]">{children}</p>
+  );
+}
+
+function StatBadge({
+  value,
+  trend,
+  tone = "pink",
+}: {
+  value: string;
+  trend?: "up" | "down";
+  tone?: "pink" | "green" | "yellow" | "red";
+}) {
+  const toneMap: Record<string, string> = {
+    pink: "bg-[#FFF0F5] text-[#E872A0]",
+    green: "bg-[#EAFBF0] text-[#34C759]",
+    yellow: "bg-[#FFF7E5] text-[#B97900]",
+    red: "bg-[#FFF0F0] text-[#FF6B6B]",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${toneMap[tone]}`}
+    >
+      {trend === "up" && <TrendingUp className="h-3.5 w-3.5" />}
+      {trend === "down" && <TrendingDown className="h-3.5 w-3.5" />}
+      {value}
+    </span>
   );
 }
 
@@ -309,7 +385,7 @@ function SkinCycleBars({ items, avgCycle }: { items?: SkinCyclePoint[]; avgCycle
   const max = Math.max(...topItems.map((item) => item.acneCount), 1);
 
   return (
-    <SectionCard title="🧴 Кожа и цикл" delay={145}>
+    <SectionCard eyebrow="Что повторяется" title="Когда чаще всего появляется акне" delay={145}>
       <div className="space-y-4">
         {topItems.map((item, index) => {
           const isPeak = index === 0;
@@ -334,9 +410,10 @@ function SkinCycleBars({ items, avgCycle }: { items?: SkinCyclePoint[]; avgCycle
           );
         })}
       </div>
-      <p className="mt-4 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-bold leading-relaxed text-[#1A1A1A]">
-        {getSkinCaption(items, avgCycle)}
-      </p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <InsightNote title="Что это значит" body={getSkinCaption(items, avgCycle).replace("📌 ", "")} />
+        <InsightNote title="Что сделать" body="Отмечай кожу ещё 7 дней, особенно в конце цикла, чтобы Mira точнее подтвердила связь." />
+      </div>
       <p className="mt-3 text-sm font-semibold text-[#8E8E93]">
         📖 Статья: <a className="font-black text-[#E872A0]" href="/article/acne">Почему перед месячными выскакивают прыщи</a>
       </p>
@@ -348,17 +425,20 @@ function SectionCard({
   children,
   delay = 0,
   title,
+  eyebrow,
 }: {
   children: React.ReactNode;
   delay?: number;
   title?: string;
+  eyebrow?: string;
 }) {
   return (
     <Card
-      className="rounded-2xl border-0 bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.07)]"
+      className="mira-card rounded-[30px] border-0 p-6 transition hover:-translate-y-0.5 hover:shadow-[0_26px_70px_rgba(76,66,126,0.14)]"
       style={{ animation: `miraAnalyticsIn 420ms ease ${delay}ms both` }}
     >
-      {title && <h2 className="mb-5 text-lg font-black text-[#1A1A1A]">{title}</h2>}
+      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+      {title && <h2 className={`text-xl font-black leading-snug text-[#1A1A1A] ${eyebrow ? "mt-2 mb-5" : "mb-5"}`}>{title}</h2>}
       {children}
     </Card>
   );
@@ -396,7 +476,7 @@ function ExportButton({ label, icon, onClick }: { label: string; icon: React.Rea
     <Button
       type="button"
       variant="outline"
-      className="h-12 flex-1 rounded-2xl border-[#E8DDE3] bg-white text-[#1A1A1A] hover:border-[#E872A0]/50 hover:bg-[#FFF4F8]"
+      className="h-12 flex-1 rounded-[20px] border-[#E8DDE3] bg-white text-[#1A1A1A] hover:border-[#E872A0]/50 hover:bg-[#FFF4F8]"
       onClick={onClick}
     >
       {icon}
@@ -416,6 +496,10 @@ function AnalyticsPageComponent({
   const data = useMemo(() => getDataset(period, datasets), [period, datasets]);
   const hasEnoughForForecast = data.trackedCycles >= 2;
   const chartTick = { fill: muted, fontSize: 12 };
+  const confidence = getConfidencePercent(data.trackedCycles);
+  const notesCount = getNotesCount(data);
+  const notesNeeded = getMoreNotesNeeded(data);
+  const mainInsight = getMainInsight(data);
 
   const doctorPhrases = useMemo(() => {
     const cyclesText = data.trackedCycles === 1 ? "1 месяц" : `${data.trackedCycles} месяца`;
@@ -431,7 +515,7 @@ function AnalyticsPageComponent({
   }, [data]);
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] px-5 py-6 text-[#1A1A1A]">
+    <main className="mira-screen px-5 py-6 text-[#202033]">
       <style jsx global>{`
         @keyframes miraAnalyticsIn {
           from {
@@ -449,7 +533,8 @@ function AnalyticsPageComponent({
         {/* Хедер */}
         <header className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-[#1A1A1A]">📊 Аналитика</h1>
+            <Eyebrow>Личная аналитика</Eyebrow>
+            <h1 className="mt-1 text-3xl font-black tracking-tight text-[#202033]">Аналитика</h1>
             <p className="mt-1 text-sm leading-relaxed text-[#8E8E93]">
               Mira показывает, что повторяется в цикле, симптомах и самочувствии.
             </p>
@@ -457,14 +542,14 @@ function AnalyticsPageComponent({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#1A1A1A] shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+              className="mira-card flex h-11 w-11 items-center justify-center rounded-2xl text-[#202033]"
               aria-label="Уведомления"
             >
               <Bell className="h-5 w-5" />
             </button>
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#1A1A1A] shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+              className="mira-card flex h-11 w-11 items-center justify-center rounded-2xl text-[#202033]"
               aria-label="Настройки"
             >
               <Settings className="h-5 w-5" />
@@ -474,7 +559,7 @@ function AnalyticsPageComponent({
 
         {/* Переключатель периода */}
         <Tabs value={period} onValueChange={(value) => setPeriod(value as PeriodKey)} className="mt-6">
-          <TabsList className="grid w-full grid-cols-2 gap-1 rounded-2xl bg-white p-1 shadow-[0_4px_12px_rgba(0,0,0,0.05)] md:grid-cols-4">
+          <TabsList className="mira-card grid w-full grid-cols-2 gap-1 rounded-[24px] p-1 md:grid-cols-4">
             {periods.map((item) => (
               <TabsTrigger key={item.value} value={item.value} className="h-11">
                 {item.label}
@@ -485,19 +570,38 @@ function AnalyticsPageComponent({
 
         <div className="mt-6 space-y-6">
           {/* Прогноз */}
-          <SectionCard delay={20}>
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FFF0F5] text-2xl">🔮</div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-black uppercase tracking-widest text-[#8E8E93]">Прогноз</p>
+          <Card className="mira-gradient-health overflow-hidden rounded-[34px] border-0 p-6 text-white shadow-[0_28px_72px_rgba(122,101,242,0.26)]" style={{ animation: "miraAnalyticsIn 420ms ease 20ms both" }}>
+            <div className="grid gap-6 lg:grid-cols-[1fr_220px] lg:items-center">
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70">Что Mira заметила</p>
                 {hasEnoughForForecast ? (
                   <>
-                    <h2 className="mt-2 text-2xl font-black text-[#1A1A1A]">
-                      📅 {data.periodStart}–{data.periodEnd} <span className="text-base text-[#8E8E93]">(через 4 дня)</span>
-                    </h2>
-                    <div className="mt-4 space-y-2 text-sm leading-relaxed text-[#1A1A1A]">
-                      <p>📌 Симптомы за 3 дня до: {data.symptoms.slice(0, 2).map((item) => item.name).join(", ") || "пока мало данных"}</p>
-                      <p>💡 Совет: начни пить больше воды за 2 дня до</p>
+                    <h2 className="mt-2 text-3xl font-black leading-tight text-white">{mainInsight}</h2>
+                    <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/78">
+                      Это помогает заранее снизить нагрузку, подготовить заботу и понять, что стоит показать врачу.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-black text-white">
+                        месячные: {data.periodStart}–{data.periodEnd}
+                      </span>
+                      <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-black text-white">через 4 дня</span>
+                      <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-black text-white">
+                        {confidence}% уверенность
+                      </span>
+                    </div>
+                    <div className="mt-5 grid gap-3 md:grid-cols-2">
+                      <div className="rounded-[22px] bg-white/16 p-4 backdrop-blur">
+                        <p className="text-xs font-bold uppercase tracking-wide text-white/65">Насколько надёжно</p>
+                        <p className="mt-1 text-sm font-black text-white">
+                          Основано на {data.trackedCycles} циклах и {notesCount} отметках.
+                        </p>
+                      </div>
+                      <div className="rounded-[22px] bg-white/16 p-4 backdrop-blur">
+                        <p className="text-xs font-bold uppercase tracking-wide text-white/65">Что сделать дальше</p>
+                        <p className="mt-1 text-sm font-black text-white">
+                          {notesNeeded > 0 ? `Ещё ${notesNeeded} отметок сделают прогноз точнее.` : "Продолжай отмечать симптомы в конце цикла."}
+                        </p>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -507,15 +611,64 @@ function AnalyticsPageComponent({
                   />
                 )}
               </div>
+              <div className="mx-auto flex h-[190px] w-[190px] items-center justify-center rounded-full bg-white/14 p-4 backdrop-blur">
+                <div className="flex h-full w-full flex-col items-center justify-center rounded-full border-[12px] border-white/35 text-center">
+                  <Sparkles className="mb-2 h-7 w-7 text-[#DFFBFF]" />
+                  <p className="text-4xl font-black leading-none">{confidence}%</p>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-wide text-white/70">уверенность</p>
+                </div>
+              </div>
             </div>
-          </SectionCard>
+          </Card>
+
+          {/* Красные флаги */}
+          {data.redFlags.length > 0 && (
+            <SectionCard delay={40}>
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FFF0F0] text-[#FF6B6B]">
+                  <Stethoscope className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Eyebrow>Когда не стоит терпеть</Eyebrow>
+                  <h2 className="mt-2 text-xl font-black text-[#1A1A1A]">Это лучше обсудить с врачом</h2>
+                  <p className="mt-2 text-sm font-semibold leading-relaxed text-[#8E8E93]">
+                    Mira не ставит диагноз, но помогает не пропустить важные повторяющиеся симптомы.
+                  </p>
+                  <ul className="mt-4 space-y-2">
+                    {data.redFlags.map((flag) => (
+                      <li
+                        key={flag}
+                        className="flex items-center gap-3 rounded-[20px] bg-[#FFF0F0] px-4 py-3 text-sm font-bold text-[#1A1A1A]"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#FF6B6B] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                          !
+                        </span>
+                        {flag}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    type="button"
+                    className="mt-5 w-full rounded-[20px] bg-[#E872A0] text-white hover:bg-[#D95F8E]"
+                    onClick={onOpenDoctorReport}
+                  >
+                    📋 Показать врачу
+                  </Button>
+                </div>
+              </div>
+            </SectionCard>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Длина цикла */}
-            <SectionCard title="Длина цикла" delay={70}>
+            <SectionCard eyebrow="Как обычно у тебя" delay={70}>
               {data.cycleLengthData.length ? (
                 <>
-                  <div className="h-64">
+                  <h2 className="text-xl font-black leading-snug text-[#1A1A1A]">
+                    Твой средний цикл —{" "}
+                    <span className="text-[#E872A0]">{data.avgCycle ?? "—"} дней</span>
+                  </h2>
+                  <div className="mt-4 h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={data.cycleLengthData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                         <CartesianGrid stroke="#F0E8EC" vertical={false} />
@@ -536,9 +689,10 @@ function AnalyticsPageComponent({
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                  <p className="mt-4 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-bold text-[#1A1A1A]">
-                    {getCycleCaption(data.cycleLengthData)}
-                  </p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <InsightNote title="Что это значит" body={getCycleCaption(data.cycleLengthData).replace("✅ ", "").replace("🟡 ", "").replace("🔴 ", "")} />
+                    <InsightNote title="Что сделать" body="Продолжай отмечать первый день месячных, чтобы Mira точнее считала задержки и прогноз." />
+                  </div>
                 </>
               ) : (
                 <EmptyState title="Начни трекать цикл" body="Добавь даты месячных, чтобы увидеть длину цикла." />
@@ -546,10 +700,14 @@ function AnalyticsPageComponent({
             </SectionCard>
 
             {/* Обильность */}
-            <SectionCard title="Обильность по дням" delay={120}>
+            <SectionCard eyebrow="Что повторяется" delay={120}>
               {data.flowData.length ? (
                 <>
-                  <div className="h-64">
+                  <h2 className="text-xl font-black leading-snug text-[#1A1A1A]">
+                    Пик обильности —{" "}
+                    <span className="text-[#E872A0]">{data.peakDay ?? "—"}</span>
+                  </h2>
+                  <div className="mt-4 h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={data.flowData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                         <CartesianGrid stroke="#F0E8EC" vertical={false} />
@@ -563,9 +721,20 @@ function AnalyticsPageComponent({
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  <p className="mt-4 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-bold text-[#1A1A1A]">
-                    {getFlowCaption(data)}
-                  </p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                    <InsightNote title="Что это значит" body={getFlowCaption(data).replace("📌 ", "").replace("🟡 ", "").replace("🔴 ", "")} />
+                    <div className="flex min-w-[88px] items-center justify-center rounded-[20px] bg-[#FAF8F5] px-4 py-3">
+                      {data.peakCount !== undefined && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-black text-[#E872A0] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                          <Droplets className="h-3.5 w-3.5" />
+                          {data.peakCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="md:col-span-2">
+                      <InsightNote title="Что сделать" body="Если пик обильности растёт или мешает жить, добавь эти данные в отчёт врачу." />
+                    </div>
+                  </div>
                 </>
               ) : (
                 <EmptyState title="Нет данных об обильности" body="Отмечай обильность в дни месячных." />
@@ -578,11 +747,17 @@ function AnalyticsPageComponent({
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Факторы влияния */}
             {data.factors.length > 0 && (
-              <SectionCard title="Факторы влияния" delay={170}>
+              <SectionCard eyebrow="Что влияет на самочувствие" title="Что может ухудшать состояние" delay={170}>
                 <div className="space-y-3">
                   {data.factors.slice(0, 3).map((factor) => (
-                    <div key={factor} className="rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-bold text-[#1A1A1A]">
-                      📉 {factor}
+                    <div
+                      key={factor}
+                      className="flex items-center gap-3 rounded-[20px] bg-[#FAF8F5] px-4 py-3 text-sm font-bold text-[#1A1A1A]"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-base shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                        📉
+                      </span>
+                      {factor}
                     </div>
                   ))}
                 </div>
@@ -590,47 +765,23 @@ function AnalyticsPageComponent({
             )}
 
             {/* Частые симптомы */}
-            <SectionCard title="Частые симптомы" delay={220}>
+            <SectionCard eyebrow="Что повторяется" title="Частые симптомы" delay={220}>
               <SymptomBars symptoms={data.symptoms} />
             </SectionCard>
           </div>
 
-          {/* Красные флаги */}
-          {data.redFlags.length > 0 && (
-            <SectionCard delay={270}>
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FFF0F0] text-[#FF6B6B]">
-                  <Stethoscope className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-black text-[#1A1A1A]">🩺 Когда обратиться к врачу</h2>
-                  <ul className="mt-4 space-y-2">
-                    {data.redFlags.map((flag) => (
-                      <li key={flag} className="text-sm font-bold text-[#1A1A1A]">✅ {flag}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-4 text-sm leading-relaxed text-[#8E8E93]">
-                    📖 “Обильные месячные: когда это норма, а когда к врачу” →{" "}
-                    <button type="button" className="font-bold text-[#E872A0]">Читать</button>
-                  </p>
-                  <Button
-                    type="button"
-                    className="mt-5 w-full rounded-2xl bg-[#E872A0] text-white hover:bg-[#D95F8E]"
-                    onClick={onOpenDoctorReport}
-                  >
-                    📋 Открыть отчёт для врача
-                  </Button>
-                </div>
-              </div>
-            </SectionCard>
-          )}
-
           {/* Фразы для врача */}
-          <SectionCard title="Фразы для врача" delay={320}>
+          <SectionCard eyebrow="Подготовка к визиту" title="Фразы для врача" delay={320}>
             <div className="space-y-3">
               {doctorPhrases.map((phrase, index) => (
-                <div key={phrase} className="rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold leading-relaxed text-[#1A1A1A]">
-                  {index + 1}. {phrase}
+                <div
+                  key={phrase}
+                  className="flex items-start gap-3 rounded-[20px] bg-[#FAF8F5] px-4 py-3 text-sm font-semibold leading-relaxed text-[#1A1A1A]"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-[#E872A0] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                    {index + 1}
+                  </span>
+                  {phrase}
                 </div>
               ))}
             </div>
@@ -643,15 +794,15 @@ function AnalyticsPageComponent({
               <ExportButton label="TXT" icon={<FileText className="h-4 w-4" />} onClick={onExportTxt} />
               <ExportButton label="Отправить себе" icon={<Mail className="h-4 w-4" />} onClick={onSendToSelf} />
             </div>
-            <p className="mt-4 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-bold text-[#8E8E93]">
+            <p className="mt-4 rounded-[20px] bg-[#FAF8F5] px-4 py-3 text-sm font-bold text-[#8E8E93]">
               🔒 Личные заметки скрыты.
             </p>
           </SectionCard>
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
-            <div className="rounded-2xl bg-white px-3 py-2 text-[#34C759]">Норма</div>
-            <div className="rounded-2xl bg-white px-3 py-2 text-[#FFB800]">Внимание</div>
-            <div className="rounded-2xl bg-white px-3 py-2 text-[#FF6B6B]">К врачу</div>
+            <div className="rounded-2xl bg-white px-3 py-2 text-[#34C759] shadow-[0_4px_12px_rgba(0,0,0,0.05)]">Норма</div>
+            <div className="rounded-2xl bg-white px-3 py-2 text-[#B97900] shadow-[0_4px_12px_rgba(0,0,0,0.05)]">Внимание</div>
+            <div className="rounded-2xl bg-white px-3 py-2 text-[#FF6B6B] shadow-[0_4px_12px_rgba(0,0,0,0.05)]">К врачу</div>
           </div>
         </div>
       </div>

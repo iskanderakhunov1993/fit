@@ -35,6 +35,12 @@ type TodayData = {
   };
 };
 
+type FactAction = {
+  fact: string;
+  action: string;
+  tone: SymptomColor;
+};
+
 type TodayPageProps = {
   data?: TodayData;
   onPain?: () => void;
@@ -153,6 +159,7 @@ function getTodayStatus(data: TodayData) {
       period: "Период: ожидание месячных",
       body: "Это может быть связано со стрессом, болезнью, перелётом, лекарствами, нерегулярным циклом или беременностью.",
       note: "Mira не ставит диагноз, но поможет сохранить факты и понять, что обсудить с врачом.",
+      needsMedicalWarning: true,
       ringValue: `${delayDays}`,
       ringLabel: "задержка",
       ringSubLabel: "дней",
@@ -169,13 +176,78 @@ function getTodayStatus(data: TodayData) {
     title: `${data.cycleDay}-й день цикла`,
     period: `${data.phase} фаза | До месячных: ${data.daysUntilPeriod} дня`,
     body: "Mira показывает только главное на сегодня: состояние цикла, важные сигналы и что подготовить.",
-    note: "Если появятся сильная боль, обморок или очень обильное кровотечение — лучше обратиться за медицинской помощью.",
+    note: "",
+    needsMedicalWarning: data.symptoms.some((symptom) => symptom.color === "red"),
     ringValue: `${data.cycleDay}`,
     ringLabel: "день цикла",
     ringSubLabel: data.phase,
     progress: Math.min(100, Math.round((data.cycleDay / 28) * 100)),
     actions: ["Отметить симптомы", "Снизить нагрузку, если энергии мало", "Подготовить аптечку, если месячные скоро"],
   };
+}
+
+function getFactActions(data: TodayData, status: ReturnType<typeof getTodayStatus>): FactAction[] {
+  if (data.symptoms.length === 0) {
+    return [
+      {
+        fact: status.title,
+        action: "Отметь симптомы или настроение, если что-то изменилось.",
+        tone: "green",
+      },
+    ];
+  }
+
+  return data.symptoms.slice(0, 3).map((symptom, index) => {
+    const defaultAction = status.actions[index] ?? data.recommendations[index] ?? data.advice;
+    const actionByType: Record<string, string> = {
+      pain: "Снизь нагрузку, выпей воды и открой “Мне больно”, если боль усиливается.",
+      energy: "Не ставь тяжёлые дела подряд, оставь окно на отдых.",
+      mood: "Не принимай резких решений, лучше выбрать спокойные задачи.",
+      blood: "Следи за обильностью и добавь факт в отчёт врачу, если это выше обычного.",
+    };
+
+    return {
+      fact: `${symptom.label}${symptom.value ? `: ${symptom.value}` : ""}`,
+      action: actionByType[symptom.type] ?? defaultAction,
+      tone: symptom.color,
+    };
+  });
+}
+
+function getCareProgress() {
+  const items = [
+    { label: "Вода", done: true, value: "1.5 / 2 л" },
+    { label: "Ходьба", done: true, value: "немного" },
+    { label: "Питание", done: false, value: "не отмечено" },
+    { label: "Вес", done: false, value: "не отмечен" },
+  ];
+  const done = items.filter((item) => item.done).length;
+  return { items, done, total: items.length, percent: Math.round((done / items.length) * 100) };
+}
+
+function getPreparationTips(data: TodayData) {
+  if (data.daysUntilPeriod < 0) {
+    return [
+      "Если была вероятность беременности, сделай тест утром.",
+      "Запиши факторы задержки: стресс, болезнь, перелёт, лекарства.",
+    ];
+  }
+  if (data.daysUntilPeriod <= 3) {
+    return [
+      "Проверь прокладки/тампоны, обезболивающее и запасное бельё.",
+      "Выбери удобную или тёмную одежду, если месячные могут начаться скоро.",
+    ];
+  }
+  if (data.symptoms.some((symptom) => symptom.type === "energy")) {
+    return [
+      "Оставь больше пауз между делами и не планируй тяжёлые встречи.",
+      "Поддержи воду и лёгкую еду, чтобы не усиливать усталость.",
+    ];
+  }
+  return [
+    "Сегодня достаточно отметить 1–2 факта: настроение, сон или воду.",
+    "Если всё спокойно, просто продолжай обычный день без лишнего контроля.",
+  ];
 }
 
 function QuickAction({
@@ -203,6 +275,9 @@ function QuickAction({
 function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn, onCare, onReport }: TodayPageProps) {
   const [painOpen, setPainOpen] = useState(false);
   const status = useMemo(() => getTodayStatus(data), [data]);
+  const factActions = useMemo(() => getFactActions(data, status), [data, status]);
+  const careProgress = useMemo(() => getCareProgress(), []);
+  const preparationTips = useMemo(() => getPreparationTips(data), [data]);
 
   function openPain() {
     if (onPain) {
@@ -253,7 +328,12 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
               <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">Что со мной сегодня</p>
               <h2 className="mt-2 max-w-2xl text-3xl font-black leading-tight text-white">{status.title}</h2>
               <p className="mt-4 max-w-2xl text-sm font-semibold leading-relaxed text-white/80">{status.body}</p>
-              <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/75">{status.note}</p>
+              {status.note && <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/75">{status.note}</p>}
+              {status.needsMedicalWarning && (
+                <p className="mt-3 max-w-2xl rounded-2xl bg-white/16 px-4 py-3 text-sm font-black leading-relaxed text-white">
+                  Если есть резкая боль, обморок, очень обильное кровотечение или сильная слабость — лучше обратиться за медицинской помощью.
+                </p>
+              )}
             </div>
             <RingStat value={status.ringValue} label={status.ringLabel} sublabel={status.ringSubLabel} percentage={status.progress} />
           </div>
@@ -288,31 +368,24 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
           <div className="space-y-6">
-            <SectionCard title="Что сделать сегодня" delay={40}>
+            <SectionCard title="Сегодня: факт → действие" delay={40}>
               <div className="space-y-3">
-                {status.actions.map((action, index) => (
-                  <div key={action} className="flex gap-3 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-bold text-[#1A1A1A]">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-[#E872A0] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-                      {index + 1}
-                    </span>
-                    <span>{action}</span>
+                {factActions.map((item, index) => (
+                  <div key={`${item.fact}-${index}`} className="rounded-2xl bg-[#FAF8F5] p-4">
+                    <div className="flex items-start gap-3">
+                      <span className={`rounded-full px-3 py-1 text-xs font-black ${symptomTone[item.tone]}`}>Факт</span>
+                      <div>
+                        <p className="text-sm font-black text-[#1A1A1A]">{item.fact}</p>
+                        <p className="mt-1 text-sm font-semibold leading-relaxed text-[#8E8E93]">{item.action}</p>
+                      </div>
+                    </div>
                   </div>
                 ))}
+                <p className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-[#1A1A1A] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                  {data.advice}
+                </p>
               </div>
             </SectionCard>
-
-            {data.symptoms.length > 0 && (
-              <SectionCard title="Важное" delay={70}>
-                <div className="space-y-3">
-                  {data.symptoms.slice(0, 3).map((symptom) => (
-                    <div key={symptom.type} className={`rounded-2xl px-4 py-3 text-sm font-bold ${symptomTone[symptom.color]}`}>
-                      {symptom.label}{symptom.value ? ` (${symptom.value})` : ""}
-                    </div>
-                  ))}
-                  <p className="rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold text-[#1A1A1A]">{data.advice}</p>
-                </div>
-              </SectionCard>
-            )}
 
             <SectionCard title="Настроение и ПМС" delay={100}>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -330,15 +403,29 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
 
           <div className="space-y-6">
             <SectionCard title="Забота сегодня" delay={130}>
+              <div className="mb-4 rounded-2xl bg-[#FAF8F5] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-black text-[#1A1A1A]">
+                    {careProgress.done} из {careProgress.total} отмечено
+                  </p>
+                  <p className="text-xs font-black text-[#E872A0]">{careProgress.percent}%</p>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                  <div className="h-full rounded-full bg-[#E872A0]" style={{ width: `${careProgress.percent}%` }} />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-[#FAF8F5] px-4 py-3">
-                  <p className="text-xs font-black uppercase tracking-wide text-[#8E8E93]">Вода</p>
-                  <p className="mt-1 text-lg font-black text-[#1A1A1A]">1.5 / 2 л</p>
-                </div>
-                <div className="rounded-2xl bg-[#FAF8F5] px-4 py-3">
-                  <p className="text-xs font-black uppercase tracking-wide text-[#8E8E93]">Ходьба</p>
-                  <p className="mt-1 text-lg font-black text-[#1A1A1A]">немного</p>
-                </div>
+                {careProgress.items.map((item) => (
+                  <div key={item.label} className="rounded-2xl bg-[#FAF8F5] px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-black uppercase tracking-wide text-[#8E8E93]">{item.label}</p>
+                      <span className={`text-sm font-black ${item.done ? "text-[#34A853]" : "text-[#8E8E93]"}`}>
+                        {item.done ? "✓" : "○"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-lg font-black text-[#1A1A1A]">{item.value}</p>
+                  </div>
+                ))}
               </div>
               <Button type="button" variant="outline" className="mt-4 w-full rounded-2xl bg-white" onClick={onCare}>
                 Открыть заботу
@@ -347,12 +434,11 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
 
             <SectionCard title="Аптечка и одежда" delay={160}>
               <div className="space-y-3">
-                <div className="rounded-2xl bg-[#FFF0F5] px-4 py-3 text-sm font-bold text-[#1A1A1A]">
-                  Проверь прокладки/тампоны и обезболивающее, если месячные скоро.
-                </div>
-                <div className="rounded-2xl bg-[#F1E9FF] px-4 py-3 text-sm font-bold text-[#1A1A1A]">
-                  На случай начала месячных лучше выбрать тёмную или удобную одежду.
-                </div>
+                {preparationTips.map((tip, index) => (
+                  <div key={tip} className={`rounded-2xl px-4 py-3 text-sm font-bold text-[#1A1A1A] ${index === 0 ? "bg-[#FFF0F5]" : "bg-[#F1E9FF]"}`}>
+                    {tip}
+                  </div>
+                ))}
               </div>
             </SectionCard>
 
@@ -367,6 +453,19 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
                     className={`flex aspect-square items-center justify-center rounded-2xl text-sm font-black ${calendarTone[day.type]}`}
                   >
                     {day.date}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-[#8E8E93]">
+                {[
+                  ["bg-[#E872A0]", "Месячные"],
+                  ["bg-[#FFB800]/40", "ПМС"],
+                  ["bg-[#EDFAF1]", "Обычный день"],
+                  ["bg-[#F1E9FF]", "Есть заметка"],
+                ].map(([color, label]) => (
+                  <div key={label} className="flex items-center gap-2 rounded-2xl bg-[#FAF8F5] px-3 py-2">
+                    <span className={`h-3 w-3 rounded-full ${color}`} />
+                    {label}
                   </div>
                 ))}
               </div>

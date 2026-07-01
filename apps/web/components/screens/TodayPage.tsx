@@ -5,6 +5,7 @@ import { CalendarDays, Edit3, Heart, HeartPulse, Plus, Siren, Sparkles } from "l
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useMiraStore, type DailyLog } from "@/store";
+import { SymptomsModal } from "./SymptomsModal";
 
 type SymptomColor = "red" | "yellow" | "blue" | "green";
 type CalendarDayType = "period" | "pms" | "normal" | "note" | "empty";
@@ -474,12 +475,14 @@ function FloStyleHero({
   onPain,
   onPeriod,
   onCheckIn,
+  onSex,
 }: {
   data: TodayData;
   status: TodayStatus;
   onPain: () => void;
   onPeriod?: () => void;
   onCheckIn?: () => void;
+  onSex?: () => void;
 }) {
   const weekDays = getWeekStripDays(data);
 
@@ -526,10 +529,11 @@ function FloStyleHero({
           <p className="mx-auto mt-5 max-w-xl text-base font-semibold leading-relaxed text-[#6F6672]">{status.period}</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-3">
           <CircleAction label="Изменить месячные" active icon={<Edit3 className="h-8 w-8" />} onClick={onPeriod} />
           <CircleAction label="Симптомы" icon={<Plus className="h-9 w-9" />} onClick={onCheckIn} />
-          <CircleAction label="Мне плохо" icon={<Heart className="h-8 w-8" />} onClick={onPain} />
+          <CircleAction label="Секс" icon={<Heart className="h-8 w-8" />} onClick={onSex} />
+          <CircleAction label="Мне плохо" icon={<Siren className="h-8 w-8" />} onClick={onPain} />
         </div>
       </div>
     </section>
@@ -574,6 +578,8 @@ function CalendarSection({ data, delay = 0 }: { data: TodayData["calendar"]; del
 
 function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn, onCare, onReport }: TodayPageProps) {
   const [painOpen, setPainOpen] = useState(false);
+  const [symptomsOpen, setSymptomsOpen] = useState(false);
+  const [symptomsInitialCategory, setSymptomsInitialCategory] = useState<string | undefined>(undefined);
   const storeLogs = useMiraStore((state) => state.logs.dailyLogs);
   const status = useMemo(() => getTodayStatus(data), [data]);
   const factActions = useMemo(() => getFactActions(data, status), [data, status]);
@@ -596,6 +602,11 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
     if (typeof window !== "undefined") window.location.href = "/report";
   }
 
+  function openSymptoms(initialCategory?: string) {
+    setSymptomsInitialCategory(initialCategory);
+    setSymptomsOpen(true);
+  }
+
   return (
     <main className="mira-screen px-5 py-6 text-[#202033]">
       <style jsx global>{`
@@ -606,7 +617,14 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
       `}</style>
 
       <div className="mx-auto max-w-5xl">
-        <FloStyleHero data={data} status={status} onPain={openPain} onPeriod={onPeriod} onCheckIn={onCheckIn} />
+        <FloStyleHero
+          data={data}
+          status={status}
+          onPain={openPain}
+          onPeriod={onPeriod}
+          onCheckIn={() => openSymptoms()}
+          onSex={() => openSymptoms("Секс и сексуальное желание")}
+        />
 
         <AdviceRail data={data} status={status} />
 
@@ -706,6 +724,14 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
       </div>
 
       <PainDialog open={painOpen} onClose={() => setPainOpen(false)} onSave={onCheckIn} />
+      <SymptomsModal
+        open={symptomsOpen}
+        initialCategoryTitle={symptomsInitialCategory}
+        onClose={() => {
+          setSymptomsOpen(false);
+          setSymptomsInitialCategory(undefined);
+        }}
+      />
     </main>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Sun, CalendarDays, ChartNoAxesCombined, FileText, HeartPulse, Plus,
+  ChartNoAxesCombined, Droplets, HeartPulse, Plus, Sun, UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavPage } from "./types";
@@ -20,12 +20,12 @@ export function BottomNav({
 }) {
   const left: { id: NavPage; label: string; icon: typeof Sun }[] = [
     { id: "today", label: "Сегодня", icon: Sun },
-    { id: "diary", label: "Дневник", icon: CalendarDays },
+    { id: "care", label: "Забота", icon: Droplets },
   ];
 
   const right: { id: NavPage; label: string; icon: typeof Sun }[] = [
     { id: "analytics", label: "Аналитика", icon: ChartNoAxesCombined },
-    { id: "report", label: "Отчёт", icon: FileText },
+    { id: "profile", label: "Профиль", icon: UserRound },
   ];
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-mira-lavender/20 bg-white/95 backdrop-blur-xl lg:hidden" style={{ boxShadow: "0 -10px 28px rgba(45,38,64,0.08)" }}>

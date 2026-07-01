@@ -8,8 +8,8 @@ export interface TabConfig {
 }
 
 export const TABS: TabConfig[] = [
-  { id: "analytics", label: "Аналитика", icon: "📊", path: "/" },
-  { id: "today", label: "Сегодня", icon: "🌸", path: "/today" },
+  { id: "today", label: "Сегодня", icon: "☀️", path: "/today" },
   { id: "care", label: "Забота", icon: "💧", path: "/care" },
-  { id: "profile", label: "Профиль", icon: "⚙️", path: "/profile" },
+  { id: "analytics", label: "Аналитика", icon: "📈", path: "/" },
+  { id: "profile", label: "Профиль", icon: "👤", path: "/profile" },
 ];

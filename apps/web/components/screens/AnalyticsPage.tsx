@@ -26,7 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { selectMostCommonSymptoms, selectRedFlags, selectSkinHistory, useMiraStore } from "@/store";
+import { useMiraStore } from "@/store";
 import type { CycleState, DailyLog } from "@/store/types";
 
 type PeriodKey = "current" | "3" | "6" | "12";
@@ -268,19 +268,97 @@ function getLogsForPeriod(logs: DailyLog[], period: PeriodKey, cycle: CycleState
   return sorted.slice(-cycle.averageLength * cycleCount);
 }
 
+function isDailyLogLike(log: unknown): log is DailyLog {
+  if (!log || typeof log !== "object") return false;
+  const item = log as Partial<DailyLog>;
+  return Boolean(
+    typeof item.date === "string" &&
+      typeof item.cycleDay === "number" &&
+      item.symptoms &&
+      item.selfCare &&
+      item.symptoms.bleeding &&
+      item.symptoms.pain &&
+      item.symptoms.sleep &&
+      item.symptoms.skin
+  );
+}
+
+function getSafeLogs(logs: unknown[]) {
+  return logs.filter(isDailyLogLike);
+}
+
 function countCondition(logs: DailyLog[], condition: (log: DailyLog) => boolean) {
-  return logs.reduce((sum, log) => sum + (condition(log) ? 1 : 0), 0);
+  return logs.reduce((sum, log) => {
+    try {
+      return sum + (condition(log) ? 1 : 0);
+    } catch {
+      return sum;
+    }
+  }, 0);
+}
+
+function getSymptomsFromLogs(logs: DailyLog[]): SymptomPoint[] {
+  const counts = new Map<string, number>();
+  const add = (name: string, active: boolean) => {
+    if (active) counts.set(name, (counts.get(name) ?? 0) + 1);
+  };
+
+  logs.forEach((log) => {
+    add("Обильность", (log.symptoms.bleeding.amount ?? 0) >= 2);
+    add("Боль", (log.symptoms.pain.level ?? 0) >= 1);
+    add("Тревога", log.symptoms.mood === "anxious");
+    add("Низкая энергия", log.symptoms.energy === "low" || log.symptoms.energy === "exhausted");
+    add("Акне", Boolean(log.symptoms.skin.acne));
+  });
+
+  return Array.from(counts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+function getRedFlagsFromLogs(logs: DailyLog[], cycle: CycleState) {
+  const flags = new Set<string>();
+
+  logs.forEach((log) => {
+    if (log.symptoms.bleeding.amount === 3 || log.symptoms.bleeding.pads >= 7) flags.add("Очень обильное кровотечение");
+    if (log.symptoms.bleeding.clots === "large") flags.add("Крупные сгустки");
+    if (log.symptoms.pain.level >= 4) flags.add("Сильная боль");
+    if (log.symptoms.pain.type === "sharp" || log.symptoms.pain.type === "cutting") flags.add("Острая или режущая боль");
+    if (log.symptoms.pain.affectedLife === "bedridden") flags.add("Боль мешает встать с кровати");
+    if (log.symptoms.energy === "exhausted") flags.add("Сильная слабость");
+  });
+
+  if (cycle.currentDay > cycle.averageLength + 7) flags.add("Задержка больше обычного");
+  return Array.from(flags);
+}
+
+function getSkinPointsFromLogs(logs: DailyLog[]) {
+  const grouped = new Map<number, SkinCyclePoint>();
+
+  logs.forEach((log) => {
+    const hasSkin = log.symptoms.skin.acne || log.symptoms.skin.dryness || log.symptoms.skin.oiliness || log.symptoms.skin.hairLoss;
+    if (!hasSkin) return;
+    const current = grouped.get(log.cycleDay) ?? { cycleDay: log.cycleDay, acneCount: 0 };
+    if (log.symptoms.skin.acne) current.acneCount += log.symptoms.skin.acneCount ?? 1;
+    if (log.symptoms.skin.dryness) current.drynessCount = (current.drynessCount ?? 0) + 1;
+    if (log.symptoms.skin.oiliness) current.oilinessCount = (current.oilinessCount ?? 0) + 1;
+    if (log.symptoms.skin.hairLoss) current.hairLossCount = (current.hairLossCount ?? 0) + 1;
+    grouped.set(log.cycleDay, current);
+  });
+
+  return Array.from(grouped.values()).sort((a, b) => b.acneCount - a.acneCount || a.cycleDay - b.cycleDay);
 }
 
 function buildDataFromLogs(
   logs: DailyLog[],
   cycle: CycleState,
-  symptoms: SymptomPoint[],
-  redFlags: string[],
-  skinPoints: SkinCyclePoint[],
   period: PeriodKey
 ): AnalyticsData {
   const periodLogs = getLogsForPeriod(logs, period, cycle);
+  const symptoms = getSymptomsFromLogs(periodLogs);
+  const redFlags = getRedFlagsFromLogs(periodLogs, cycle);
+  const skinPoints = getSkinPointsFromLogs(periodLogs);
   const trackedCycles = Math.max(1, period === "current" ? 1 : Math.min(Number(period), Math.ceil(periodLogs.length / cycle.averageLength)));
   const cycleLengthData =
     cycle.cycles.length > 0
@@ -636,18 +714,16 @@ function AnalyticsPageComponent({
   onSendToSelf,
 }: AnalyticsPageProps) {
   const [period, setPeriod] = useState<PeriodKey>("3");
-  const logs = useMiraStore((state) => state.logs.dailyLogs);
+  const rawLogs = useMiraStore((state) => state.logs.dailyLogs);
   const cycle = useMiraStore((state) => state.cycle);
-  const storeSymptoms = useMiraStore(selectMostCommonSymptoms);
-  const storeRedFlags = useMiraStore(selectRedFlags);
-  const storeSkinHistory = useMiraStore(selectSkinHistory);
+  const logs = useMemo(() => getSafeLogs(rawLogs), [rawLogs]);
   const realDatasets = useMemo<Partial<Record<PeriodKey, AnalyticsData>> | undefined>(() => {
     if (logs.length === 0) return undefined;
     return periods.reduce((acc, item) => {
-      acc[item.value] = buildDataFromLogs(logs, cycle, storeSymptoms, storeRedFlags, storeSkinHistory.points, item.value);
+      acc[item.value] = buildDataFromLogs(logs, cycle, item.value);
       return acc;
     }, {} as Partial<Record<PeriodKey, AnalyticsData>>);
-  }, [cycle, logs, storeRedFlags, storeSkinHistory.points, storeSymptoms]);
+  }, [cycle, logs]);
   const data = useMemo(() => getDataset(period, datasets ?? realDatasets), [period, datasets, realDatasets]);
   const hasEnoughForForecast = data.trackedCycles >= 2;
   const chartTick = { fill: muted, fontSize: 12 };

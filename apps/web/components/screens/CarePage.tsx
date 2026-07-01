@@ -289,12 +289,17 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
   const [skin, setSkin] = useState(data.skin);
   const [libido, setLibido] = useState<LibidoValue>(data.libido);
   const [weight, setWeight] = useState(data.weight?.toString() ?? "");
+  const [kit, setKit] = useState({
+    painkiller: true,
+    pads: true,
+    pregnancyTest: false,
+  });
   const [toast, setToast] = useState("");
 
   const completedCount = useMemo(() => {
     let count = 0;
     if (water > 0) count += 1;
-    if (Object.keys(vitaminStatus).length > 0) count += 1;
+    if (Object.values(kit).some(Boolean)) count += 1;
     if (walking) count += 1;
     if (workout) count += 1;
     if (Object.values(skin).some(Boolean)) count += 1;
@@ -302,7 +307,7 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
     if (weight) count += 1;
     if (data.calories.current > 0) count += 1;
     return count;
-  }, [data.calories.current, libido, skin, vitaminStatus, walking, water, weight, workout]);
+  }, [data.calories.current, kit, libido, skin, walking, water, weight, workout]);
   const shoppingList = useMemo(
     () => data.vitamins.filter((vitamin) => vitaminStatus[vitamin.id] === "buy").map((vitamin) => vitamin.name),
     [data.vitamins, vitaminStatus]
@@ -317,6 +322,10 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
     setSkin((current) => ({ ...current, [key]: !current[key] }));
   }
 
+  function toggleKit(key: keyof typeof kit) {
+    setKit((current) => ({ ...current, [key]: !current[key] }));
+  }
+
   function saveAll() {
     onSaveAll?.({
       ...data,
@@ -327,7 +336,7 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
       weight: Number.parseFloat(weight) || undefined,
       vitamins: data.vitamins.map((vitamin) => ({ ...vitamin, has: vitaminStatus[vitamin.id] === "has" })),
     });
-    showToast("Все данные сохранены!");
+    showToast("Готово. Эти данные появятся на главной как выжимка и в аналитике как возможные связи.");
   }
 
   return (
@@ -345,7 +354,7 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
           <div>
             <h1 className="text-3xl font-black tracking-tight text-[#1A1A1A]">💧 Забота</h1>
             <p className="mt-2 text-sm font-semibold text-[#8E8E93]">
-              Отметь только то, что легко вспомнить. Даже пары быстрых отметок достаточно для первых связей в аналитике.
+              Сегодня достаточно 2 быстрых отметок. Начни с воды и активности, остальное можно добавить по желанию.
             </p>
           </div>
           <div className="mira-card rounded-2xl px-4 py-3 text-right text-sm font-black text-[#202033]">
@@ -361,6 +370,26 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
         )}
 
         <div className="mt-6 space-y-6">
+          <SectionCard delay={10}>
+            <Eyebrow tone="dark">Главный вопрос</Eyebrow>
+            <h2 className="mt-1 text-2xl font-black text-[#1A1A1A]">Что хочешь отметить сегодня?</h2>
+            <p className="mt-2 text-sm font-semibold leading-relaxed text-[#8E8E93]">
+              Сценарий простой: вода + активность, при желании вес или аптечка, потом “Сохранить всё”.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4">
+              {["Вода", "Активность", "Вес", "Аптечка"].map((item) => (
+                <div key={item} className="rounded-2xl bg-[#FAF8F5] px-4 py-3 text-center text-sm font-black text-[#1A1A1A]">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          <div>
+            <Eyebrow tone="dark">Быстро</Eyebrow>
+            <h2 className="mt-1 text-xl font-black text-[#1A1A1A]">Главные отметки на сегодня</h2>
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Вода */}
             <Card
@@ -432,8 +461,45 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
             </SectionCard>
           </div>
 
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Вес */}
+            <SectionCard title="⚖️ Вес" delay={100}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  value={weight}
+                  onChange={(event) => setWeight(event.target.value)}
+                  inputMode="decimal"
+                  placeholder="Введите вес"
+                  className="h-12 flex-1 rounded-2xl border border-[#E8DDE3] bg-white px-4 text-lg font-black text-[#1A1A1A] outline-none focus:border-[#E872A0]"
+                />
+                <span className="text-sm font-bold text-[#8E8E93]">кг</span>
+              </div>
+              {!weight && <p className="mt-3 text-sm font-semibold text-[#8E8E93]">Введите вес, чтобы увидеть динамику.</p>}
+              <p className="mt-3 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold text-[#8E8E93]">
+                Вес сохранится вместе с остальными отметками по кнопке “Сохранить всё”.
+              </p>
+            </SectionCard>
+
+            {/* Аптечка */}
+            <SectionCard title="🧰 Аптечка" delay={120}>
+              <div className="space-y-3">
+                <CheckboxRow checked={kit.painkiller} label="Обезболивающее есть" onChange={() => toggleKit("painkiller")} />
+                <CheckboxRow checked={kit.pads} label="Прокладки/тампоны есть" onChange={() => toggleKit("pads")} />
+                <CheckboxRow checked={kit.pregnancyTest} label="Тест на беременность есть" onChange={() => toggleKit("pregnancyTest")} />
+              </div>
+              <p className="mt-4 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold text-[#8E8E93]">
+                Аптечка помогает Mira заранее напомнить, что взять перед месячными или при задержке.
+              </p>
+            </SectionCard>
+          </div>
+
+          <div>
+            <Eyebrow tone="dark">Дополнительно</Eyebrow>
+            <h2 className="mt-1 text-xl font-black text-[#1A1A1A]">Можно заполнить позже</h2>
+          </div>
+
           {/* Витамины */}
-          <SectionCard title="💊 Аптечка и добавки (необязательно)" delay={120}>
+          <SectionCard title="💊 Добавки (необязательно)" delay={150}>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {data.vitamins.map((vitamin, index) => {
                 const status = vitaminStatus[vitamin.id];
@@ -540,31 +606,13 @@ function CarePageComponent({ data = mockCareData, onSaveAll }: CarePageProps) {
             </SectionCard>
           </div>
 
-          {/* Вес */}
-          <SectionCard title="⚖️ Вес" delay={330}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                value={weight}
-                onChange={(event) => setWeight(event.target.value)}
-                inputMode="decimal"
-                placeholder="Введите вес"
-                className="h-12 flex-1 rounded-2xl border border-[#E8DDE3] bg-white px-4 text-lg font-black text-[#1A1A1A] outline-none focus:border-[#E872A0]"
-              />
-              <span className="text-sm font-bold text-[#8E8E93]">кг</span>
-            </div>
-            {!weight && <p className="mt-3 text-sm font-semibold text-[#8E8E93]">Введите вес, чтобы увидеть динамику.</p>}
-            <p className="mt-3 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold text-[#8E8E93]">
-              Вес сохранится вместе с остальными отметками по кнопке “Сохранить всё”.
-            </p>
-          </SectionCard>
-
           {/* Сохранить всё */}
           <SectionCard delay={380}>
             <Button type="button" className="h-14 w-full rounded-2xl bg-[#E872A0] text-base font-black text-white hover:bg-[#D95F8E]" onClick={saveAll}>
               💾 Сохранить всё
             </Button>
-            <p className="mt-4 text-sm font-semibold leading-relaxed text-[#8E8E93]">
-              ⚠️ Перед приёмом добавок проконсультируйся с врачом.
+            <p className="mt-4 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold leading-relaxed text-[#8E8E93]">
+              После сохранения Mira покажет выжимку на главной и использует данные как возможные связи в аналитике.
             </p>
           </SectionCard>
         </div>

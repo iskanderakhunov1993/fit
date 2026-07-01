@@ -3,16 +3,15 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-mira-primary/30 active:scale-[0.98] active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 [&>*]:relative",
+  "relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[18px] text-sm font-black transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#35AEEF]/25 active:scale-[0.98] active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&>*]:relative",
   {
     variants: {
       variant: {
-        // глянцевый: верхний внутренний блик + глубокая тень + лёгкий подъём
-        default: "bg-mira-primary text-white shadow-[0_10px_24px_rgba(155,142,196,0.26)] hover:bg-mira-primary-deep hover:shadow-[0_14px_34px_rgba(155,142,196,0.32)]",
-        secondary: "bg-mira-lavender-light text-mira-text hover:bg-mira-lavender/40",
-        ghost: "text-mira-text hover:bg-mira-lavender-light/70",
-        outline: "border border-mira-lavender/40 bg-white text-mira-text hover:border-mira-primary/40 hover:bg-mira-lavender-light/30",
-        cycle: "bg-mira-cycle text-white shadow-[0_10px_24px_rgba(196,126,155,0.25)] hover:bg-[#AA6684]"
+        default: "bg-[#35AEEF] text-white shadow-[0_14px_30px_rgba(53,174,239,0.28),inset_0_1px_0_rgba(255,255,255,0.38)] hover:bg-[#259FDF] hover:shadow-[0_18px_40px_rgba(53,174,239,0.34)]",
+        secondary: "border border-white/80 bg-white/82 text-[#31415C] shadow-[10px_14px_30px_rgba(112,134,170,0.12),-6px_-8px_20px_rgba(255,255,255,0.9)] hover:bg-white",
+        ghost: "text-[#31415C] hover:bg-white/70 hover:shadow-[0_8px_22px_rgba(112,134,170,0.10)]",
+        outline: "border border-white/85 bg-white/78 text-[#31415C] shadow-[8px_10px_24px_rgba(112,134,170,0.10),inset_0_1px_0_rgba(255,255,255,0.92)] hover:border-[#35AEEF]/35 hover:bg-white",
+        cycle: "bg-[#E872A0] text-white shadow-[0_14px_30px_rgba(232,114,160,0.26),inset_0_1px_0_rgba(255,255,255,0.35)] hover:bg-[#D95F8E]"
       },
       size: {
         default: "h-12 px-6",

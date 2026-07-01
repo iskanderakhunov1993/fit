@@ -225,31 +225,6 @@ function getCareProgress() {
   return { items, done, total: items.length, percent: Math.round((done / items.length) * 100) };
 }
 
-function getPreparationTips(data: TodayData) {
-  if (data.daysUntilPeriod < 0) {
-    return [
-      "Если была вероятность беременности, сделай тест утром.",
-      "Запиши факторы задержки: стресс, болезнь, перелёт, лекарства.",
-    ];
-  }
-  if (data.daysUntilPeriod <= 3) {
-    return [
-      "Проверь прокладки/тампоны, обезболивающее и запасное бельё.",
-      "Выбери удобную или тёмную одежду, если месячные могут начаться скоро.",
-    ];
-  }
-  if (data.symptoms.some((symptom) => symptom.type === "energy")) {
-    return [
-      "Оставь больше пауз между делами и не планируй тяжёлые встречи.",
-      "Поддержи воду и лёгкую еду, чтобы не усиливать усталость.",
-    ];
-  }
-  return [
-    "Сегодня достаточно отметить 1–2 факта: настроение, сон или воду.",
-    "Если всё спокойно, просто продолжай обычный день без лишнего контроля.",
-  ];
-}
-
 function QuickAction({
   children,
   tone = "white",
@@ -272,12 +247,47 @@ function QuickAction({
   );
 }
 
+function CalendarSection({ data, delay = 0 }: { data: TodayData["calendar"]; delay?: number }) {
+  return (
+    <SectionCard title={`📅 ${data.month}`} delay={delay}>
+      <div className="grid grid-cols-7 gap-2 text-center text-xs font-black text-[#8E8E93]">
+        {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => <div key={day}>{day}</div>)}
+      </div>
+      <div className="mt-3 grid grid-cols-7 gap-2">
+        {data.days.slice(0, 42).map((day, index) => (
+          <div
+            key={`${day.date ?? "empty"}-${index}`}
+            className={`flex aspect-square items-center justify-center rounded-2xl text-sm font-black ${calendarTone[day.type]}`}
+          >
+            {day.date}
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-[#8E8E93] md:grid-cols-4">
+        {[
+          ["bg-[#E872A0]", "Месячные"],
+          ["bg-[#FFB800]/40", "ПМС"],
+          ["bg-[#EDFAF1]", "Обычный день"],
+          ["bg-[#F1E9FF]", "Есть заметка"],
+        ].map(([color, label]) => (
+          <div key={label} className="flex items-center gap-2 rounded-2xl bg-[#FAF8F5] px-3 py-2">
+            <span className={`h-3 w-3 rounded-full ${color}`} />
+            {label}
+          </div>
+        ))}
+      </div>
+      {data.note && (
+        <p className="mt-3 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold text-[#1A1A1A]">📝 {data.note}</p>
+      )}
+    </SectionCard>
+  );
+}
+
 function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn, onCare, onReport }: TodayPageProps) {
   const [painOpen, setPainOpen] = useState(false);
   const status = useMemo(() => getTodayStatus(data), [data]);
   const factActions = useMemo(() => getFactActions(data, status), [data, status]);
   const careProgress = useMemo(() => getCareProgress(), []);
-  const preparationTips = useMemo(() => getPreparationTips(data), [data]);
 
   function openPain() {
     if (onPain) {
@@ -319,9 +329,13 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
           </div>
         </header>
 
+        <div className="mt-6">
+          <CalendarSection data={data.calendar} delay={0} />
+        </div>
+
         <Card
           className="mira-gradient-cycle mt-6 overflow-hidden rounded-[34px] border-0 p-6 shadow-[0_28px_72px_rgba(232,114,160,0.25)] sm:p-8"
-          style={{ animation: "miraTodayIn 420ms ease 0ms both" }}
+          style={{ animation: "miraTodayIn 420ms ease 30ms both" }}
         >
           <div className="grid gap-6 lg:grid-cols-[1fr_210px] lg:items-center">
             <div>
@@ -432,47 +446,6 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
               </Button>
             </SectionCard>
 
-            <SectionCard title="Аптечка и одежда" delay={160}>
-              <div className="space-y-3">
-                {preparationTips.map((tip, index) => (
-                  <div key={tip} className={`rounded-2xl px-4 py-3 text-sm font-bold text-[#1A1A1A] ${index === 0 ? "bg-[#FFF0F5]" : "bg-[#F1E9FF]"}`}>
-                    {tip}
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-
-            <SectionCard title={`📅 ${data.calendar.month}`} delay={190}>
-              <div className="grid grid-cols-7 gap-2 text-center text-xs font-black text-[#8E8E93]">
-                {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => <div key={day}>{day}</div>)}
-              </div>
-              <div className="mt-3 grid grid-cols-7 gap-2">
-                {data.calendar.days.slice(0, 42).map((day, index) => (
-                  <div
-                    key={`${day.date ?? "empty"}-${index}`}
-                    className={`flex aspect-square items-center justify-center rounded-2xl text-sm font-black ${calendarTone[day.type]}`}
-                  >
-                    {day.date}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-[#8E8E93]">
-                {[
-                  ["bg-[#E872A0]", "Месячные"],
-                  ["bg-[#FFB800]/40", "ПМС"],
-                  ["bg-[#EDFAF1]", "Обычный день"],
-                  ["bg-[#F1E9FF]", "Есть заметка"],
-                ].map(([color, label]) => (
-                  <div key={label} className="flex items-center gap-2 rounded-2xl bg-[#FAF8F5] px-3 py-2">
-                    <span className={`h-3 w-3 rounded-full ${color}`} />
-                    {label}
-                  </div>
-                ))}
-              </div>
-              {data.calendar.note && (
-                <p className="mt-3 rounded-2xl bg-[#FAF8F5] px-4 py-3 text-sm font-semibold text-[#1A1A1A]">📝 {data.calendar.note}</p>
-              )}
-            </SectionCard>
           </div>
         </div>
       </div>

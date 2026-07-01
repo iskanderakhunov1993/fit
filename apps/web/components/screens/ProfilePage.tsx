@@ -453,6 +453,27 @@ function ProfilePageComponent({ data = mockProfileData }: ProfilePageProps) {
               <Button type="button" className="mt-4 rounded-2xl bg-[#E872A0] text-white">📝 Написать сообщение</Button>
             </SectionCard>
           </div>
+
+          <SectionCard title="🗞️ Статьи, новости и обновления" delay={400}>
+            <p className="mb-5 text-sm font-semibold leading-relaxed text-[#8E8E93]">
+              Здесь будут полезные материалы Mira: короткие статьи, новости о женском здоровье и обновления приложения.
+            </p>
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                ["📖 Статьи", "Гайды про цикл, ПМС, задержки, боль и подготовку к врачу."],
+                ["🩺 Новости здоровья", "Важные темы без паники: что изменилось и на что обратить внимание."],
+                ["✨ Обновления Mira", "Новые функции, улучшения аналитики и подсказки по использованию."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-[24px] bg-[#FAF8F5] px-4 py-4">
+                  <p className="text-sm font-black text-[#1A1A1A]">{title}</p>
+                  <p className="mt-2 text-sm font-semibold leading-relaxed text-[#8E8E93]">{body}</p>
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="outline" className="mt-5 w-full rounded-2xl bg-white">
+              Открыть ленту
+            </Button>
+          </SectionCard>
         </div>
       </div>
 

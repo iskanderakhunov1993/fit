@@ -1,7 +1,7 @@
 "use client";
 
 import React, { memo, useMemo, useState } from "react";
-import { CalendarDays, HeartPulse, Plus, Siren, Sparkles } from "lucide-react";
+import { CalendarDays, Edit3, Heart, HeartPulse, Plus, Siren, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useMiraStore, type DailyLog } from "@/store";
@@ -41,6 +41,8 @@ type FactAction = {
   action: string;
   tone: SymptomColor;
 };
+
+type TodayStatus = ReturnType<typeof getTodayStatus>;
 
 type FirstPattern = {
   isReady: boolean;
@@ -235,6 +237,21 @@ function getCareProgress() {
   return { items, done, total: items.length, percent: Math.round((done / items.length) * 100) };
 }
 
+function getWeekStripDays(data: TodayData) {
+  const today = Number.parseInt(data.date, 10) || 1;
+  const weekdays = ["П", "В", "С", "Ч", "П", "С", "В"];
+  return Array.from({ length: 7 }, (_, index) => {
+    const offset = index - 2;
+    const date = today + offset;
+    return {
+      weekday: index === 2 ? "Сегодня" : weekdays[index],
+      date,
+      isToday: index === 2,
+      isPeriod: index <= 2,
+    };
+  });
+}
+
 function isDailyLog(log: unknown): log is DailyLog {
   if (!log || typeof log !== "object") return false;
   const value = log as Partial<DailyLog>;
@@ -384,6 +401,141 @@ function QuickAction({
   );
 }
 
+function CircleAction({
+  label,
+  icon,
+  active = false,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button type="button" className="flex min-w-0 flex-1 flex-col items-center gap-3 text-center" onClick={onClick}>
+      <span
+        className={`flex h-16 w-16 items-center justify-center rounded-full text-[#1A1A1A] shadow-[0_12px_28px_rgba(62,52,83,0.10)] transition active:scale-95 ${
+          active ? "bg-[#F64F86] text-white" : "bg-white"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="max-w-[92px] text-sm font-black leading-tight text-[#1A1A1A]">{label}</span>
+    </button>
+  );
+}
+
+function AdviceRail({ data, status }: { data: TodayData; status: TodayStatus }) {
+  const cards = [
+    {
+      title: data.daysUntilPeriod < 0 ? "Что может влиять на задержку" : "Возможные симптомы",
+      body: data.symptoms.length ? data.symptoms.map((item) => item.label).join(", ") : "Пока симптомов нет",
+      tone: "bg-[#EAF8F8]",
+    },
+    {
+      title: "Что сделать сегодня",
+      body: status.actions[0] ?? "Отметь состояние",
+      tone: "bg-[#FFE1EA]",
+    },
+    {
+      title: "Для врача",
+      body: status.needsMedicalWarning ? "Сохрани тревожные симптомы" : "Факты будут в отчёте",
+      tone: "bg-white",
+    },
+  ];
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-2xl font-black tracking-tight text-[#1A1A1A]">Советы на каждый день</h2>
+      <div className="-mx-5 mt-4 flex gap-3 overflow-x-auto px-5 pb-2">
+        {cards.map((card) => (
+          <div
+            key={card.title}
+            className={`min-h-[150px] w-[190px] shrink-0 rounded-[28px] border-2 border-[#F64F86] p-4 shadow-[0_14px_34px_rgba(232,114,160,0.10)] ${card.tone}`}
+          >
+            <p className="text-lg font-black leading-tight text-[#1A1A1A]">{card.title}</p>
+            <p className="mt-3 text-sm font-semibold leading-relaxed text-[#6F6672]">{card.body}</p>
+            <div className="mt-5 flex gap-1">
+              <span className="h-2 w-2 rounded-full bg-[#F64F86]" />
+              <span className="h-2 w-2 rounded-full bg-[#F64F86]" />
+              <span className="h-2 w-2 rounded-full bg-[#F64F86]" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FloStyleHero({
+  data,
+  status,
+  onPain,
+  onPeriod,
+  onCheckIn,
+}: {
+  data: TodayData;
+  status: TodayStatus;
+  onPain: () => void;
+  onPeriod?: () => void;
+  onCheckIn?: () => void;
+}) {
+  const weekDays = getWeekStripDays(data);
+
+  return (
+    <section className="-mx-5 -mt-6 overflow-hidden bg-[linear-gradient(160deg,#FFF7F8_0%,#FFD6E4_48%,#F9C2D6_100%)] px-5 pb-9 pt-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex items-center justify-between">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#17A85E] text-xl shadow-[0_10px_24px_rgba(23,168,94,0.18)]">
+            ✦
+          </div>
+          <div className="text-center">
+            <p className="text-3xl font-black italic tracking-tight text-[#F64F86]">Mira</p>
+            <p className="mt-6 text-xl font-semibold text-[#1A1A1A]">{data.date}</p>
+          </div>
+          <button type="button" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/55 text-[#1A1A1A]">
+            <CalendarDays className="h-7 w-7" />
+          </button>
+        </div>
+
+        <div className="mt-6 grid grid-cols-7 items-end gap-2 text-center">
+          {weekDays.map((day) => (
+            <div key={`${day.weekday}-${day.date}`} className="flex flex-col items-center gap-3">
+              <p className={`text-xs font-black uppercase tracking-wide ${day.isToday ? "text-[#1A1A1A]" : "text-[#6F6672]"}`}>
+                {day.weekday}
+              </p>
+              <div
+                className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl font-black ${
+                  day.isToday
+                    ? "bg-[#F64F86] text-white ring-[10px] ring-white/85"
+                    : day.isPeriod
+                      ? "text-[#1A1A1A]"
+                      : "text-[#0FA7A8]"
+                }`}
+              >
+                {day.date}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="py-20 text-center sm:py-24">
+          <p className="text-2xl font-black text-[#1A1A1A]">{data.daysUntilPeriod < 0 ? "Задержка:" : "Текущий цикл:"}</p>
+          <h1 className="mt-5 text-6xl font-black tracking-tight text-black sm:text-7xl">{status.title}</h1>
+          <p className="mx-auto mt-5 max-w-xl text-base font-semibold leading-relaxed text-[#6F6672]">{status.period}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <CircleAction label="Изменить месячные" active icon={<Edit3 className="h-8 w-8" />} onClick={onPeriod} />
+          <CircleAction label="Симптомы" icon={<Plus className="h-9 w-9" />} onClick={onCheckIn} />
+          <CircleAction label="Мне плохо" icon={<Heart className="h-8 w-8" />} onClick={onPain} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CalendarSection({ data, delay = 0 }: { data: TodayData["calendar"]; delay?: number }) {
   return (
     <SectionCard title={`📅 ${data.month}`} delay={delay}>
@@ -454,55 +606,17 @@ function TodayPageComponent({ data = mockTodayData, onPain, onPeriod, onCheckIn,
       `}</style>
 
       <div className="mx-auto max-w-5xl">
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#E872A0]">Сегодня</p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight text-[#1A1A1A]">
-              Mira показывает <span className="text-[#E872A0]">главное</span>
-            </h1>
-            <p className="mt-2 text-sm font-semibold text-[#8E8E93]">{status.period}</p>
-          </div>
-          <div className="mira-card flex shrink-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-[#202033]">
-            <CalendarDays className="h-4 w-4 text-[#E872A0]" />
-            {data.date}
-          </div>
-        </header>
+        <FloStyleHero data={data} status={status} onPain={openPain} onPeriod={onPeriod} onCheckIn={onCheckIn} />
 
-        <div className="mt-6">
-          <CalendarSection data={data.calendar} delay={0} />
-        </div>
+        <AdviceRail data={data} status={status} />
 
-        <Card
-          className="mira-gradient-cycle mt-6 overflow-hidden rounded-[34px] border-0 p-6 shadow-[0_28px_72px_rgba(232,114,160,0.25)] sm:p-8"
-          style={{ animation: "miraTodayIn 420ms ease 30ms both" }}
-        >
-          <div className="grid gap-6 lg:grid-cols-[1fr_210px] lg:items-center">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">Что со мной сегодня</p>
-              <h2 className="mt-2 max-w-2xl text-3xl font-black leading-tight text-white">{status.title}</h2>
-              <p className="mt-4 max-w-2xl text-sm font-semibold leading-relaxed text-white/80">{status.body}</p>
-              {status.note && <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/75">{status.note}</p>}
-              {status.needsMedicalWarning && (
-                <p className="mt-3 max-w-2xl rounded-2xl bg-white/16 px-4 py-3 text-sm font-black leading-relaxed text-white">
-                  Если есть резкая боль, обморок, очень обильное кровотечение или сильная слабость — лучше обратиться за медицинской помощью.
-                </p>
-              )}
-            </div>
-            <RingStat value={status.ringValue} label={status.ringLabel} sublabel={status.ringSubLabel} percentage={status.progress} />
-          </div>
-        </Card>
-
-        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
           <QuickAction tone="danger" onClick={openPain}>
             <Siren className="h-4 w-4" />
             Мне больно
           </QuickAction>
-          <QuickAction onClick={onPeriod}>🩸 Месячные</QuickAction>
-          <QuickAction tone="primary" onClick={onCheckIn}>
-            <Plus className="h-4 w-4" />
-            Симптом
-          </QuickAction>
           <QuickAction onClick={openReport}>📋 Отчёт врачу</QuickAction>
+          <QuickAction onClick={onCare}>💧 Забота</QuickAction>
         </div>
 
         <Card className="mt-4 rounded-[28px] border-0 bg-[#FFF0F0] p-5 shadow-[0_18px_42px_rgba(255,107,107,0.12)]">

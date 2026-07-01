@@ -180,6 +180,33 @@ function ContentPageComponent() {
           </div>
         </Card>
 
+        <Card className="mira-card mt-5 rounded-[30px] border-0 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8E8E93]">Лента Mira</p>
+              <h2 className="mt-1 text-2xl font-black text-[#1A1A1A]">Статьи, новости и обновления</h2>
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-[#8E8E93]">
+                Здесь собраны короткие статьи, новости о женском здоровье и обновления приложения.
+              </p>
+            </div>
+            <Button type="button" variant="outline" className="rounded-2xl bg-white" onClick={() => setActiveCategory("news")}>
+              Открыть новости
+            </Button>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {[
+              ["📖 Статьи", "Гайды про цикл, ПМС, задержки, боль и подготовку к врачу."],
+              ["🩺 Новости здоровья", "Важные темы без паники: что изменилось и на что обратить внимание."],
+              ["✨ Обновления Mira", "Новые функции, улучшения аналитики и подсказки по использованию."],
+            ].map(([title, body]) => (
+              <div key={title} className="rounded-[24px] bg-[#FAF8F5] px-4 py-4">
+                <p className="text-sm font-black text-[#1A1A1A]">{title}</p>
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-[#8E8E93]">{body}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
         <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
           <label className="mira-card flex items-center gap-3 rounded-[24px] px-4 py-3">
             <Search className="h-5 w-5 text-[#8E8E93]" />
